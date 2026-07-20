@@ -26,3 +26,6 @@ npm-debug.log*
 
 # Docker
 postgres_data/
+
+# Secrets
+secrets/
