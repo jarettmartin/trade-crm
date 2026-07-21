@@ -13,9 +13,10 @@ import {
 
 import { useLocation } from "react-router-dom";
 import {
+  homeOutline,
+  homeSharp,
   archiveOutline,
   archiveSharp,
-  bookmarkOutline,
   heartOutline,
   heartSharp,
   mailOutline,
@@ -39,6 +40,12 @@ interface AppPage {
 }
 
 const appPages: AppPage[] = [
+  {
+    title: "Home",
+    url: "/home",
+    iosIcon: homeOutline,
+    mdIcon: homeSharp,
+  },
   {
     title: "Inbox",
     url: "/folder/Inbox",
@@ -77,8 +84,6 @@ const appPages: AppPage[] = [
   },
 ];
 
-const labels = ["Family", "Friends", "Notes", "Work", "Travel", "Reminders"];
-
 const Menu: React.FC = () => {
   const location = useLocation();
   const { logout, user } = useAuth();
@@ -116,16 +121,6 @@ const Menu: React.FC = () => {
               </IonMenuToggle>
             );
           })}
-        </IonList>
-
-        <IonList id="labels-list">
-          <IonListHeader>Labels</IonListHeader>
-          {labels.map((label, index) => (
-            <IonItem lines="none" key={index}>
-              <IonIcon aria-hidden="true" slot="start" icon={bookmarkOutline} />
-              <IonLabel>{label}</IonLabel>
-            </IonItem>
-          ))}
         </IonList>
 
         <IonList>

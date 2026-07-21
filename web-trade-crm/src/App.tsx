@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Menu from "./components/Menu";
 import Page from "./pages/Page";
 import AuthPage from "./pages/AuthPage";
+import Home from "./pages/Home";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -72,7 +73,10 @@ const AppContent: React.FC = () => {
           <Menu />
           <IonRouterOutlet id="main">
             <Route path="/" exact={true}>
-              <Redirect to="/folder/Inbox" />
+              <Redirect to="/home" />
+            </Route>
+            <Route path="/home" exact={true}>
+              <Home />
             </Route>
             <Route path="/folder/:name" exact={true}>
               <Page />
