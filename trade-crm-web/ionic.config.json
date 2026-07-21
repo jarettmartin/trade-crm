@@ -1,7 +1,0 @@
-{
-  "name": "trade-crm-web",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "react-vite"
-}

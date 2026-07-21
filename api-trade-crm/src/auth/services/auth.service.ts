@@ -85,16 +85,55 @@ export class AuthService {
         1,
       );
 
-      // 7. Send verification email
+      // 7. Send verification email via Firebase REST API
       try {
-        const verificationLink =
-          await this.firebaseService.generateEmailVerificationLink(dto.email);
-        this.logger.log(
-          `Verification email link generated for ${dto.email}: ${verificationLink}`,
+        const apiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
+
+        // Sign in to get an idToken
+        const signInRes = await fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: dto.email,
+              password: dto.password,
+              returnSecureToken: true,
+            }),
+          },
         );
+        const signInData = await signInRes.json();
+
+        if (signInData.idToken) {
+          // Send the verification email
+          const verifyRes = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                requestType: 'VERIFY_EMAIL',
+                idToken: signInData.idToken,
+              }),
+            },
+          );
+          const verifyData = await verifyRes.json();
+
+          if (verifyRes.ok) {
+            this.logger.log(`Verification email sent to ${dto.email}`);
+          } else {
+            this.logger.warn(
+              `Failed to send verification email: ${verifyData.error?.message}`,
+            );
+          }
+        } else {
+          this.logger.warn(
+            `Could not sign in to send verification email: ${signInData.error?.message}`,
+          );
+        }
       } catch (emailError: any) {
         this.logger.warn(
-          `Failed to generate verification link for ${dto.email}: ${emailError.message}`,
+          `Failed to send verification email for ${dto.email}: ${emailError.message}`,
         );
       }
 
@@ -150,6 +189,12 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('User not found in local database');
+    }
+
+    if (user.status === UserStatus.PENDING) {
+      throw new UnauthorizedException(
+        'Please verify your email before signing in',
+      );
     }
 
     if (user.status === UserStatus.DISABLED) {
