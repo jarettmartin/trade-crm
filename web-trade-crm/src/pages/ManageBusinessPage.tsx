@@ -7,8 +7,6 @@ import {
   IonTitle,
   IonButtons,
   IonMenuButton,
-  IonCard,
-  IonCardContent,
   IonItem,
   IonLabel,
   IonInput,
@@ -110,87 +108,81 @@ const ManageBusinessPage: React.FC = () => {
       </IonHeader>
       <IonContent className="ion-padding">
         <div style={{ maxWidth: 500, width: "100%", margin: "20px auto" }}>
-          <IonCard>
-            <IonCardContent>
-              <IonItem>
-                <IonLabel position="stacked">Business Name</IonLabel>
-                <IonInput
-                  value={businessName}
-                  onIonInput={(e) => setBusinessName(e.detail.value!)}
-                  placeholder="Your Company Inc."
-                />
-              </IonItem>
+          <IonItem>
+            <IonLabel position="stacked">Business Name</IonLabel>
+            <IonInput
+              value={businessName}
+              onIonInput={(e) => setBusinessName(e.detail.value!)}
+              placeholder="Your Company Inc."
+            />
+          </IonItem>
 
-              <IonItem>
-                <IonLabel position="stacked">Business Email</IonLabel>
-                <IonInput
-                  type="email"
-                  value={businessEmail}
-                  onIonInput={(e) => setBusinessEmail(e.detail.value!)}
-                  placeholder="billing@company.com"
-                />
-              </IonItem>
+          <IonItem>
+            <IonLabel position="stacked">Business Email</IonLabel>
+            <IonInput
+              type="email"
+              value={businessEmail}
+              onIonInput={(e) => setBusinessEmail(e.detail.value!)}
+              placeholder="billing@company.com"
+            />
+          </IonItem>
 
-              <IonItem>
-                <IonLabel position="stacked">Phone</IonLabel>
-                <IonInput
-                  type="tel"
-                  value={phone}
-                  onIonInput={(e) => setPhone(e.detail.value!)}
-                  placeholder="(555) 555-0100"
-                />
-              </IonItem>
+          <IonItem>
+            <IonLabel position="stacked">Phone</IonLabel>
+            <IonInput
+              type="tel"
+              value={phone}
+              onIonInput={(e) => setPhone(e.detail.value!)}
+              placeholder="(555) 555-0100"
+            />
+          </IonItem>
 
-              <IonItem>
-                <IonLabel position="stacked">Default Tax %</IonLabel>
-                <IonInput
-                  type="number"
-                  value={defaultTaxPercent}
-                  onIonInput={(e) =>
-                    setDefaultTaxPercent(Number(e.detail.value) || 0)
-                  }
-                  placeholder="13"
-                />
-              </IonItem>
+          <IonItem>
+            <IonLabel position="stacked">Default Tax %</IonLabel>
+            <IonInput
+              type="number"
+              value={defaultTaxPercent}
+              onIonInput={(e) =>
+                setDefaultTaxPercent(Number(e.detail.value) || 0)
+              }
+              placeholder="13"
+            />
+          </IonItem>
 
-              <IonNote
-                color="medium"
-                style={{ display: "block", margin: "4px 16px 0", fontSize: 12 }}
-              >
-                Default tax rate used when creating invoices. Can be changed per
-                invoice.
-              </IonNote>
+          <IonNote
+            color="medium"
+            style={{ display: "block", margin: "4px 16px 0", fontSize: 12 }}
+          >
+            Default tax rate used when creating invoices. Can be changed per
+            invoice.
+          </IonNote>
 
-              <IonItem style={{ marginTop: 16 }}>
-                <IonLabel position="stacked">
-                  Payment Instructions (shown on invoices)
-                </IonLabel>
-                <IonTextarea
-                  rows={4}
-                  value={invoicePaymentMethodNote}
-                  onIonInput={(e) =>
-                    setInvoicePaymentMethodNote(e.detail.value!)
-                  }
-                  placeholder='e.g. "Please send e-transfers to billing@company.com"'
-                />
-              </IonItem>
+          <IonItem style={{ marginTop: 16 }}>
+            <IonLabel position="stacked">
+              Payment Instructions (shown on invoices)
+            </IonLabel>
+            <IonTextarea
+              rows={4}
+              value={invoicePaymentMethodNote}
+              onIonInput={(e) => setInvoicePaymentMethodNote(e.detail.value!)}
+              placeholder='e.g. "Please send e-transfers to billing@company.com"'
+            />
+          </IonItem>
 
-              {error && (
-                <IonText color="danger">
-                  <p style={{ fontSize: 13, margin: "12px 0 0" }}>{error}</p>
-                </IonText>
-              )}
+          {error && (
+            <IonText color="danger">
+              <p style={{ fontSize: 13, margin: "12px 0 0" }}>{error}</p>
+            </IonText>
+          )}
 
-              <IonButton
-                expand="block"
-                onClick={handleSave}
-                disabled={saving || !hasChanges}
-                style={{ marginTop: 20 }}
-              >
-                {saving ? <IonSpinner /> : "Save Changes"}
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
+          <IonButton
+            expand="block"
+            onClick={handleSave}
+            disabled={saving || !hasChanges}
+            style={{ marginTop: 20 }}
+          >
+            {saving ? <IonSpinner /> : "Save Changes"}
+          </IonButton>
         </div>
 
         <IonToast

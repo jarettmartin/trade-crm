@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import {
   IonContent,
   IonPage,
-  IonCard,
-  IonCardContent,
   IonItem,
   IonLabel,
   IonInput,
@@ -60,113 +58,107 @@ const CreateTenantPage: React.FC = () => {
     <IonPage>
       <IonContent className="ion-padding">
         <div style={{ maxWidth: 500, width: "100%", margin: "40px auto" }}>
-          <IonCard>
-            <IonCardContent>
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <h1
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: "#1a73e8",
-                    margin: 0,
-                  }}
-                >
-                  Create Your Business
-                </h1>
-                <p style={{ color: "#666", marginTop: 4 }}>
-                  Set up your company to get started
-                </p>
-              </div>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <h1
+              style={{
+                fontSize: 24,
+                fontWeight: 700,
+                color: "#1a73e8",
+                margin: 0,
+              }}
+            >
+              Create Your Business
+            </h1>
+            <p style={{ color: "#666", marginTop: 4 }}>
+              Set up your company to get started
+            </p>
+          </div>
 
-              <IonItem>
-                <IonLabel position="stacked">Business Name *</IonLabel>
-                <IonInput
-                  value={businessName}
-                  onIonInput={(e) => setBusinessName(e.detail.value!)}
-                  placeholder="Your Company Inc."
-                />
-              </IonItem>
+          <IonItem>
+            <IonLabel position="stacked">Business Name *</IonLabel>
+            <IonInput
+              value={businessName}
+              onIonInput={(e) => setBusinessName(e.detail.value!)}
+              placeholder="Your Company Inc."
+            />
+          </IonItem>
 
-              <IonItem>
-                <IonLabel position="stacked">Business Email *</IonLabel>
-                <IonInput
-                  type="email"
-                  value={businessEmail}
-                  onIonInput={(e) => setBusinessEmail(e.detail.value!)}
-                  placeholder="billing@company.com"
-                />
-              </IonItem>
+          <IonItem>
+            <IonLabel position="stacked">Business Email *</IonLabel>
+            <IonInput
+              type="email"
+              value={businessEmail}
+              onIonInput={(e) => setBusinessEmail(e.detail.value!)}
+              placeholder="billing@company.com"
+            />
+          </IonItem>
 
-              <IonItem>
-                <IonLabel position="stacked">Phone</IonLabel>
-                <IonInput
-                  type="tel"
-                  value={phone}
-                  onIonInput={(e) => setPhone(e.detail.value!)}
-                  placeholder="(555) 555-0100"
-                />
-              </IonItem>
+          <IonItem>
+            <IonLabel position="stacked">Phone</IonLabel>
+            <IonInput
+              type="tel"
+              value={phone}
+              onIonInput={(e) => setPhone(e.detail.value!)}
+              placeholder="(555) 555-0100"
+            />
+          </IonItem>
 
-              <IonItem>
-                <IonLabel position="stacked">Default Tax %</IonLabel>
-                <IonInput
-                  type="number"
-                  value={defaultTaxPercent}
-                  onIonInput={(e) =>
-                    setDefaultTaxPercent(Number(e.detail.value) || 0)
-                  }
-                  placeholder="13"
-                />
-              </IonItem>
+          <IonItem>
+            <IonLabel position="stacked">Default Tax %</IonLabel>
+            <IonInput
+              type="number"
+              value={defaultTaxPercent}
+              onIonInput={(e) =>
+                setDefaultTaxPercent(Number(e.detail.value) || 0)
+              }
+              placeholder="13"
+            />
+          </IonItem>
 
-              <IonNote
-                color="medium"
-                style={{ display: "block", marginTop: 4, fontSize: 12 }}
-              >
-                Default tax rate used when creating invoices. Can be changed per
-                invoice.
-              </IonNote>
+          <IonNote
+            color="medium"
+            style={{ display: "block", margin: "4px 16px 0", fontSize: 12 }}
+          >
+            Default tax rate used when creating invoices. Can be changed per
+            invoice.
+          </IonNote>
 
-              <IonItem style={{ marginTop: 16 }}>
-                <IonLabel position="stacked">
-                  Payment Instructions (shown on invoices)
-                </IonLabel>
-                <IonTextarea
-                  rows={4}
-                  value={invoicePaymentMethodNote}
-                  onIonInput={(e) =>
-                    setInvoicePaymentMethodNote(e.detail.value!)
-                  }
-                  placeholder='e.g. "Please send e-transfers to billing@company.com"'
-                />
-              </IonItem>
+          <IonItem style={{ marginTop: 16 }}>
+            <IonLabel position="stacked">
+              Payment Instructions (shown on invoices)
+            </IonLabel>
+            <IonTextarea
+              rows={4}
+              value={invoicePaymentMethodNote}
+              onIonInput={(e) => setInvoicePaymentMethodNote(e.detail.value!)}
+              placeholder='e.g. "Please send e-transfers to billing@company.com"'
+            />
+          </IonItem>
 
-              {error && (
-                <IonText color="danger">
-                  <p style={{ fontSize: 13, margin: "12px 0 0" }}>{error}</p>
-                </IonText>
-              )}
+          {error && (
+            <IonText color="danger">
+              <p style={{ fontSize: 13, margin: "12px 0 0" }}>{error}</p>
+            </IonText>
+          )}
 
-              <IonButton
-                expand="block"
-                onClick={handleCreate}
-                disabled={loading}
-                style={{ marginTop: 20 }}
-              >
-                {loading ? <IonSpinner /> : "Create Business"}
-              </IonButton>
+          <IonButton
+            expand="block"
+            onClick={handleCreate}
+            disabled={loading}
+            style={{ marginTop: 20 }}
+          >
+            {loading ? <IonSpinner /> : "Create Business"}
+          </IonButton>
 
-              <IonButton
-                expand="block"
-                fill="outline"
-                color="danger"
-                onClick={logout}
-                style={{ marginTop: 12 }}
-              >
-                Logout
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
+          <IonButton
+            expand="block"
+            fill="outline"
+            color="danger"
+            onClick={logout}
+            style={{ marginTop: 12 }}
+          >
+            Logout
+          </IonButton>
         </div>
       </IonContent>
     </IonPage>
