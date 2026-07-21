@@ -60,6 +60,25 @@ export interface UpdateTenantPayload {
   invoicePaymentMethodNote?: string;
 }
 
+export interface CustomerResult {
+  id: string;
+  type: string;
+  firstName: string;
+  lastName: string;
+  companyName?: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+  addresses?: Array<{
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    stateProvince: string;
+    zipPostalCode: string;
+    isDefault: boolean;
+  }>;
+}
+
 class ApiService {
   private baseUrl = API_BASE;
   private idToken: string | null = null;
@@ -196,6 +215,15 @@ class ApiService {
       headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
+  }
+
+  async searchCustomers(q: string) {
+    return this.request<CustomerResult[]>(
+      `/customers/search?q=${encodeURIComponent(q)}`,
+      {
+        headers: this.authHeaders(),
+      },
+    );
   }
 }
 
