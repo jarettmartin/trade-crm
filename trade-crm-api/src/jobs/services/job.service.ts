@@ -20,11 +20,21 @@ export class JobService {
     private readonly lineItemRepository: Repository<JobLineItem>,
   ) {}
 
-  async findAll(tenantId: string, page: number, limit: number) {
+  async findAll(
+    tenantId: string,
+    page: number,
+    limit: number,
+    status?: string,
+  ) {
     const skip = (page - 1) * limit;
 
+    const where: any = { tenantId };
+    if (status) {
+      where.status = status;
+    }
+
     const [jobs, total] = await this.jobRepository.findAndCount({
-      where: { tenantId },
+      where,
       order: { createdAt: 'DESC' },
       skip,
       take: limit,

@@ -11,7 +11,7 @@ import {
 import { JobService } from '../services/job.service';
 import { CreateJobDto } from '../dto/create-job.dto';
 import { UpdateJobDto } from '../dto/update-job.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { QueryJobsDto } from '../dto/query-jobs.dto';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
@@ -32,13 +32,14 @@ export class JobController {
   @Get()
   @UseGuards(TenantGuard)
   async findAll(
-    @Query() pagination: PaginationDto,
+    @Query() query: QueryJobsDto,
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.jobService.findAll(
       user.tenantId!,
-      pagination.page ?? 1,
-      pagination.limit ?? 10,
+      query.page ?? 1,
+      query.limit ?? 10,
+      query.status,
     );
   }
 
