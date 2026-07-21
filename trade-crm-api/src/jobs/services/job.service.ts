@@ -20,6 +20,28 @@ export class JobService {
     private readonly lineItemRepository: Repository<JobLineItem>,
   ) {}
 
+  async findById(id: string, tenantId: string) {
+    const job = await this.jobRepository.findOne({
+      where: { id, tenantId },
+      relations: {
+        customer: true,
+        customerAddress: true,
+        notes: true,
+        lineItems: true,
+      },
+      order: {
+        notes: { createdAt: 'ASC' },
+        lineItems: { sortOrder: 'ASC' },
+      },
+    });
+
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    return job;
+  }
+
   async create(dto: CreateJobDto, tenantId: string) {
     const job = this.jobRepository.create({
       ...dto,

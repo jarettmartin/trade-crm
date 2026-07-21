@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Patch,
   Body,
   Param,
@@ -24,6 +25,15 @@ export class JobController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.jobService.create(dto, user.tenantId!);
+  }
+
+  @Get(':id')
+  @UseGuards(TenantGuard)
+  async findById(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.jobService.findById(id, user.tenantId!);
   }
 
   @Patch(':id')
