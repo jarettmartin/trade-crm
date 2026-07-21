@@ -2,13 +2,16 @@ import {
   Controller,
   Post,
   Patch,
+  Get,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CustomerService } from '../services/customer.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
+import { SearchCustomerDto } from '../dto/search-customer.dto';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
@@ -34,5 +37,14 @@ export class CustomerController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.customerService.update(id, dto, user.tenantId!);
+  }
+
+  @Get('search')
+  @UseGuards(TenantGuard)
+  async search(
+    @Query() dto: SearchCustomerDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.customerService.search(dto, user.tenantId!);
   }
 }
