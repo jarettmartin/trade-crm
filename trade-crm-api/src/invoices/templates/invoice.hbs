@@ -1,0 +1,219 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <style>
+      @page {
+        margin: 0;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 11px;
+        color: #333;
+        line-height: 1.5;
+        padding: 40px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #1a73e8;
+      }
+      .header .brand h1 {
+        font-size: 24px;
+        color: #1a73e8;
+        margin: 0;
+      }
+      .header .brand .business-name {
+        font-size: 16px;
+        color: #555;
+        margin-top: 4px;
+      }
+      .header .invoice-meta {
+        text-align: right;
+      }
+      .header .invoice-meta h2 {
+        font-size: 20px;
+        color: #333;
+        margin: 0 0 4px;
+      }
+      .header .invoice-meta .meta-row {
+        font-size: 11px;
+        color: #666;
+      }
+      .billing-section {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+      }
+      .billing-section .bill-to h3,
+      .billing-section .service-address h3 {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #888;
+        margin-bottom: 6px;
+        letter-spacing: 1px;
+      }
+      .billing-section .bill-to p,
+      .billing-section .service-address p {
+        font-size: 12px;
+        color: #333;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+      }
+      thead th {
+        background: #f5f5f5;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #666;
+        padding: 10px 8px;
+        text-align: left;
+        border-bottom: 2px solid #ddd;
+      }
+      thead th.amount {
+        text-align: right;
+      }
+      tbody td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #eee;
+        font-size: 11px;
+      }
+      tbody td.amount {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .totals {
+        width: 300px;
+        margin-left: auto;
+      }
+      .totals .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 12px;
+      }
+      .totals .row.sub {
+        border-top: 1px solid #ddd;
+      }
+      .totals .row.grand {
+        border-top: 2px solid #333;
+        font-weight: bold;
+        font-size: 14px;
+        padding-top: 8px;
+        margin-top: 4px;
+      }
+      .footer {
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+        font-size: 10px;
+        color: #999;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='header'>
+      <div class='brand'>
+        <h1>INVOICE</h1>
+        <div class='business-name'>{{businessName}}</div>
+        <div>{{businessEmail}}</div>
+        {{#if businessPhone}}<div>{{businessPhone}}</div>{{/if}}
+      </div>
+      <div class='invoice-meta'>
+        <h2>#{{invoiceNumber}}</h2>
+        <div class='meta-row'>Issued: {{issuedAt}}</div>
+        <div class='meta-row'>Status: <strong>{{status}}</strong></div>
+      </div>
+    </div>
+
+    <div class='billing-section'>
+      <div class='bill-to'>
+        <h3>Bill To</h3>
+        <p>
+          <strong>{{customerName}}</strong><br />
+          {{#if customerCompany}}{{customerCompany}}<br />{{/if}}
+          {{customerPhone}}<br />
+          {{customerEmail}}
+        </p>
+      </div>
+      <div class='service-address'>
+        <h3>Service Address</h3>
+        <p>
+          {{addressLabel}}<br />
+          {{addressLine1}}<br />
+          {{#if addressLine2}}{{addressLine2}}<br />{{/if}}
+          {{city}},
+          {{stateProvince}}
+          {{zipPostalCode}}
+        </p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style='width:8%;'>#</th>
+          <th>Description</th>
+          <th style='width:8%;'>Qty</th>
+          <th style='width:12%;' class='amount'>Unit Price</th>
+          <th style='width:12%;' class='amount'>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each lineItems}}
+          <tr>
+            <td>{{sortOrder}}</td>
+            <td><strong>{{description}}</strong><br /><span
+                style='color:#888;font-size:10px;'
+              >{{type}}</span></td>
+            <td class='amount'>{{quantity}}</td>
+            <td class='amount'>${{formatNumber unitPrice}}</td>
+            <td class='amount'>${{formatNumber lineTotal}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <div class='totals'>
+      <div class='row sub'>
+        <span>Subtotal</span>
+        <span>${{formatNumber subtotal}}</span>
+      </div>
+      <div class='row'>
+        <span>Tax ({{taxPercent}}%)</span>
+        <span>${{formatNumber taxAmount}}</span>
+      </div>
+      <div class='row grand'>
+        <span>Total</span>
+        <span>${{formatNumber total}}</span>
+      </div>
+    </div>
+
+    {{#if paymentNote}}
+      <div
+        style='margin-top:30px;padding:15px;background:#f9f9f9;border-radius:4px;font-size:11px;'
+      >
+        <strong>Payment Method:</strong><br />
+        {{paymentNote}}
+      </div>
+    {{/if}}
+
+    <div class='footer'>
+      <p>Thank you for your business!</p>
+    </div>
+  </body>
+</html>

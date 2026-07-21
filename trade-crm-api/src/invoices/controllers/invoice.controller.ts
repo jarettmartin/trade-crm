@@ -1,15 +1,28 @@
-import { Controller, Post, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import type { Response } from 'express';
 import { InvoiceService } from '../services/invoice.service';
+import { PdfService } from '../services/pdf.service';
 import { CreateInvoiceDto } from '../dto/create-invoice.dto';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
 
-@Controller('jobs/:jobId/invoices')
+@Controller()
 export class InvoiceController {
-  constructor(private readonly invoiceService: InvoiceService) {}
+  constructor(
+    private readonly invoiceService: InvoiceService,
+    private readonly pdfService: PdfService,
+  ) {}
 
-  @Post()
+  @Post('jobs/:jobId/invoices')
   @UseGuards(TenantGuard)
   async create(
     @Param('jobId') jobId: string,
@@ -17,5 +30,26 @@ export class InvoiceController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.invoiceService.create(jobId, dto, user.tenantId!);
+  }
+
+  @Get('invoices/:invoiceId/pdf')
+  @UseGuards(TenantGuard)
+  async downloadPdf(
+    @Param('invoiceId') invoiceId: string,
+    @CurrentUser() user: CurrentUserType,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.pdfService.generateInvoicePdf(
+      invoiceId,
+      user.tenantId!,
+    );
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="invoice-${invoiceId}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
+
+    res.send(pdfBuffer);
   }
 }
