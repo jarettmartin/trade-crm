@@ -12,7 +12,13 @@ import {
 } from "@ionic/react";
 
 import { useLocation } from "react-router-dom";
-import { homeOutline, homeSharp, logOutOutline } from "ionicons/icons";
+import {
+  homeOutline,
+  homeSharp,
+  businessOutline,
+  businessSharp,
+  logOutOutline,
+} from "ionicons/icons";
 import { useAuth } from "../contexts/AuthContext";
 import "./Menu.css";
 
@@ -29,6 +35,12 @@ const appPages: AppPage[] = [
     url: "/home",
     iosIcon: homeOutline,
     mdIcon: homeSharp,
+  },
+  {
+    title: "Manage Business",
+    url: "/manage-business",
+    iosIcon: businessOutline,
+    mdIcon: businessSharp,
   },
 ];
 

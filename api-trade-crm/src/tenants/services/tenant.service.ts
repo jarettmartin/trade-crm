@@ -49,6 +49,7 @@ export class TenantService {
       businessEmail: dto.businessEmail,
       phone: dto.phone,
       defaultTaxPercent: dto.defaultTaxPercent ?? 0,
+      invoicePaymentMethodNote: dto.invoicePaymentMethodNote,
     });
 
     const savedTenant = await this.tenantRepository.save(tenant);
@@ -65,7 +66,9 @@ export class TenantService {
       id: savedTenant.id,
       businessName: savedTenant.businessName,
       businessEmail: savedTenant.businessEmail,
+      phone: savedTenant.phone,
       defaultTaxPercent: savedTenant.defaultTaxPercent,
+      invoicePaymentMethodNote: savedTenant.invoicePaymentMethodNote,
     };
   }
 

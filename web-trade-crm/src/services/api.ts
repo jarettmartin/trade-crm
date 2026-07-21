@@ -15,6 +15,11 @@ export interface LoginResponse {
     firstName: string;
     lastName: string;
     tenantId?: string;
+    businessName?: string;
+    businessEmail?: string;
+    phone?: string;
+    defaultTaxPercent?: number;
+    invoicePaymentMethodNote?: string;
   };
 }
 
@@ -42,7 +47,17 @@ export interface CreateTenantResponse {
   id: string;
   businessName: string;
   businessEmail: string;
+  phone?: string;
   defaultTaxPercent: number;
+  invoicePaymentMethodNote?: string;
+}
+
+export interface UpdateTenantPayload {
+  businessName?: string;
+  businessEmail?: string;
+  phone?: string;
+  defaultTaxPercent?: number;
+  invoicePaymentMethodNote?: string;
 }
 
 class ApiService {
@@ -170,6 +185,14 @@ class ApiService {
   async createTenant(payload: CreateTenantPayload) {
     return this.request<CreateTenantResponse>("/tenants", {
       method: "POST",
+      headers: this.authHeaders(),
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateTenant(tenantId: string, payload: UpdateTenantPayload) {
+    return this.request<CreateTenantResponse>(`/tenants/${tenantId}`, {
+      method: "PATCH",
       headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });

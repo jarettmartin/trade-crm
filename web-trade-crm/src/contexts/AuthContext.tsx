@@ -74,7 +74,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const res = await api.login(email, password);
     localStorage.setItem(TOKEN_KEY, res.idToken);
     localStorage.setItem(USER_KEY, JSON.stringify(res.user));
-    // api.setTokens already stores the refresh token, no need to duplicate here
     setState({
       user: res.user,
       idToken: res.idToken,

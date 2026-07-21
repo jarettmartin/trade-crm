@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   IonContent,
   IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonMenuButton,
   IonCard,
   IonCardContent,
   IonItem,
@@ -12,74 +17,103 @@ import {
   IonText,
   IonSpinner,
   IonNote,
+  IonToast,
 } from "@ionic/react";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api";
 
-const CreateTenantPage: React.FC = () => {
-  const { updateUser, logout } = useAuth();
-  const [businessName, setBusinessName] = useState("");
-  const [businessEmail, setBusinessEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [defaultTaxPercent, setDefaultTaxPercent] = useState<number>(0);
-  const [invoicePaymentMethodNote, setInvoicePaymentMethodNote] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+const ManageBusinessPage: React.FC = () => {
+  const { user, updateUser } = useAuth();
 
-  const handleCreate = async () => {
-    if (!businessName || !businessEmail) {
-      setError("Business name and email are required");
-      return;
-    }
-    setLoading(true);
+  const makeSnapshot = useCallback(
+    () => ({
+      businessName: user?.businessName ?? "",
+      businessEmail: user?.businessEmail ?? "",
+      phone: user?.phone ?? "",
+      defaultTaxPercent: user?.defaultTaxPercent ?? 0,
+      invoicePaymentMethodNote: user?.invoicePaymentMethodNote ?? "",
+    }),
+    [user],
+  );
+
+  const initialRef = useRef(makeSnapshot());
+
+  const [businessName, setBusinessName] = useState(
+    initialRef.current.businessName,
+  );
+  const [businessEmail, setBusinessEmail] = useState(
+    initialRef.current.businessEmail,
+  );
+  const [phone, setPhone] = useState(initialRef.current.phone);
+  const [defaultTaxPercent, setDefaultTaxPercent] = useState<number>(
+    initialRef.current.defaultTaxPercent,
+  );
+  const [invoicePaymentMethodNote, setInvoicePaymentMethodNote] = useState(
+    initialRef.current.invoicePaymentMethodNote,
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [showToast, setShowToast] = useState(false);
+
+  const hasChanges =
+    businessName !== initialRef.current.businessName ||
+    businessEmail !== initialRef.current.businessEmail ||
+    phone !== initialRef.current.phone ||
+    defaultTaxPercent !== initialRef.current.defaultTaxPercent ||
+    invoicePaymentMethodNote !== initialRef.current.invoicePaymentMethodNote;
+
+  const handleSave = async () => {
+    if (!user?.tenantId) return;
+    setSaving(true);
     setError("");
     try {
-      const result = await api.createTenant({
-        businessName,
-        businessEmail,
+      const result = await api.updateTenant(user.tenantId, {
+        businessName: businessName || undefined,
+        businessEmail: businessEmail || undefined,
         phone: phone || undefined,
-        defaultTaxPercent,
+        defaultTaxPercent:
+          defaultTaxPercent !== undefined ? defaultTaxPercent : undefined,
         invoicePaymentMethodNote: invoicePaymentMethodNote || undefined,
       });
       updateUser({
-        tenantId: result.id,
         businessName: result.businessName,
         businessEmail: result.businessEmail,
         phone: result.phone,
         defaultTaxPercent: result.defaultTaxPercent,
         invoicePaymentMethodNote: result.invoicePaymentMethodNote,
       });
+      // Reset baseline so save button disables again
+      initialRef.current = {
+        businessName: result.businessName ?? "",
+        businessEmail: result.businessEmail ?? "",
+        phone: result.phone ?? "",
+        defaultTaxPercent: result.defaultTaxPercent ?? 0,
+        invoicePaymentMethodNote: result.invoicePaymentMethodNote ?? "",
+      };
+      setShowToast(true);
     } catch (err: any) {
-      setError(err.message || "Failed to create tenant");
+      setError(err.message || "Failed to update business");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
     <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonMenuButton />
+          </IonButtons>
+          <IonTitle>Manage Business</IonTitle>
+        </IonToolbar>
+      </IonHeader>
       <IonContent className="ion-padding">
-        <div style={{ maxWidth: 500, width: "100%", margin: "40px auto" }}>
+        <div style={{ maxWidth: 500, width: "100%", margin: "20px auto" }}>
           <IonCard>
             <IonCardContent>
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <h1
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: "#1a73e8",
-                    margin: 0,
-                  }}
-                >
-                  Create Your Business
-                </h1>
-                <p style={{ color: "#666", marginTop: 4 }}>
-                  Set up your company to get started
-                </p>
-              </div>
-
               <IonItem>
-                <IonLabel position="stacked">Business Name *</IonLabel>
+                <IonLabel position="stacked">Business Name</IonLabel>
                 <IonInput
                   value={businessName}
                   onIonInput={(e) => setBusinessName(e.detail.value!)}
@@ -88,7 +122,7 @@ const CreateTenantPage: React.FC = () => {
               </IonItem>
 
               <IonItem>
-                <IonLabel position="stacked">Business Email *</IonLabel>
+                <IonLabel position="stacked">Business Email</IonLabel>
                 <IonInput
                   type="email"
                   value={businessEmail}
@@ -121,7 +155,7 @@ const CreateTenantPage: React.FC = () => {
 
               <IonNote
                 color="medium"
-                style={{ display: "block", marginTop: 4, fontSize: 12 }}
+                style={{ display: "block", margin: "4px 16px 0", fontSize: 12 }}
               >
                 Default tax rate used when creating invoices. Can be changed per
                 invoice.
@@ -149,28 +183,26 @@ const CreateTenantPage: React.FC = () => {
 
               <IonButton
                 expand="block"
-                onClick={handleCreate}
-                disabled={loading}
+                onClick={handleSave}
+                disabled={saving || !hasChanges}
                 style={{ marginTop: 20 }}
               >
-                {loading ? <IonSpinner /> : "Create Business"}
-              </IonButton>
-
-              <IonButton
-                expand="block"
-                fill="outline"
-                color="danger"
-                onClick={logout}
-                style={{ marginTop: 12 }}
-              >
-                Logout
+                {saving ? <IonSpinner /> : "Save Changes"}
               </IonButton>
             </IonCardContent>
           </IonCard>
         </div>
+
+        <IonToast
+          isOpen={showToast}
+          message="Business details updated successfully"
+          duration={5000}
+          onDidDismiss={() => setShowToast(false)}
+          color="success"
+        />
       </IonContent>
     </IonPage>
   );
 };
 
-export default CreateTenantPage;
+export default ManageBusinessPage;

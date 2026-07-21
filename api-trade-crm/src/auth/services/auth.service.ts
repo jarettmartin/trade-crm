@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { FirebaseService } from './firebase.service';
 import { InviteCode } from '../entities/invite-code.entity';
 import { User } from '../../users/entities/user.entity';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { UserStatus } from '../../common/enums/user-status.enum';
@@ -27,6 +28,8 @@ export class AuthService {
     private readonly inviteCodeRepository: Repository<InviteCode>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Tenant)
+    private readonly tenantRepository: Repository<Tenant>,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -191,6 +194,29 @@ export class AuthService {
       throw new UnauthorizedException('User not found in local database');
     }
 
+    // Fetch tenant details if user belongs to a tenant
+    let tenant: Tenant | null = null;
+    if (user.tenantId) {
+      tenant = await this.tenantRepository.findOne({
+        where: { id: user.tenantId },
+      });
+    }
+
+    const userResponse = {
+      id: user.id,
+      email: user.email,
+      status: user.status,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      tenantId: user.tenantId,
+      businessName: tenant?.businessName,
+      businessEmail: tenant?.businessEmail,
+      phone: tenant?.phone,
+      defaultTaxPercent: tenant ? Number(tenant.defaultTaxPercent) : undefined,
+      invoicePaymentMethodNote: tenant?.invoicePaymentMethodNote,
+    };
+
     // If PENDING, check Firebase for up-to-date verification status
     if (user.status === UserStatus.PENDING) {
       const firebaseUser = await this.firebaseService.getUser(user.firebaseUid);
@@ -209,15 +235,7 @@ export class AuthService {
           refreshToken: data.refreshToken,
           expiresIn: data.expiresIn,
           localId: data.localId,
-          user: {
-            id: user.id,
-            email: user.email,
-            status: user.status,
-            role: user.role,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            tenantId: user.tenantId,
-          },
+          user: { ...userResponse, status: user.status },
         };
       }
 
@@ -237,15 +255,7 @@ export class AuthService {
       refreshToken: data.refreshToken,
       expiresIn: data.expiresIn,
       localId: data.localId,
-      user: {
-        id: user.id,
-        email: user.email,
-        status: user.status,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        tenantId: user.tenantId,
-      },
+      user: userResponse,
     };
   }
 

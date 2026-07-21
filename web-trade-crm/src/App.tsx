@@ -12,6 +12,7 @@ import Menu from "./components/Menu";
 import AuthPage from "./pages/AuthPage";
 import Home from "./pages/Home";
 import CreateTenantPage from "./pages/CreateTenantPage";
+import ManageBusinessPage from "./pages/ManageBusinessPage";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -86,6 +87,9 @@ const AppContent: React.FC = () => {
             </Route>
             <Route path="/home" exact={true}>
               <Home />
+            </Route>
+            <Route path="/manage-business" exact={true}>
+              <ManageBusinessPage />
             </Route>
           </IonRouterOutlet>
         </IonSplitPane>

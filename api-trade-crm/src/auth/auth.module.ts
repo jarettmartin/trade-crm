@@ -6,9 +6,10 @@ import { AuthService } from './services/auth.service';
 import { FirebaseService } from './services/firebase.service';
 import { InviteCode } from './entities/invite-code.entity';
 import { User } from '../users/entities/user.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([InviteCode, User]), ConfigModule],
+  imports: [TypeOrmModule.forFeature([InviteCode, User, Tenant]), ConfigModule],
   controllers: [AuthController],
   providers: [AuthService, FirebaseService],
   exports: [FirebaseService],
