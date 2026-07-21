@@ -264,9 +264,9 @@ const CreateJobPage: React.FC = () => {
             style={{
               marginTop: "16px",
               padding: "12px",
-              border: "1px solid var(--ion-color-primary-tint)",
+              border: "1px solid var(--ion-color-light-shade)",
               borderRadius: "8px",
-              background: "var(--ion-color-primary-tint)",
+              background: "var(--ion-background-color)",
             }}
           >
             <div
@@ -310,11 +310,20 @@ const CreateJobPage: React.FC = () => {
 
             {selectedCustomer.addresses &&
               selectedCustomer.addresses.length > 0 && (
-                <IonItem style={{ "--padding-start": "0", marginTop: "8px" }}>
-                  <IonLabel position="stacked">Address</IonLabel>
+                <div style={{ marginTop: "12px" }}>
+                  <IonLabel
+                    style={{
+                      fontSize: "14px",
+                      marginBottom: "4px",
+                      display: "block",
+                    }}
+                  >
+                    Address
+                  </IonLabel>
                   <IonSelect
                     value={selectedAddressId}
                     onIonChange={(e) => setSelectedAddressId(e.detail.value)}
+                    style={{ width: "100%" }}
                   >
                     {selectedCustomer.addresses.map((addr) => {
                       return (
@@ -328,7 +337,7 @@ const CreateJobPage: React.FC = () => {
                       );
                     })}
                   </IonSelect>
-                </IonItem>
+                </div>
               )}
           </div>
         )}
