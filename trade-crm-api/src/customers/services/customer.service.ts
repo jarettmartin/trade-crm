@@ -14,24 +14,49 @@ export class CustomerService {
   constructor(
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(CustomerAddress)
+    private readonly addressRepository: Repository<CustomerAddress>,
   ) {}
 
   async create(dto: CreateCustomerDto, tenantId: string) {
+    const { addresses, ...customerData } = dto;
+
     const customer = this.customerRepository.create({
-      ...dto,
+      ...customerData,
       tenantId,
     });
 
     const savedCustomer = await this.customerRepository.save(customer);
 
+    // Create addresses if provided
+    if (addresses && addresses.length > 0) {
+      const addressEntities = addresses.map((addr, index) =>
+        this.addressRepository.create({
+          ...addr,
+          tenantId,
+          customerId: savedCustomer.id,
+          isDefault: addr.isDefault ?? index === 0,
+        }),
+      );
+      await this.addressRepository.save(addressEntities);
+    }
+
+    // Return customer with addresses
+    const customerWithAddresses = await this.customerRepository.findOne({
+      where: { id: savedCustomer.id },
+      relations: { addresses: true },
+    });
+
     this.logger.log(
       `Customer ${savedCustomer.id} created for tenant ${tenantId}`,
     );
 
-    return savedCustomer;
+    return customerWithAddresses;
   }
 
   async update(id: string, dto: UpdateCustomerDto, tenantId: string) {
+    const { addresses, ...customerData } = dto;
+
     const customer = await this.customerRepository.findOne({
       where: { id, tenantId },
     });
@@ -40,10 +65,36 @@ export class CustomerService {
       throw new NotFoundException('Customer not found');
     }
 
-    Object.assign(customer, dto);
-    const savedCustomer = await this.customerRepository.save(customer);
+    // Update customer fields
+    Object.assign(customer, customerData);
+    await this.customerRepository.save(customer);
 
-    return savedCustomer;
+    // Replace addresses if provided
+    if (addresses !== undefined) {
+      // Delete existing addresses
+      await this.addressRepository.delete({ customerId: id, tenantId });
+
+      // Create new addresses
+      if (addresses.length > 0) {
+        const addressEntities = addresses.map((addr, index) =>
+          this.addressRepository.create({
+            ...addr,
+            tenantId,
+            customerId: id,
+            isDefault: addr.isDefault ?? index === 0,
+          }),
+        );
+        await this.addressRepository.save(addressEntities);
+      }
+    }
+
+    // Return customer with addresses
+    const customerWithAddresses = await this.customerRepository.findOne({
+      where: { id, tenantId },
+      relations: { addresses: true },
+    });
+
+    return customerWithAddresses;
   }
 
   async search(dto: SearchCustomerDto, tenantId: string) {

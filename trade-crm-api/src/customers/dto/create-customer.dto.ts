@@ -3,10 +3,14 @@ import {
   IsEmail,
   IsOptional,
   IsEnum,
+  IsArray,
+  ValidateNested,
   MinLength,
   MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { CustomerType } from '../../common/enums/customer-type.enum';
+import { CreateAddressDto } from './create-address.dto';
 
 export class CreateCustomerDto {
   @IsEnum(CustomerType)
@@ -39,4 +43,10 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateAddressDto)
+  addresses?: CreateAddressDto[];
 }
