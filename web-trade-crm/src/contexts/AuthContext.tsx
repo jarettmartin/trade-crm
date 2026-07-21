@@ -17,6 +17,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (partial: Partial<LoginResponse["user"]>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,6 +41,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (token && userJson) {
       try {
         const user = JSON.parse(userJson);
+        // Sync token into api service so it can use it for authenticated requests
+        api.setTokens(
+          token,
+          localStorage.getItem("trade_crm_refresh_token") || "",
+        );
         setState({
           user,
           idToken: token,
@@ -56,10 +62,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  const updateUser = useCallback((partial: Partial<LoginResponse["user"]>) => {
+    setState((prev) => {
+      const updated = { ...prev.user!, ...partial };
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      return { ...prev, user: updated };
+    });
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.login(email, password);
     localStorage.setItem(TOKEN_KEY, res.idToken);
     localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+    // api.setTokens already stores the refresh token, no need to duplicate here
     setState({
       user: res.user,
       idToken: res.idToken,
@@ -69,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const logout = useCallback(() => {
+    api.clearTokens();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setState({
@@ -80,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

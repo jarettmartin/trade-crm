@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Menu from "./components/Menu";
 import AuthPage from "./pages/AuthPage";
 import Home from "./pages/Home";
+import CreateTenantPage from "./pages/CreateTenantPage";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -38,7 +39,7 @@ import "./theme/variables.css";
 setupIonicReact();
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -61,6 +62,15 @@ const AppContent: React.FC = () => {
     return (
       <IonApp>
         <AuthPage />
+      </IonApp>
+    );
+  }
+
+  // Force create tenant page if user has no tenant
+  if (!user?.tenantId) {
+    return (
+      <IonApp>
+        <CreateTenantPage />
       </IonApp>
     );
   }
