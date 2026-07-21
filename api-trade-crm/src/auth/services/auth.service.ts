@@ -191,7 +191,35 @@ export class AuthService {
       throw new UnauthorizedException('User not found in local database');
     }
 
+    // If PENDING, check Firebase for up-to-date verification status
     if (user.status === UserStatus.PENDING) {
+      const firebaseUser = await this.firebaseService.getUser(user.firebaseUid);
+
+      if (firebaseUser && firebaseUser.emailVerified) {
+        user.status = UserStatus.ACTIVE;
+        user.lastLoginAt = new Date();
+        await this.userRepository.save(user);
+
+        this.logger.log(
+          `User ${user.email} auto-verified and activated on login`,
+        );
+
+        return {
+          idToken: data.idToken,
+          refreshToken: data.refreshToken,
+          expiresIn: data.expiresIn,
+          localId: data.localId,
+          user: {
+            id: user.id,
+            email: user.email,
+            status: user.status,
+            role: user.role,
+            firstName: user.firstName,
+            lastName: user.lastName,
+          },
+        };
+      }
+
       throw new UnauthorizedException(
         'Please verify your email before signing in',
       );
