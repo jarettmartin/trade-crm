@@ -29,6 +29,24 @@ export class CustomerController {
     return this.customerService.create(dto, user.tenantId!);
   }
 
+  @Get('search')
+  @UseGuards(TenantGuard)
+  async search(
+    @Query() dto: SearchCustomerDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.customerService.search(dto, user.tenantId!);
+  }
+
+  @Get(':id')
+  @UseGuards(TenantGuard)
+  async findById(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.customerService.findById(id, user.tenantId!);
+  }
+
   @Patch(':id')
   @UseGuards(TenantGuard)
   async update(
@@ -37,14 +55,5 @@ export class CustomerController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.customerService.update(id, dto, user.tenantId!);
-  }
-
-  @Get('search')
-  @UseGuards(TenantGuard)
-  async search(
-    @Query() dto: SearchCustomerDto,
-    @CurrentUser() user: CurrentUserType,
-  ) {
-    return this.customerService.search(dto, user.tenantId!);
   }
 }

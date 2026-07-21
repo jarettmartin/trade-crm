@@ -97,6 +97,31 @@ export class CustomerService {
     return customerWithAddresses;
   }
 
+  async findById(id: string, tenantId: string) {
+    const customer = await this.customerRepository.findOne({
+      where: { id, tenantId },
+      relations: {
+        addresses: true,
+        jobs: {
+          notes: true,
+          lineItems: true,
+          invoices: true,
+        },
+      },
+      order: {
+        jobs: {
+          createdAt: 'DESC',
+        },
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    return customer;
+  }
+
   async search(dto: SearchCustomerDto, tenantId: string) {
     const tokens = dto.q.split(/\s+/).filter((t) => t.length > 0);
 
