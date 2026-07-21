@@ -24,11 +24,20 @@ const Home: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <h2>Welcome to Trade CRM</h2>
-        <p>Select a page from the menu to get started.</p>
-        <IonButton expand="block" onClick={() => history.push("/create-job")}>
-          New Job
-        </IonButton>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+          }}
+        >
+          <IonButton
+            size="small"
+            fill="outline"
+            onClick={() => history.push("/create-job")}
+          >
+            New Job
+          </IonButton>
+        </div>
       </IonContent>
     </IonPage>
   );
