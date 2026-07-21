@@ -70,6 +70,7 @@ export interface CustomerResult {
   email?: string;
   notes?: string;
   addresses?: Array<{
+    id: string;
     addressLine1: string;
     addressLine2?: string;
     city: string;
@@ -97,6 +98,13 @@ export interface CreateCustomerPayload {
     countryCode: string;
     isDefault?: boolean;
   }>;
+}
+
+export interface CreateJobPayload {
+  customerId: string;
+  customerAddressId: string;
+  title: string;
+  description?: string;
 }
 
 class ApiService {
@@ -248,6 +256,14 @@ class ApiService {
 
   async createCustomer(payload: CreateCustomerPayload) {
     return this.request<CustomerResult>("/customers", {
+      method: "POST",
+      headers: this.authHeaders(),
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async createJob(payload: CreateJobPayload) {
+    return this.request("/jobs", {
       method: "POST",
       headers: this.authHeaders(),
       body: JSON.stringify(payload),
