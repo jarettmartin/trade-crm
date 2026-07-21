@@ -1,0 +1,20 @@
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { JobService } from '../services/job.service';
+import { CreateJobDto } from '../dto/create-job.dto';
+import { TenantGuard } from '../../common/guards/tenant.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
+
+@Controller('jobs')
+export class JobController {
+  constructor(private readonly jobService: JobService) {}
+
+  @Post()
+  @UseGuards(TenantGuard)
+  async create(
+    @Body() dto: CreateJobDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.jobService.create(dto, user.tenantId!);
+  }
+}
