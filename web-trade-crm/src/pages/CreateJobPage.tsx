@@ -364,27 +364,33 @@ const CreateJobPage: React.FC = () => {
                 placeholder="Describe the work to be done..."
               />
             </IonItem>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "24px",
-              }}
-            >
-              <IonButton
-                expand="block"
-                fill="outline"
-                onClick={() => history.goBack()}
-              >
-                Cancel
-              </IonButton>
-              <IonButton expand="block" onClick={handleSave} disabled={saving}>
-                {saving ? <IonSpinner /> : "Save Job"}
-              </IonButton>
-            </div>
           </>
         )}
+
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginTop: "24px",
+          }}
+        >
+          <IonButton
+            expand="block"
+            fill="outline"
+            onClick={() => history.goBack()}
+          >
+            Cancel
+          </IonButton>
+          <IonButton
+            expand="block"
+            onClick={handleSave}
+            disabled={
+              saving || !selectedCustomer || !title.trim() || !selectedAddressId
+            }
+          >
+            {saving ? <IonSpinner /> : "Save Job"}
+          </IonButton>
+        </div>
       </IonContent>
     </IonPage>
   );
