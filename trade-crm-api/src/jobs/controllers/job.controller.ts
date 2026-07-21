@@ -5,11 +5,13 @@ import {
   Patch,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JobService } from '../services/job.service';
 import { CreateJobDto } from '../dto/create-job.dto';
 import { UpdateJobDto } from '../dto/update-job.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
@@ -25,6 +27,19 @@ export class JobController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.jobService.create(dto, user.tenantId!);
+  }
+
+  @Get()
+  @UseGuards(TenantGuard)
+  async findAll(
+    @Query() pagination: PaginationDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.jobService.findAll(
+      user.tenantId!,
+      pagination.page ?? 1,
+      pagination.limit ?? 10,
+    );
   }
 
   @Get(':id')

@@ -20,6 +20,32 @@ export class JobService {
     private readonly lineItemRepository: Repository<JobLineItem>,
   ) {}
 
+  async findAll(tenantId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const [jobs, total] = await this.jobRepository.findAndCount({
+      where: { tenantId },
+      order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
+      relations: {
+        customer: true,
+        customerAddress: true,
+        assignedUser: true,
+      },
+    });
+
+    return {
+      data: jobs,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async findById(id: string, tenantId: string) {
     const job = await this.jobRepository.findOne({
       where: { id, tenantId },
