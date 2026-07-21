@@ -7,22 +7,20 @@ import { AuthModule } from './auth/auth.module';
 import { TenantModule } from './tenants/tenant.module';
 import { CustomerModule } from './customers/customer.module';
 import { JobModule } from './jobs/job.module';
-import { TenantGuard } from './common/guards/tenant.guard';
-import { User } from './users/entities/user.entity';
+import { CommonModule } from './common/common.module';
 import typeOrmConfig from './config/typeorm.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot(typeOrmConfig),
-    TypeOrmModule.forFeature([User]),
+    CommonModule,
     AuthModule,
     TenantModule,
     CustomerModule,
     JobModule,
   ],
   controllers: [AppController],
-  providers: [AppService, TenantGuard],
-  exports: [TenantGuard],
+  providers: [AppService],
 })
 export class AppModule {}
