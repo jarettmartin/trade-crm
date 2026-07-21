@@ -352,7 +352,13 @@ const CreateCustomerPage: React.FC = () => {
           >
             Cancel
           </IonButton>
-          <IonButton expand="block" onClick={handleSave} disabled={saving}>
+          <IonButton
+            expand="block"
+            onClick={handleSave}
+            disabled={
+              saving || !firstName.trim() || !lastName.trim() || !phone.trim()
+            }
+          >
             {saving ? <IonSpinner /> : "Save Customer"}
           </IonButton>
         </div>
