@@ -23,4 +23,8 @@ export class CreateTenantDto {
   @Max(100)
   @IsOptional()
   defaultTaxPercent?: number;
+
+  @IsString()
+  @IsOptional()
+  invoicePaymentMethodNote?: string;
 }

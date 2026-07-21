@@ -216,13 +216,12 @@ export class AuthService {
             role: user.role,
             firstName: user.firstName,
             lastName: user.lastName,
+            tenantId: user.tenantId,
           },
         };
       }
 
-      throw new UnauthorizedException(
-        'Please verify your email before signing in',
-      );
+      throw new UnauthorizedException('Please verify email before signing in');
     }
 
     if (user.status === UserStatus.DISABLED) {
@@ -245,6 +244,7 @@ export class AuthService {
         role: user.role,
         firstName: user.firstName,
         lastName: user.lastName,
+        tenantId: user.tenantId,
       },
     };
   }

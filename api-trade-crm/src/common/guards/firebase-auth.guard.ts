@@ -34,8 +34,13 @@ export class FirebaseAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid authorization header format');
     }
 
+    this.logger.log(
+      `Token received (first 20 chars): ${token.substring(0, 20)}...`,
+    );
+
     try {
       const decodedToken = await getAuth().verifyIdToken(token);
+      this.logger.log(`Token verified for uid: ${decodedToken.uid}`);
       request.user = {
         uid: decodedToken.uid,
         email: decodedToken.email || '',
