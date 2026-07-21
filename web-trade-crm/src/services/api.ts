@@ -79,6 +79,26 @@ export interface CustomerResult {
   }>;
 }
 
+export interface CreateCustomerPayload {
+  type: string;
+  firstName: string;
+  lastName: string;
+  companyName?: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+  addresses?: Array<{
+    label: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    stateProvince: string;
+    zipPostalCode: string;
+    countryCode: string;
+    isDefault?: boolean;
+  }>;
+}
+
 class ApiService {
   private baseUrl = API_BASE;
   private idToken: string | null = null;
@@ -224,6 +244,14 @@ class ApiService {
         headers: this.authHeaders(),
       },
     );
+  }
+
+  async createCustomer(payload: CreateCustomerPayload) {
+    return this.request<CustomerResult>("/customers", {
+      method: "POST",
+      headers: this.authHeaders(),
+      body: JSON.stringify(payload),
+    });
   }
 }
 

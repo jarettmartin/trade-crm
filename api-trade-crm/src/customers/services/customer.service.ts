@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource, Brackets } from 'typeorm';
 import { Customer } from '../entities/customer.entity';
 import { CustomerAddress } from '../entities/customer-address.entity';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
@@ -16,42 +16,46 @@ export class CustomerService {
     private readonly customerRepository: Repository<Customer>,
     @InjectRepository(CustomerAddress)
     private readonly addressRepository: Repository<CustomerAddress>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(dto: CreateCustomerDto, tenantId: string) {
     const { addresses, ...customerData } = dto;
 
-    const customer = this.customerRepository.create({
-      ...customerData,
-      tenantId,
-    });
+    return this.dataSource.transaction(async (manager) => {
+      const customer = manager.create(Customer, {
+        ...customerData,
+        tenantId,
+      });
 
-    const savedCustomer = await this.customerRepository.save(customer);
+      const savedCustomer = await manager.save(Customer, customer);
 
-    // Create addresses if provided
-    if (addresses && addresses.length > 0) {
-      const addressEntities = addresses.map((addr, index) =>
-        this.addressRepository.create({
-          ...addr,
-          tenantId,
-          customerId: savedCustomer.id,
-          isDefault: addr.isDefault ?? index === 0,
-        }),
+      // Create addresses if provided
+      if (addresses && addresses.length > 0) {
+        const addressEntities = addresses.map((addr, index) =>
+          manager.create(CustomerAddress, {
+            ...addr,
+            tenantId,
+            customerId: savedCustomer.id,
+            isDefault: addr.isDefault ?? index === 0,
+          }),
+        );
+        await manager.save(CustomerAddress, addressEntities);
+      }
+
+      // Return customer with addresses
+      const customerWithAddresses = await manager.findOne(Customer, {
+        where: { id: savedCustomer.id },
+        relations: { addresses: true },
+      });
+
+      this.logger.log(
+        `Customer ${savedCustomer.id} created for tenant ${tenantId}`,
       );
-      await this.addressRepository.save(addressEntities);
-    }
 
-    // Return customer with addresses
-    const customerWithAddresses = await this.customerRepository.findOne({
-      where: { id: savedCustomer.id },
-      relations: { addresses: true },
+      return customerWithAddresses;
     });
-
-    this.logger.log(
-      `Customer ${savedCustomer.id} created for tenant ${tenantId}`,
-    );
-
-    return customerWithAddresses;
   }
 
   async update(id: string, dto: UpdateCustomerDto, tenantId: string) {
