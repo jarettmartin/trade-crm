@@ -1,5 +1,4 @@
 import {
-  IonButton,
   IonContent,
   IonHeader,
   IonPage,
@@ -8,11 +7,8 @@ import {
   IonButtons,
   IonMenuButton,
 } from "@ionic/react";
-import { useHistory } from "react-router-dom";
 
-const Home: React.FC = () => {
-  const history = useHistory();
-
+const CreateJobPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
@@ -20,18 +16,14 @@ const Home: React.FC = () => {
           <IonButtons slot="start">
             <IonMenuButton />
           </IonButtons>
-          <IonTitle>Home</IonTitle>
+          <IonTitle>New Job</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <h2>Welcome to Trade CRM</h2>
-        <p>Select a page from the menu to get started.</p>
-        <IonButton expand="block" onClick={() => history.push("/create-job")}>
-          New Job
-        </IonButton>
+        <p>Create a new job</p>
       </IonContent>
     </IonPage>
   );
 };
 
-export default Home;
+export default CreateJobPage;
