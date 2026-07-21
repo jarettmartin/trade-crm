@@ -9,7 +9,6 @@ import { IonReactRouter } from "@ionic/react-router";
 import { Redirect, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Menu from "./components/Menu";
-import Page from "./pages/Page";
 import AuthPage from "./pages/AuthPage";
 import Home from "./pages/Home";
 
@@ -77,9 +76,6 @@ const AppContent: React.FC = () => {
             </Route>
             <Route path="/home" exact={true}>
               <Home />
-            </Route>
-            <Route path="/folder/:name" exact={true}>
-              <Page />
             </Route>
           </IonRouterOutlet>
         </IonSplitPane>
