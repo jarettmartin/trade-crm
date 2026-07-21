@@ -338,14 +338,24 @@ const CreateCustomerPage: React.FC = () => {
           </div>
         ))}
 
-        <IonButton
-          expand="block"
-          onClick={handleSave}
-          disabled={saving}
-          style={{ marginTop: "16px" }}
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginTop: "16px",
+          }}
         >
-          {saving ? <IonSpinner /> : "Save Customer"}
-        </IonButton>
+          <IonButton
+            expand="block"
+            fill="outline"
+            onClick={() => history.goBack()}
+          >
+            Cancel
+          </IonButton>
+          <IonButton expand="block" onClick={handleSave} disabled={saving}>
+            {saving ? <IonSpinner /> : "Save Customer"}
+          </IonButton>
+        </div>
       </IonContent>
     </IonPage>
   );
