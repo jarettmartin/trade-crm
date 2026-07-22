@@ -18,6 +18,8 @@ import {
   IonToast,
   IonChip,
   IonIcon,
+  IonSelect,
+  IonSelectOption,
   useIonViewWillEnter,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
@@ -25,6 +27,7 @@ import { calendarOutline } from "ionicons/icons";
 import { api, JobResult } from "../services/api";
 
 const statusLabel: Record<string, string> = {
+  ALL: "All Statuses",
   DRAFT: "Draft",
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In Progress",
@@ -49,8 +52,13 @@ const Home: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-  const loadJobs = async (pageNum: number, append: boolean) => {
+  const loadJobs = async (
+    pageNum: number,
+    append: boolean,
+    status?: string,
+  ) => {
     if (append) {
       setLoadingMore(true);
     } else {
@@ -58,7 +66,8 @@ const Home: React.FC = () => {
     }
 
     try {
-      const res = await api.fetchJobs(pageNum, 5);
+      const filterStatus = status && status !== "ALL" ? status : undefined;
+      const res = await api.fetchJobs(pageNum, 5, filterStatus);
       if (append) {
         setJobs((prev) => [...prev, ...res.data]);
       } else {
@@ -82,13 +91,19 @@ const Home: React.FC = () => {
 
   useIonViewWillEnter(() => {
     setPage(1);
-    loadJobs(1, false);
+    loadJobs(1, false, statusFilter);
   });
+
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+    setPage(1);
+    loadJobs(1, false, value);
+  };
 
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    loadJobs(nextPage, true);
+    loadJobs(nextPage, true, statusFilter);
   };
 
   const formatDate = (dateStr: string) => {
@@ -111,13 +126,36 @@ const Home: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
+        <IonText>
+          <h2 style={{ marginTop: 0, marginBottom: "12px" }}>Recent Jobs</h2>
+        </IonText>
+
         <div
           style={{
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: "16px",
           }}
         >
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <IonText color="medium">
+              <small>Filter by status</small>
+            </IonText>
+            <IonSelect
+              value={statusFilter}
+              onIonChange={(e) => handleStatusChange(e.detail.value)}
+              interface="popover"
+              style={{ minWidth: "120px" }}
+            >
+              <IonSelectOption value="ALL">All Statuses</IonSelectOption>
+              <IonSelectOption value="DRAFT">Draft</IonSelectOption>
+              <IonSelectOption value="ASSIGNED">Assigned</IonSelectOption>
+              <IonSelectOption value="IN_PROGRESS">In Progress</IonSelectOption>
+              <IonSelectOption value="COMPLETED">Completed</IonSelectOption>
+              <IonSelectOption value="CANCELLED">Cancelled</IonSelectOption>
+            </IonSelect>
+          </div>
           <IonButton
             size="small"
             fill="outline"
@@ -136,7 +174,7 @@ const Home: React.FC = () => {
         {!loading && jobs.length === 0 && (
           <IonText color="medium">
             <p style={{ textAlign: "center", marginTop: "32px" }}>
-              No jobs yet. Create your first job!
+              No jobs found.
             </p>
           </IonText>
         )}

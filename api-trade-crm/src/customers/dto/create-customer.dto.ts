@@ -7,6 +7,7 @@ import {
   ValidateNested,
   MinLength,
   MaxLength,
+  ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CustomerType } from '../../common/enums/customer-type.enum';
@@ -45,8 +46,8 @@ export class CreateCustomerDto {
   notes?: string;
 
   @IsArray()
-  @IsOptional()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreateAddressDto)
-  addresses?: CreateAddressDto[];
+  addresses!: CreateAddressDto[];
 }

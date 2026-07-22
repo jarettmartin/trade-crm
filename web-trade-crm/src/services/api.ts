@@ -301,13 +301,14 @@ class ApiService {
     });
   }
 
-  async fetchJobs(page: number = 1, limit: number = 10) {
-    return this.request<PaginatedJobsResponse>(
-      `/jobs?page=${page}&limit=${limit}`,
-      {
-        headers: this.authHeaders(),
-      },
-    );
+  async fetchJobs(page: number = 1, limit: number = 10, status?: string) {
+    let path = `/jobs?page=${page}&limit=${limit}`;
+    if (status) {
+      path += `&status=${encodeURIComponent(status)}`;
+    }
+    return this.request<PaginatedJobsResponse>(path, {
+      headers: this.authHeaders(),
+    });
   }
 }
 
