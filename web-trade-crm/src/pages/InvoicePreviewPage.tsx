@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   IonContent,
   IonHeader,
@@ -9,6 +9,7 @@ import {
   IonBackButton,
   IonSpinner,
   IonText,
+  useIonViewWillEnter,
 } from "@ionic/react";
 import { useParams } from "react-router-dom";
 import { getPdfBlob } from "../services/pdfCache";
@@ -17,25 +18,26 @@ const InvoicePreviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const blobUrlRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    const loadPdf = async () => {
+  useIonViewWillEnter(() => {
+    setError("");
+    setObjectUrl(null);
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+    (async () => {
       try {
         const blob = await getPdfBlob(id);
         const url = URL.createObjectURL(blob);
+        blobUrlRef.current = url;
         setObjectUrl(url);
       } catch {
         setError("Failed to load PDF");
       }
-    };
-    loadPdf();
-
-    return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [id]);
+    })();
+  });
 
   return (
     <IonPage>

@@ -667,7 +667,7 @@ const JobDetailPage: React.FC = () => {
               <IonButton
                 size="small"
                 fill="clear"
-                onClick={() => history.push(`/invoice-preview/${inv.id}`)}
+                routerLink={`/invoice-preview/${inv.id}`}
               >
                 <IonIcon icon={eyeOutline} slot="icon-only" />
               </IonButton>
