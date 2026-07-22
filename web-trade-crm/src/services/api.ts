@@ -350,6 +350,20 @@ class ApiService {
     });
   }
 
+  async fetchCustomer(id: string) {
+    return this.request<CustomerResult>(`/customers/${id}`, {
+      headers: this.authHeaders(),
+    });
+  }
+
+  async updateCustomer(id: string, payload: Record<string, unknown>) {
+    return this.request(`/customers/${id}`, {
+      method: "PATCH",
+      headers: this.authHeaders(),
+      body: JSON.stringify(payload),
+    });
+  }
+
   async createJob(payload: CreateJobPayload) {
     return this.request("/jobs", {
       method: "POST",

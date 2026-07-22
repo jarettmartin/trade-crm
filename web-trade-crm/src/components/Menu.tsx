@@ -17,6 +17,8 @@ import {
   homeSharp,
   businessOutline,
   businessSharp,
+  peopleOutline,
+  peopleSharp,
   logOutOutline,
 } from "ionicons/icons";
 import { useAuth } from "../contexts/AuthContext";
@@ -35,6 +37,12 @@ const appPages: AppPage[] = [
     url: "/home",
     iosIcon: homeOutline,
     mdIcon: homeSharp,
+  },
+  {
+    title: "Manage Customers",
+    url: "/manage-customers",
+    iosIcon: peopleOutline,
+    mdIcon: peopleSharp,
   },
   {
     title: "Manage Business",

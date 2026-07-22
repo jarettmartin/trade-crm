@@ -16,6 +16,7 @@ import CreateJobPage from "./pages/CreateJobPage";
 import CreateCustomerPage from "./pages/CreateCustomerPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import ManageBusinessPage from "./pages/ManageBusinessPage";
+import ManageCustomersPage from "./pages/ManageCustomersPage";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -102,6 +103,9 @@ const AppContent: React.FC = () => {
             </Route>
             <Route path="/job/:id" exact={true}>
               <JobDetailPage />
+            </Route>
+            <Route path="/manage-customers" exact={true}>
+              <ManageCustomersPage />
             </Route>
           </IonRouterOutlet>
         </IonSplitPane>

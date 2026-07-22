@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   IonContent,
   IonHeader,
@@ -7,10 +7,6 @@ import {
   IonToolbar,
   IonButtons,
   IonBackButton,
-  IonSearchbar,
-  IonList,
-  IonItem,
-  IonLabel,
   IonButton,
   IonSpinner,
   IonText,
@@ -18,16 +14,15 @@ import {
   IonTextarea,
   IonSelect,
   IonSelectOption,
+  IonItem,
+  IonLabel,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { api, CustomerResult, CreateJobPayload } from "../services/api";
+import CustomerSearch from "../components/CustomerSearch";
 
 const CreateJobPage: React.FC = () => {
   const history = useHistory();
-  const [searchText, setSearchText] = useState("");
-  const [results, setResults] = useState<CustomerResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerResult | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
@@ -35,52 +30,9 @@ const CreateJobPage: React.FC = () => {
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-
-  const doSearch = async (q: string) => {
-    setIsSearching(true);
-    try {
-      const data = await api.searchCustomers(q);
-      setResults(data);
-      setShowDropdown(true);
-    } catch {
-      setResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
-    const trimmed = searchText.trim();
-    if (trimmed.length === 0) {
-      setResults([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    debounceRef.current = setTimeout(() => {
-      doSearch(trimmed);
-    }, 1000);
-
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, [searchText]);
 
   const handleSelectCustomer = (customer: CustomerResult) => {
     setSelectedCustomer(customer);
-    setSearchText("");
-    setShowDropdown(false);
-    setResults([]);
-    // Auto-select first address
     if (customer.addresses && customer.addresses.length > 0) {
       const defaultAddr = customer.addresses.find((a) => a.isDefault);
       setSelectedAddressId(
@@ -94,9 +46,6 @@ const CreateJobPage: React.FC = () => {
   const handleClearSelection = () => {
     setSelectedCustomer(null);
     setSelectedAddressId("");
-    setSearchText("");
-    setResults([]);
-    setShowDropdown(false);
   };
 
   const handleSave = async () => {
@@ -150,114 +99,7 @@ const CreateJobPage: React.FC = () => {
           </IonText>
         )}
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            marginBottom: "8px",
-          }}
-        >
-          <IonButton
-            size="small"
-            fill="outline"
-            onClick={() => history.push("/create-customer")}
-          >
-            Create New Customer
-          </IonButton>
-        </div>
-
-        <div style={{ position: "relative" }}>
-          <IonSearchbar
-            value={searchText}
-            onIonInput={(e) => setSearchText(e.detail.value || "")}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const trimmed = searchText.trim();
-                if (trimmed.length > 0) {
-                  if (debounceRef.current) {
-                    clearTimeout(debounceRef.current);
-                  }
-                  doSearch(trimmed);
-                }
-              }
-            }}
-            placeholder="Search customers..."
-            debounce={0}
-          />
-
-          {isSearching && (
-            <div
-              style={{
-                position: "absolute",
-                top: "56px",
-                left: "16px",
-                right: "16px",
-                background: "var(--ion-background-color)",
-                border: "1px solid var(--ion-color-light-shade)",
-                borderRadius: "8px",
-                zIndex: 100,
-                padding: "16px",
-                textAlign: "center",
-              }}
-            >
-              <IonSpinner />
-            </div>
-          )}
-
-          {showDropdown && results.length > 0 && (
-            <IonList
-              style={{
-                position: "absolute",
-                top: "56px",
-                left: "16px",
-                right: "16px",
-                background: "var(--ion-background-color)",
-                border: "1px solid var(--ion-color-light-shade)",
-                borderRadius: "8px",
-                zIndex: 100,
-                maxHeight: "240px",
-                overflowY: "auto",
-              }}
-            >
-              {results.map((customer) => (
-                <IonItem
-                  key={customer.id}
-                  button
-                  onClick={() => handleSelectCustomer(customer)}
-                >
-                  <IonLabel>
-                    <h2>
-                      {customer.firstName} {customer.lastName}
-                    </h2>
-                    {customer.companyName && <p>{customer.companyName}</p>}
-                    <p>{customer.phone}</p>
-                  </IonLabel>
-                </IonItem>
-              ))}
-            </IonList>
-          )}
-
-          {showDropdown && results.length === 0 && !isSearching && (
-            <div
-              style={{
-                position: "absolute",
-                top: "56px",
-                left: "16px",
-                right: "16px",
-                background: "var(--ion-background-color)",
-                border: "1px solid var(--ion-color-light-shade)",
-                borderRadius: "8px",
-                zIndex: 100,
-                padding: "16px",
-                textAlign: "center",
-              }}
-            >
-              <IonText color="medium">
-                <p>No customers found</p>
-              </IonText>
-            </div>
-          )}
-        </div>
+        <CustomerSearch onSelect={handleSelectCustomer} />
 
         {selectedCustomer && (
           <div
