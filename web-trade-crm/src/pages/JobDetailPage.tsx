@@ -545,8 +545,16 @@ const JobDetailPage: React.FC = () => {
             <IonText>{currency(preTaxTotal)}</IonText>
           </div>
 
-          <IonItem style={{ "--padding-start": "0", marginTop: "4px" }}>
-            <IonLabel>Tax %</IonLabel>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "4px 0",
+              marginTop: "4px",
+            }}
+          >
+            <IonText>Tax %</IonText>
             <IonInput
               type="number"
               value={taxPercent}
@@ -554,10 +562,18 @@ const JobDetailPage: React.FC = () => {
                 const v = parseFloat(e.detail.value || "0");
                 setTaxPercent(isNaN(v) ? 0 : v);
               }}
-              onIonBlur={handleTaxChange}
-              style={{ textAlign: "right" }}
+              style={{
+                maxWidth: "100px",
+                textAlign: "right",
+                "--padding-top": "0",
+                "--padding-bottom": "0",
+                border: "1px solid var(--ion-color-light-shade)",
+                borderRadius: "4px",
+                "--padding-start": "8px",
+                "--padding-end": "8px",
+              }}
             />
-          </IonItem>
+          </div>
 
           <div
             style={{
