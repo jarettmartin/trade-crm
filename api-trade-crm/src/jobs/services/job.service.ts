@@ -62,7 +62,7 @@ export class JobService {
       relations: {
         customer: true,
         customerAddress: true,
-        notes: true,
+        notes: { user: true },
         lineItems: true,
       },
       order: {
