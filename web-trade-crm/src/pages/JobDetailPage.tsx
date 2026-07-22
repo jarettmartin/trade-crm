@@ -225,12 +225,6 @@ const JobDetailPage: React.FC = () => {
         taxAmount,
         total: grandTotal,
       });
-      // Mark job as completed
-      try {
-        await api.updateJob(id, { status: "COMPLETED" });
-      } catch {
-        // non-blocking
-      }
       await loadJob();
     } catch (err) {
       showToastMsg(
@@ -316,6 +310,14 @@ const JobDetailPage: React.FC = () => {
             {job.customer.companyName ? ` — ${job.customer.companyName}` : ""}
           </p>
         </IonText>
+        {job.customerAddress && job.customerAddress.addressLine1 && (
+          <IonText color="medium">
+            <p style={{ margin: "2px 0" }}>
+              Location: {job.customerAddress.addressLine1}
+              {job.customerAddress.city ? `, ${job.customerAddress.city}` : ""}
+            </p>
+          </IonText>
+        )}
         {job.description && (
           <IonText>
             <p>{job.description}</p>
