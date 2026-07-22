@@ -6,7 +6,7 @@ import {
   IonTitle,
   IonToolbar,
   IonButtons,
-  IonMenuButton,
+  IonBackButton,
   IonSearchbar,
   IonList,
   IonItem,
@@ -138,7 +138,7 @@ const CreateJobPage: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonMenuButton />
+            <IonBackButton defaultHref="/home" />
           </IonButtons>
           <IonTitle>New Job</IonTitle>
         </IonToolbar>

@@ -6,7 +6,7 @@ import {
   IonTitle,
   IonToolbar,
   IonButtons,
-  IonMenuButton,
+  IonBackButton,
   IonItem,
   IonLabel,
   IonInput,
@@ -137,7 +137,7 @@ const CreateCustomerPage: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonMenuButton />
+            <IonBackButton defaultHref="/home" />
           </IonButtons>
           <IonTitle>New Customer</IonTitle>
         </IonToolbar>
