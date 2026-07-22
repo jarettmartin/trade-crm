@@ -138,6 +138,50 @@ export interface PaginatedJobsResponse {
   };
 }
 
+export interface JobNoteResult {
+  id: string;
+  note: string;
+  createdAt: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface JobLineItemResult {
+  id: string;
+  type: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  sortOrder: number;
+}
+
+export interface JobDetailResult {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  createdAt: string;
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    companyName?: string;
+    phone: string;
+  };
+  customerAddress: {
+    id: string;
+    addressLine1: string;
+    city: string;
+    stateProvince: string;
+  };
+  notes: JobNoteResult[];
+  lineItems: JobLineItemResult[];
+}
+
 class ApiService {
   private baseUrl = API_BASE;
   private idToken: string | null = null;
@@ -308,6 +352,20 @@ class ApiService {
     }
     return this.request<PaginatedJobsResponse>(path, {
       headers: this.authHeaders(),
+    });
+  }
+
+  async fetchJob(id: string) {
+    return this.request<JobDetailResult>(`/jobs/${id}`, {
+      headers: this.authHeaders(),
+    });
+  }
+
+  async updateJob(id: string, payload: Record<string, unknown>) {
+    return this.request(`/jobs/${id}`, {
+      method: "PATCH",
+      headers: this.authHeaders(),
+      body: JSON.stringify(payload),
     });
   }
 }
