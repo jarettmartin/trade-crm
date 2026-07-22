@@ -15,6 +15,7 @@ import CreateTenantPage from "./pages/CreateTenantPage";
 import CreateJobPage from "./pages/CreateJobPage";
 import CreateCustomerPage from "./pages/CreateCustomerPage";
 import JobDetailPage from "./pages/JobDetailPage";
+import InvoicePreviewPage from "./pages/InvoicePreviewPage";
 import ManageBusinessPage from "./pages/ManageBusinessPage";
 import ManageCustomersPage from "./pages/ManageCustomersPage";
 
@@ -106,6 +107,9 @@ const AppContent: React.FC = () => {
             </Route>
             <Route path="/manage-customers" exact={true}>
               <ManageCustomersPage />
+            </Route>
+            <Route path="/invoice-preview/:id" exact={true}>
+              <InvoicePreviewPage />
             </Route>
           </IonRouterOutlet>
         </IonSplitPane>

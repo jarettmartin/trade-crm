@@ -25,10 +25,11 @@ import {
   IonCardContent,
   IonChip,
 } from "@ionic/react";
-import { trashOutline } from "ionicons/icons";
+import { trashOutline, downloadOutline, eyeOutline } from "ionicons/icons";
 import { useParams, useHistory } from "react-router-dom";
 import { api, JobDetailResult } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import { downloadPdf } from "../services/pdfCache";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Draft",
@@ -658,7 +659,31 @@ const JobDetailPage: React.FC = () => {
               style={{
                 display: "flex",
                 justifyContent: "flex-end",
-                padding: "12px 16px 0 16px",
+                gap: "4px",
+                padding: "12px 12px 0 0",
+              }}
+            >
+              <IonButton
+                size="small"
+                fill="clear"
+                onClick={() => history.push(`/invoice-preview/${inv.id}`)}
+              >
+                <IonIcon icon={eyeOutline} slot="icon-only" />
+              </IonButton>
+              <IonButton
+                size="small"
+                fill="clear"
+                onClick={() => downloadPdf(inv.id, inv.invoiceNumber)}
+              >
+                <IonIcon icon={downloadOutline} slot="icon-only" />
+              </IonButton>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                padding: "0 16px 0 16px",
+                marginBottom: "4px",
               }}
             >
               <IonChip

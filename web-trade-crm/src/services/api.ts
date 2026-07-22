@@ -411,6 +411,19 @@ class ApiService {
       body: JSON.stringify(payload),
     });
   }
+
+  async downloadInvoicePdf(invoiceId: string): Promise<Blob> {
+    const token = this.getValidToken();
+    const res = await fetch(`${this.baseUrl}/invoices/${invoiceId}/pdf`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error("Failed to download PDF");
+    }
+    return res.blob();
+  }
 }
 
 export const api = new ApiService();
