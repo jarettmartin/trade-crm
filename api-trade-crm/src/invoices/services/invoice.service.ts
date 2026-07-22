@@ -43,14 +43,22 @@ export class InvoiceService {
       { status: InvoiceStatus.SUPERSEDED },
     );
 
-    // 3. Generate the next invoice number for this tenant
-    const latestInvoice = await this.invoiceRepository.findOne({
+    // 3. Generate the next invoice number for this tenant (starts at 88880001)
+    const latestTenantInvoice = await this.invoiceRepository.findOne({
       where: { tenantId },
       order: { invoiceNumber: 'DESC' },
     });
-    const invoiceNumber = latestInvoice ? latestInvoice.invoiceNumber + 1 : 1;
+    const invoiceNumber = latestTenantInvoice
+      ? latestTenantInvoice.invoiceNumber + 1
+      : 88880001;
 
-    // 4. Build the snapshot
+    // 4. Determine version based on existing invoices for this job
+    const existingJobInvoices = await this.invoiceRepository.count({
+      where: { jobId, tenantId },
+    });
+    const version = existingJobInvoices + 1;
+
+    // 5. Build the snapshot
     const snapshot = {
       customer: {
         id: job.customer?.id,
@@ -92,12 +100,12 @@ export class InvoiceService {
       },
     };
 
-    // 5. Create the invoice
+    // 6. Create the invoice
     const invoice = this.invoiceRepository.create({
       jobId,
       tenantId,
       invoiceNumber,
-      version: 1,
+      version,
       status: InvoiceStatus.DRAFT,
       subtotal: dto.subtotal,
       taxPercent: dto.taxPercent,

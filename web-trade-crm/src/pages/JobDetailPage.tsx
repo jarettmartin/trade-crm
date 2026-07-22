@@ -654,39 +654,41 @@ const JobDetailPage: React.FC = () => {
 
         {job.invoices.map((inv) => (
           <IonCard key={inv.id}>
-            <IonCardHeader>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                padding: "16px 16px 0 16px",
+              }}
+            >
+              <IonChip
+                color={
+                  inv.status === "DRAFT"
+                    ? "medium"
+                    : inv.status === "SUPERSEDED"
+                      ? "warning"
+                      : "success"
+                }
               >
-                <div>
-                  <IonCardTitle>
-                    Invoice #{inv.invoiceNumber}
-                    {inv.version > 1 ? ` (v${inv.version})` : ""}
-                  </IonCardTitle>
-                  <IonCardSubtitle>
-                    {new Date(inv.createdAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </IonCardSubtitle>
-                </div>
-                <IonChip
-                  color={
-                    inv.status === "DRAFT"
-                      ? "medium"
-                      : inv.status === "SUPERSEDED"
-                        ? "warning"
-                        : "success"
-                  }
-                >
-                  {inv.status}
-                </IonChip>
-              </div>
+                {inv.status}
+              </IonChip>
+            </div>
+            <IonCardHeader>
+              <IonCardSubtitle>INVOICE #</IonCardSubtitle>
+              <IonCardTitle>
+                {inv.invoiceNumber
+                  .toString()
+                  .padStart(8, "0")
+                  .replace(/(\d{4})(\d{4})/, "$1 $2")}
+              </IonCardTitle>
+              <IonCardSubtitle>
+                {new Date(inv.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </IonCardSubtitle>
+              <IonCardSubtitle>VER: {inv.version}</IonCardSubtitle>
             </IonCardHeader>
             <IonCardContent>
               <div
