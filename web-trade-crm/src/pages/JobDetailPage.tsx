@@ -23,6 +23,8 @@ import {
   IonCardTitle,
   IonCardSubtitle,
   IonCardContent,
+  IonChip,
+  IonActionSheet,
 } from "@ionic/react";
 import { trashOutline, downloadOutline, eyeOutline } from "ionicons/icons";
 import { useParams, useHistory } from "react-router-dom";
@@ -64,6 +66,9 @@ const JobDetailPage: React.FC = () => {
 
   // Invoice
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [statusSheetInvoice, setStatusSheetInvoice] = useState<string | null>(
+    null,
+  );
 
   // Toast
   const [toastMessage, setToastMessage] = useState("");
@@ -698,19 +703,20 @@ const JobDetailPage: React.FC = () => {
                 marginBottom: "4px",
               }}
             >
-              <IonSelect
-                value={inv.status}
-                onIonChange={(e) =>
-                  handleInvoiceStatusChange(inv.id, e.detail.value)
+              <IonChip
+                color={
+                  inv.status === "DRAFT"
+                    ? "medium"
+                    : inv.status === "SUPERSEDED"
+                      ? "warning"
+                      : inv.status === "PAID"
+                        ? "success"
+                        : "primary"
                 }
-                interface="popover"
-                style={{ minWidth: "130px" }}
+                onClick={() => setStatusSheetInvoice(inv.id)}
               >
-                <IonSelectOption value="DRAFT">Draft</IonSelectOption>
-                <IonSelectOption value="ISSUED">Issued</IonSelectOption>
-                <IonSelectOption value="PAID">Paid</IonSelectOption>
-                <IonSelectOption value="VOID">Void</IonSelectOption>
-              </IonSelect>
+                {inv.status}
+              </IonChip>
             </div>
             <div style={{ padding: "0 16px 0 16px" }}>
               <IonText>
@@ -824,6 +830,51 @@ const JobDetailPage: React.FC = () => {
             </IonCardContent>
           </IonCard>
         ))}
+
+        <IonActionSheet
+          isOpen={statusSheetInvoice !== null}
+          onDidDismiss={() => setStatusSheetInvoice(null)}
+          header="Change Status"
+          buttons={[
+            {
+              text: "Draft",
+              handler: () => {
+                if (statusSheetInvoice) {
+                  handleInvoiceStatusChange(statusSheetInvoice, "DRAFT");
+                }
+              },
+            },
+            {
+              text: "Issued",
+              handler: () => {
+                if (statusSheetInvoice) {
+                  handleInvoiceStatusChange(statusSheetInvoice, "ISSUED");
+                }
+              },
+            },
+            {
+              text: "Paid",
+              handler: () => {
+                if (statusSheetInvoice) {
+                  handleInvoiceStatusChange(statusSheetInvoice, "PAID");
+                }
+              },
+            },
+            {
+              text: "Void",
+              role: "destructive",
+              handler: () => {
+                if (statusSheetInvoice) {
+                  handleInvoiceStatusChange(statusSheetInvoice, "VOID");
+                }
+              },
+            },
+            {
+              text: "Cancel",
+              role: "cancel",
+            },
+          ]}
+        />
 
         <IonToast
           isOpen={showToast}
