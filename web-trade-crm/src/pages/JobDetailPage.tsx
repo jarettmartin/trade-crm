@@ -86,7 +86,12 @@ const JobDetailPage: React.FC = () => {
       setJob(data);
       setStatus(data.status);
       setStatusRef(data.status);
-      const tax = user?.defaultTaxPercent ?? 0;
+      // Use latest invoice tax% if available, otherwise default from tenant
+      const latestInv =
+        data.invoices && data.invoices.length > 0 ? data.invoices[0] : null;
+      const tax = latestInv
+        ? Number(latestInv.taxPercent)
+        : (user?.defaultTaxPercent ?? 0);
       setTaxPercent(Number(tax));
     } catch {
       showToastMsg("Failed to load job");
