@@ -53,7 +53,7 @@ const CreateCustomerPage: React.FC = () => {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
-  const [addresses, setAddresses] = useState<AddressForm[]>([]);
+  const [addresses, setAddresses] = useState<AddressForm[]>([emptyAddress()]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -91,6 +91,14 @@ const CreateCustomerPage: React.FC = () => {
       return;
     }
 
+    const validAddresses = addresses.filter(
+      (a) => a.addressLine1.trim().length > 0,
+    );
+    if (validAddresses.length === 0) {
+      setError("At least one address is required");
+      return;
+    }
+
     const payload: CreateCustomerPayload = {
       type,
       firstName: firstName.trim(),
@@ -99,18 +107,16 @@ const CreateCustomerPage: React.FC = () => {
       phone: phone.trim(),
       email: email.trim() || undefined,
       notes: notes.trim() || undefined,
-      addresses: addresses
-        .filter((a) => a.addressLine1.trim().length > 0)
-        .map((a) => ({
-          label: a.label.trim() || "Main",
-          addressLine1: a.addressLine1.trim(),
-          addressLine2: a.addressLine2.trim() || undefined,
-          city: a.city.trim(),
-          stateProvince: a.stateProvince.trim(),
-          zipPostalCode: a.zipPostalCode.trim(),
-          countryCode: a.countryCode.trim().toUpperCase(),
-          isDefault: true,
-        })),
+      addresses: validAddresses.map((a) => ({
+        label: a.label.trim() || "Main",
+        addressLine1: a.addressLine1.trim(),
+        addressLine2: a.addressLine2.trim() || undefined,
+        city: a.city.trim(),
+        stateProvince: a.stateProvince.trim(),
+        zipPostalCode: a.zipPostalCode.trim(),
+        countryCode: a.countryCode.trim().toUpperCase(),
+        isDefault: true,
+      })),
     };
 
     setSaving(true);
@@ -356,7 +362,12 @@ const CreateCustomerPage: React.FC = () => {
             expand="block"
             onClick={handleSave}
             disabled={
-              saving || !firstName.trim() || !lastName.trim() || !phone.trim()
+              saving ||
+              !firstName.trim() ||
+              !lastName.trim() ||
+              !phone.trim() ||
+              addresses.filter((a) => a.addressLine1.trim().length > 0)
+                .length === 0
             }
           >
             {saving ? <IonSpinner /> : "Save Customer"}

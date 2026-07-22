@@ -88,7 +88,7 @@ export interface CreateCustomerPayload {
   phone: string;
   email?: string;
   notes?: string;
-  addresses?: Array<{
+  addresses: Array<{
     label: string;
     addressLine1: string;
     addressLine2?: string;
