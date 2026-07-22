@@ -66,11 +66,15 @@ export class PdfService implements OnModuleDestroy {
       day: 'numeric',
     });
 
+    const formattedInvoiceNumber = String(invoice.invoiceNumber)
+      .padStart(8, '0')
+      .replace(/(\d{4})(\d{4})/, '$1 $2');
+
     const html = this.template!({
       businessName: tenant?.businessName ?? 'Business',
       businessEmail: tenant?.businessEmail ?? '',
       businessPhone: tenant?.phone ?? '',
-      invoiceNumber: invoice.invoiceNumber,
+      invoiceNumber: formattedInvoiceNumber,
       issuedAt: invoice.issuedAt
         ? new Date(invoice.issuedAt).toLocaleDateString('en-US', {
             year: 'numeric',
