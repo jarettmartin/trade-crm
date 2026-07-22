@@ -107,6 +107,37 @@ export interface CreateJobPayload {
   description?: string;
 }
 
+export interface JobResult {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  createdAt: string;
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    companyName?: string;
+    phone: string;
+  };
+  customerAddress: {
+    id: string;
+    addressLine1: string;
+    city: string;
+    stateProvince: string;
+  };
+}
+
+export interface PaginatedJobsResponse {
+  data: JobResult[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 class ApiService {
   private baseUrl = API_BASE;
   private idToken: string | null = null;
@@ -268,6 +299,15 @@ class ApiService {
       headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
+  }
+
+  async fetchJobs(page: number = 1, limit: number = 10) {
+    return this.request<PaginatedJobsResponse>(
+      `/jobs?page=${page}&limit=${limit}`,
+      {
+        headers: this.authHeaders(),
+      },
+    );
   }
 }
 
