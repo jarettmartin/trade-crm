@@ -662,32 +662,7 @@ const JobDetailPage: React.FC = () => {
               style={{
                 display: "flex",
                 justifyContent: "flex-end",
-                gap: "4px",
-                padding: "12px 12px 0 0",
-              }}
-            >
-              <IonButton
-                size="small"
-                fill="clear"
-                routerLink={`/invoice-preview/${inv.id}`}
-              >
-                <IonIcon icon={eyeOutline} slot="icon-only" />
-              </IonButton>
-              <IonButton
-                size="small"
-                fill="clear"
-                onClick={() =>
-                  downloadPdf(inv.id, inv.invoiceNumber, user?.businessName)
-                }
-              >
-                <IonIcon icon={downloadOutline} slot="icon-only" />
-              </IonButton>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                padding: "0 16px 0 16px",
+                padding: "16px 16px 0 16px",
                 marginBottom: "4px",
               }}
             >
@@ -767,6 +742,50 @@ const JobDetailPage: React.FC = () => {
                 <IonText>
                   <strong>{currency(Number(inv.total))}</strong>
                 </IonText>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  borderTop: "1px solid var(--ion-color-light-shade)",
+                  marginTop: "8px",
+                  paddingTop: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    justifyContent: "center",
+                    borderRight: "1px solid var(--ion-color-light-shade)",
+                  }}
+                >
+                  <IonButton
+                    size="small"
+                    fill="clear"
+                    onClick={() =>
+                      downloadPdf(inv.id, inv.invoiceNumber, user?.businessName)
+                    }
+                  >
+                    <IonIcon icon={downloadOutline} slot="start" />
+                    Download
+                  </IonButton>
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                >
+                  <IonButton
+                    size="small"
+                    fill="clear"
+                    routerLink={`/invoice-preview/${inv.id}`}
+                  >
+                    <IonIcon icon={eyeOutline} slot="start" />
+                    Preview
+                  </IonButton>
+                </div>
               </div>
             </IonCardContent>
           </IonCard>
