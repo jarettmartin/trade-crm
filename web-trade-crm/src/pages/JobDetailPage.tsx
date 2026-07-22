@@ -658,7 +658,7 @@ const JobDetailPage: React.FC = () => {
               style={{
                 display: "flex",
                 justifyContent: "flex-end",
-                padding: "16px 16px 0 16px",
+                padding: "12px 16px 0 16px",
               }}
             >
               <IonChip
@@ -673,23 +673,35 @@ const JobDetailPage: React.FC = () => {
                 {inv.status}
               </IonChip>
             </div>
-            <IonCardHeader>
-              <IonCardSubtitle>INVOICE #</IonCardSubtitle>
-              <IonCardTitle>
-                {inv.invoiceNumber
-                  .toString()
-                  .padStart(8, "0")
-                  .replace(/(\d{4})(\d{4})/, "$1 $2")}
-              </IonCardTitle>
-              <IonCardSubtitle>
-                {new Date(inv.createdAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </IonCardSubtitle>
-              <IonCardSubtitle>VER: {inv.version}</IonCardSubtitle>
-            </IonCardHeader>
+            <div style={{ padding: "0 16px 0 16px" }}>
+              <IonText>
+                <p style={{ margin: "0 0 2px 0", fontSize: "12px" }}>
+                  INVOICE #
+                </p>
+              </IonText>
+              <IonText>
+                <h2 style={{ margin: "0 0 4px 0" }}>
+                  {inv.invoiceNumber
+                    .toString()
+                    .padStart(8, "0")
+                    .replace(/(\d{4})(\d{4})/, "$1 $2")}
+                </h2>
+              </IonText>
+              <IonText>
+                <p style={{ margin: "0 0 2px 0", fontSize: "12px" }}>
+                  {new Date(inv.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              </IonText>
+              <IonText>
+                <p style={{ margin: 0, fontSize: "12px" }}>
+                  VER: {inv.version}
+                </p>
+              </IonText>
+            </div>
             <IonCardContent>
               <div
                 style={{
