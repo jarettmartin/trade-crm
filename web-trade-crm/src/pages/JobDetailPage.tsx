@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   IonContent,
   IonHeader,
@@ -18,7 +18,12 @@ import {
   IonTextarea,
   IonButton,
   IonIcon,
-  IonList,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+  IonCardContent,
+  IonChip,
 } from "@ionic/react";
 import { trashOutline } from "ionicons/icons";
 import { useParams, useHistory } from "react-router-dom";
@@ -55,7 +60,9 @@ const JobDetailPage: React.FC = () => {
 
   // Tax
   const [taxPercent, setTaxPercent] = useState(0);
-  const initialTaxRef = useRef(0);
+
+  // Invoice
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Toast
   const [toastMessage, setToastMessage] = useState("");
@@ -81,7 +88,6 @@ const JobDetailPage: React.FC = () => {
       setStatusRef(data.status);
       const tax = user?.defaultTaxPercent ?? 0;
       setTaxPercent(Number(tax));
-      initialTaxRef.current = Number(tax);
     } catch {
       showToastMsg("Failed to load job");
     } finally {
@@ -178,25 +184,6 @@ const JobDetailPage: React.FC = () => {
     }
   };
 
-  const handleTaxChange = async () => {
-    try {
-      await api.updateJob(id, {
-        notes: job?.notes.map((n) => ({ note: n.note, userId: n.user.id })),
-        lineItems: job?.lineItems.map((li) => ({
-          type: li.type,
-          description: li.description,
-          quantity: Number(li.quantity),
-          unitPrice: Number(li.unitPrice),
-          lineTotal: Number(li.lineTotal),
-          sortOrder: Number(li.sortOrder),
-        })),
-      });
-      initialTaxRef.current = taxPercent;
-    } catch {
-      showToastMsg("Failed to save tax percentage");
-    }
-  };
-
   const lineItemsByType = (type: string) =>
     job?.lineItems.filter((li) => li.type === type) || [];
 
@@ -209,6 +196,43 @@ const JobDetailPage: React.FC = () => {
   const preTaxTotal = totalServices + totalMaterials + totalFees;
   const taxAmount = preTaxTotal * (taxPercent / 100);
   const grandTotal = preTaxTotal + taxAmount;
+
+  const invoiceOutOfDate = (() => {
+    if (!job || job.invoices.length === 0) return true;
+    const latest = job.invoices[0];
+    return (
+      Number(latest.subtotal) !== preTaxTotal ||
+      Number(latest.taxPercent) !== taxPercent ||
+      Number(latest.taxAmount) !== taxAmount ||
+      Number(latest.total) !== grandTotal
+    );
+  })();
+
+  const handleCreateInvoice = async () => {
+    if (!job) return;
+    setCreatingInvoice(true);
+    try {
+      await api.createInvoice(job.id, {
+        subtotal: preTaxTotal,
+        taxPercent,
+        taxAmount,
+        total: grandTotal,
+      });
+      // Mark job as completed
+      try {
+        await api.updateJob(id, { status: "COMPLETED" });
+      } catch {
+        // non-blocking
+      }
+      await loadJob();
+    } catch (err) {
+      showToastMsg(
+        err instanceof Error ? err.message : "Failed to create invoice",
+      );
+    } finally {
+      setCreatingInvoice(false);
+    }
+  };
 
   const currency = (n: number) =>
     new Intl.NumberFormat("en-US", {
@@ -602,6 +626,105 @@ const JobDetailPage: React.FC = () => {
             </IonText>
           </div>
         </div>
+
+        {/* === INVOICES === */}
+        <IonText>
+          <h3 style={{ marginTop: "24px", marginBottom: "8px" }}>Invoices</h3>
+        </IonText>
+
+        <IonButton
+          expand="block"
+          onClick={handleCreateInvoice}
+          disabled={creatingInvoice || !invoiceOutOfDate}
+          style={{ marginBottom: "12px" }}
+        >
+          {creatingInvoice ? <IonSpinner /> : "Create Invoice"}
+        </IonButton>
+
+        {job.invoices.length === 0 && (
+          <IonText color="medium">
+            <p>No invoices yet.</p>
+          </IonText>
+        )}
+
+        {job.invoices.map((inv) => (
+          <IonCard key={inv.id}>
+            <IonCardHeader>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
+                <div>
+                  <IonCardTitle>
+                    Invoice #{inv.invoiceNumber}
+                    {inv.version > 1 ? ` (v${inv.version})` : ""}
+                  </IonCardTitle>
+                  <IonCardSubtitle>
+                    {new Date(inv.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </IonCardSubtitle>
+                </div>
+                <IonChip
+                  color={
+                    inv.status === "DRAFT"
+                      ? "medium"
+                      : inv.status === "SUPERSEDED"
+                        ? "warning"
+                        : "success"
+                  }
+                >
+                  {inv.status}
+                </IonChip>
+              </div>
+            </IonCardHeader>
+            <IonCardContent>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "2px 0",
+                }}
+              >
+                <IonText>Subtotal</IonText>
+                <IonText>{currency(Number(inv.subtotal))}</IonText>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "2px 0",
+                }}
+              >
+                <IonText>Tax ({Number(inv.taxPercent)}%)</IonText>
+                <IonText>{currency(Number(inv.taxAmount))}</IonText>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "2px 0",
+                  fontWeight: "bold",
+                  borderTop: "1px solid var(--ion-color-light-shade)",
+                  marginTop: "4px",
+                  paddingTop: "4px",
+                }}
+              >
+                <IonText>
+                  <strong>Total</strong>
+                </IonText>
+                <IonText>
+                  <strong>{currency(Number(inv.total))}</strong>
+                </IonText>
+              </div>
+            </IonCardContent>
+          </IonCard>
+        ))}
 
         <IonToast
           isOpen={showToast}

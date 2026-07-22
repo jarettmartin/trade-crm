@@ -64,10 +64,12 @@ export class JobService {
         customerAddress: true,
         notes: { user: true },
         lineItems: true,
+        invoices: true,
       },
       order: {
         notes: { createdAt: 'ASC' },
         lineItems: { sortOrder: 'ASC' },
+        invoices: { createdAt: 'DESC' },
       },
     });
 

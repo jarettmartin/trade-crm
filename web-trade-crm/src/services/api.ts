@@ -159,6 +159,18 @@ export interface JobLineItemResult {
   sortOrder: number;
 }
 
+export interface InvoiceResult {
+  id: string;
+  invoiceNumber: number;
+  version: number;
+  status: string;
+  subtotal: number;
+  taxPercent: number;
+  taxAmount: number;
+  total: number;
+  createdAt: string;
+}
+
 export interface JobDetailResult {
   id: string;
   title: string;
@@ -180,6 +192,7 @@ export interface JobDetailResult {
   };
   notes: JobNoteResult[];
   lineItems: JobLineItemResult[];
+  invoices: InvoiceResult[];
 }
 
 class ApiService {
@@ -364,6 +377,22 @@ class ApiService {
   async updateJob(id: string, payload: Record<string, unknown>) {
     return this.request(`/jobs/${id}`, {
       method: "PATCH",
+      headers: this.authHeaders(),
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async createInvoice(
+    jobId: string,
+    payload: {
+      subtotal: number;
+      taxPercent: number;
+      taxAmount: number;
+      total: number;
+    },
+  ) {
+    return this.request(`/jobs/${jobId}/invoices`, {
+      method: "POST",
       headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
