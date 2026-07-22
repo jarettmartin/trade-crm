@@ -23,7 +23,6 @@ import {
   IonCardTitle,
   IonCardSubtitle,
   IonCardContent,
-  IonChip,
 } from "@ionic/react";
 import { trashOutline, downloadOutline, eyeOutline } from "ionicons/icons";
 import { useParams, useHistory } from "react-router-dom";
@@ -232,6 +231,39 @@ const JobDetailPage: React.FC = () => {
       );
     } finally {
       setCreatingInvoice(false);
+    }
+  };
+
+  const handleInvoiceStatusChange = async (
+    invoiceId: string,
+    newStatus: string,
+  ) => {
+    // Optimistically update local state
+    setJob((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        invoices: prev.invoices.map((inv) =>
+          inv.id === invoiceId ? { ...inv, status: newStatus } : inv,
+        ),
+      };
+    });
+    try {
+      await api.updateInvoiceStatus(invoiceId, newStatus);
+    } catch (err) {
+      // Revert on failure
+      setJob((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          invoices: prev.invoices.map((inv) =>
+            inv.id === invoiceId ? { ...inv, status: inv.status } : inv,
+          ),
+        };
+      });
+      showToastMsg(
+        err instanceof Error ? err.message : "Failed to update invoice status",
+      );
     }
   };
 
@@ -666,17 +698,19 @@ const JobDetailPage: React.FC = () => {
                 marginBottom: "4px",
               }}
             >
-              <IonChip
-                color={
-                  inv.status === "DRAFT"
-                    ? "medium"
-                    : inv.status === "SUPERSEDED"
-                      ? "warning"
-                      : "success"
+              <IonSelect
+                value={inv.status}
+                onIonChange={(e) =>
+                  handleInvoiceStatusChange(inv.id, e.detail.value)
                 }
+                interface="popover"
+                style={{ minWidth: "130px" }}
               >
-                {inv.status}
-              </IonChip>
+                <IonSelectOption value="DRAFT">Draft</IonSelectOption>
+                <IonSelectOption value="ISSUED">Issued</IonSelectOption>
+                <IonSelectOption value="PAID">Paid</IonSelectOption>
+                <IonSelectOption value="VOID">Void</IonSelectOption>
+              </IonSelect>
             </div>
             <div style={{ padding: "0 16px 0 16px" }}>
               <IonText>

@@ -412,6 +412,14 @@ class ApiService {
     });
   }
 
+  async updateInvoiceStatus(invoiceId: string, status: string) {
+    return this.request(`/invoices/${invoiceId}`, {
+      method: "PATCH",
+      headers: this.authHeaders(),
+      body: JSON.stringify({ status }),
+    });
+  }
+
   async downloadInvoicePdf(invoiceId: string): Promise<Blob> {
     const token = this.getValidToken();
     const res = await fetch(`${this.baseUrl}/invoices/${invoiceId}/pdf`, {

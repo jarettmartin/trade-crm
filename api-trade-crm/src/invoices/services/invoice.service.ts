@@ -122,4 +122,31 @@ export class InvoiceService {
 
     return savedInvoice;
   }
+
+  async updateStatus(invoiceId: string, status: string, tenantId: string) {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: invoiceId, tenantId },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+
+    const updateData: any = { status };
+
+    // If marking as PAID, set the paidAt timestamp
+    if (status === InvoiceStatus.PAID) {
+      updateData.paidAt = new Date();
+    }
+
+    await this.invoiceRepository.update(invoiceId, updateData);
+
+    this.logger.log(
+      `Invoice ${invoice.invoiceNumber} status updated to ${status}`,
+    );
+
+    return this.invoiceRepository.findOne({
+      where: { id: invoiceId, tenantId },
+    });
+  }
 }

@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   Param,
   Res,
@@ -30,6 +31,20 @@ export class InvoiceController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.invoiceService.create(jobId, dto, user.tenantId!);
+  }
+
+  @Patch('invoices/:invoiceId')
+  @UseGuards(TenantGuard)
+  async updateStatus(
+    @Param('invoiceId') invoiceId: string,
+    @Body() dto: { status: string },
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.invoiceService.updateStatus(
+      invoiceId,
+      dto.status,
+      user.tenantId!,
+    );
   }
 
   @Get('invoices/:invoiceId/pdf')
