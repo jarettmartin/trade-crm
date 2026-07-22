@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { formatInvoiceNumber } from "./format";
 
 /** In-memory cache of downloaded PDF blobs keyed by invoice ID */
 const pdfCache = new Map<string, Blob>();
@@ -20,16 +21,19 @@ export async function getPdfBlob(invoiceId: string): Promise<Blob> {
 /**
  * Download a PDF to the user's device.
  * Triggers a browser download with the invoice filename.
+ * Example filename: "MyBusiness-invoice-88880001.pdf"
  */
 export async function downloadPdf(
   invoiceId: string,
   invoiceNumber: number,
+  businessName?: string,
 ): Promise<void> {
   const blob = await getPdfBlob(invoiceId);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+  const prefix = businessName ? `${businessName.replace(/\s+/g, "")}-` : "";
   a.href = url;
-  a.download = `invoice-${invoiceNumber}.pdf`;
+  a.download = `${prefix}invoice-${formatInvoiceNumber(invoiceNumber, false)}.pdf`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

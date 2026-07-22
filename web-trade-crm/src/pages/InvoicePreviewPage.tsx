@@ -42,7 +42,7 @@ const InvoicePreviewPage: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/home" />
+            <IonBackButton />
           </IonButtons>
           <IonTitle>Invoice Preview</IonTitle>
         </IonToolbar>

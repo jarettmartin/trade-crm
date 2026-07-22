@@ -29,6 +29,7 @@ import { trashOutline, downloadOutline, eyeOutline } from "ionicons/icons";
 import { useParams, useHistory } from "react-router-dom";
 import { api, JobDetailResult } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import { formatInvoiceNumber } from "../services/format";
 import { downloadPdf } from "../services/pdfCache";
 
 const statusLabel: Record<string, string> = {
@@ -673,7 +674,9 @@ const JobDetailPage: React.FC = () => {
               <IonButton
                 size="small"
                 fill="clear"
-                onClick={() => downloadPdf(inv.id, inv.invoiceNumber)}
+                onClick={() =>
+                  downloadPdf(inv.id, inv.invoiceNumber, user?.businessName)
+                }
               >
                 <IonIcon icon={downloadOutline} slot="icon-only" />
               </IonButton>
@@ -706,10 +709,7 @@ const JobDetailPage: React.FC = () => {
               </IonText>
               <IonText>
                 <h2 style={{ margin: "0 0 4px 0" }}>
-                  {inv.invoiceNumber
-                    .toString()
-                    .padStart(8, "0")
-                    .replace(/(\d{4})(\d{4})/, "$1 $2")}
+                  {formatInvoiceNumber(inv.invoiceNumber)}
                 </h2>
               </IonText>
               <IonText>
