@@ -463,9 +463,21 @@ const JobDetailPage: React.FC = () => {
                     borderBottom: "1px solid var(--ion-color-light-shade)",
                   }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <IonText>
-                      <p style={{ margin: 0 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {li.description}
                         <IonText color="medium">
                           {" "}
