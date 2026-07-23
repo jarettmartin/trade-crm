@@ -1,4 +1,5 @@
 const API_BASE = "http://localhost:3000";
+const FIREBASE_API_KEY = "AIzaSyDwTUilKplIzmgIdPJuFXUl0CL-bQi795w";
 const ID_TOKEN_KEY = "trade_crm_id_token";
 const REFRESH_TOKEN_KEY = "trade_crm_refresh_token";
 
@@ -431,6 +432,24 @@ class ApiService {
       throw new Error("Failed to download PDF");
     }
     return res.blob();
+  }
+
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestType: "PASSWORD_RESET",
+          email,
+        }),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error?.message || "Failed to send password reset");
+    }
   }
 }
 

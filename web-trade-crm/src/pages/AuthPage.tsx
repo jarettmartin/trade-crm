@@ -15,7 +15,7 @@ import { api } from "../services/api";
 
 const AuthPage: React.FC = () => {
   const { login } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -66,6 +66,24 @@ const AuthPage: React.FC = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await api.sendPasswordResetEmail(email);
+      setToast("Password reset email sent! Check your inbox.");
+      setMode("login");
+    } catch (err: any) {
+      setError(err.message || "Failed to send password reset");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <IonPage>
       <IonContent
@@ -92,7 +110,9 @@ const AuthPage: React.FC = () => {
             <p style={{ color: "#666", marginTop: 4 }}>
               {mode === "login"
                 ? "Sign in to your account"
-                : "Create a new account"}
+                : mode === "register"
+                  ? "Create a new account"
+                  : "Reset your password"}
             </p>
           </div>
 
@@ -106,15 +126,17 @@ const AuthPage: React.FC = () => {
             />
           </IonItem>
 
-          <IonItem>
-            <IonLabel position="stacked">Password</IonLabel>
-            <IonInput
-              type="password"
-              value={password}
-              onIonInput={(e) => setPassword(e.detail.value!)}
-              placeholder="••••••••"
-            />
-          </IonItem>
+          {mode !== "reset" && (
+            <IonItem>
+              <IonLabel position="stacked">Password</IonLabel>
+              <IonInput
+                type="password"
+                value={password}
+                onIonInput={(e) => setPassword(e.detail.value!)}
+                placeholder="••••••••"
+              />
+            </IonItem>
+          )}
 
           {mode === "register" && (
             <IonItem>
@@ -135,7 +157,13 @@ const AuthPage: React.FC = () => {
 
           <IonButton
             expand="block"
-            onClick={mode === "login" ? handleLogin : handleRegister}
+            onClick={
+              mode === "login"
+                ? handleLogin
+                : mode === "register"
+                  ? handleRegister
+                  : handleResetPassword
+            }
             disabled={loading}
             style={{ marginTop: 16 }}
           >
@@ -143,22 +171,54 @@ const AuthPage: React.FC = () => {
               <IonSpinner />
             ) : mode === "login" ? (
               "Sign In"
-            ) : (
+            ) : mode === "register" ? (
               "Register"
+            ) : (
+              "Send Reset Email"
             )}
           </IonButton>
 
           <div style={{ textAlign: "center", marginTop: 12 }}>
-            <IonText color="primary">
-              <span
-                style={{ cursor: "pointer", fontSize: 14 }}
-                onClick={toggleMode}
-              >
-                {mode === "login"
-                  ? "Don't have an account? Register"
-                  : "Already have an account? Sign In"}
-              </span>
-            </IonText>
+            {mode === "login" && (
+              <div style={{ marginBottom: "8px" }}>
+                <IonText color="primary">
+                  <span
+                    style={{ cursor: "pointer", fontSize: 14 }}
+                    onClick={() => {
+                      setMode("reset");
+                      setError("");
+                    }}
+                  >
+                    Forgot Password?
+                  </span>
+                </IonText>
+              </div>
+            )}
+            {mode === "reset" && (
+              <IonText color="primary">
+                <span
+                  style={{ cursor: "pointer", fontSize: 14 }}
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                  }}
+                >
+                  Back to Sign In
+                </span>
+              </IonText>
+            )}
+            {mode !== "reset" && (
+              <IonText color="primary">
+                <span
+                  style={{ cursor: "pointer", fontSize: 14 }}
+                  onClick={toggleMode}
+                >
+                  {mode === "login"
+                    ? "Don't have an account? Register"
+                    : "Already have an account? Sign In"}
+                </span>
+              </IonText>
+            )}
           </div>
         </div>
 
