@@ -479,17 +479,25 @@ const JobDetailPage: React.FC = () => {
                         }}
                       >
                         {li.description}
-                        <IonText color="medium">
-                          {" "}
-                          (x{li.quantity} @ {currency(Number(li.unitPrice))})
-                        </IonText>
+                      </p>
+                    </IonText>
+                    <IonText color="medium">
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "12px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        x{li.quantity} @ {currency(Number(li.unitPrice))}
                       </p>
                     </IonText>
                   </div>
                   <div
                     style={{
                       display: "flex",
-                      alignItems: "center",
                       gap: "8px",
                     }}
                   >
