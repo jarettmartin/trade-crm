@@ -118,7 +118,7 @@ const AuthPage: React.FC = () => {
               style={{
                 fontSize: 24,
                 fontWeight: 700,
-                color: "#1a73e8",
+                color: "var(--ion-color-primary)",
                 margin: 0,
               }}
             >
