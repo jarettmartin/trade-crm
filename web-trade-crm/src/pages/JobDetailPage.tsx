@@ -522,7 +522,7 @@ const JobDetailPage: React.FC = () => {
             <strong>Add Line Item</strong>
           </IonText>
 
-          <IonItem style={{ "--padding-start": "0", marginTop: "8px" }}>
+          <IonItem style={{ "--padding-start": "16px", marginTop: "8px" }}>
             <IonLabel>Type</IonLabel>
             <IonSelect
               value={liType}
@@ -535,7 +535,7 @@ const JobDetailPage: React.FC = () => {
             </IonSelect>
           </IonItem>
 
-          <IonItem style={{ "--padding-start": "0" }}>
+          <IonItem style={{ "--padding-start": "16px" }}>
             <IonLabel position="stacked">Description</IonLabel>
             <IonInput
               value={liDesc}
@@ -544,7 +544,7 @@ const JobDetailPage: React.FC = () => {
           </IonItem>
 
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            <IonItem style={{ "--padding-start": "0", flex: 1 }}>
+            <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
               <IonLabel position="stacked">Quantity</IonLabel>
               <IonInput
                 type="number"
@@ -552,7 +552,7 @@ const JobDetailPage: React.FC = () => {
                 onIonInput={(e) => setLiQty(e.detail.value || "")}
               />
             </IonItem>
-            <IonItem style={{ "--padding-start": "0", flex: 1 }}>
+            <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
               <IonLabel position="stacked">Unit Price</IonLabel>
               <IonInput
                 type="number"
