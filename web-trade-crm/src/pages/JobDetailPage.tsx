@@ -880,7 +880,12 @@ const JobDetailPage: React.FC = () => {
           isOpen={showToast}
           message={toastMessage}
           color={toastIsError ? "danger" : "success"}
-          buttons={[{ text: "Dismiss", handler: () => setShowToast(false) }]}
+          duration={toastIsError ? undefined : 5000}
+          buttons={
+            toastIsError
+              ? [{ text: "Dismiss", handler: () => setShowToast(false) }]
+              : undefined
+          }
           onDidDismiss={() => setShowToast(false)}
         />
       </IonContent>
