@@ -30,6 +30,7 @@ import {
   detectCountryFromPostalCode,
   validatePostalCode,
 } from "../services/validation";
+import { formatPhone, stripPhone } from "../services/format";
 
 interface AddressForm {
   label: string;
@@ -275,8 +276,10 @@ const ManageCustomersPage: React.FC = () => {
               <IonLabel position="stacked">Phone</IonLabel>
               <IonInput
                 type="tel"
-                value={phone}
-                onIonInput={(e) => setPhone(e.detail.value || "")}
+                value={formatPhone(phone)}
+                onIonInput={(e) =>
+                  setPhone(stripPhone(e.detail.value || "").slice(0, 10))
+                }
               />
             </IonItem>
 

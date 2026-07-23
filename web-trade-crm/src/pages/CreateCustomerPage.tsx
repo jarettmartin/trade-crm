@@ -29,6 +29,7 @@ import {
   detectCountryFromPostalCode,
   validatePostalCode,
 } from "../services/validation";
+import { formatPhone, stripPhone } from "../services/format";
 
 interface AddressForm {
   label: string;
@@ -70,7 +71,6 @@ const CreateCustomerPage: React.FC = () => {
   const handleZipChange = (index: number, value: string) => {
     const updated = [...addresses];
     updated[index] = { ...updated[index], zipPostalCode: value };
-    // Auto-detect country from zip format
     const detected = detectCountryFromPostalCode(value);
     if (detected) {
       updated[index] = { ...updated[index], countryCode: detected };
@@ -93,12 +93,11 @@ const CreateCustomerPage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    // Validate postal codes
     for (const addr of addresses) {
       if (addr.zipPostalCode.trim()) {
-        const error = validatePostalCode(addr.zipPostalCode);
-        if (error) {
-          setError(error);
+        const err = validatePostalCode(addr.zipPostalCode);
+        if (err) {
+          setError(err);
           return;
         }
       }
@@ -117,8 +116,8 @@ const CreateCustomerPage: React.FC = () => {
       setError("Phone is required");
       return;
     }
-    if (!isValidPhone(phone.trim())) {
-      setError("Please enter a valid phone number");
+    if (!isValidPhone(phone)) {
+      setError("Please enter a valid 10-digit phone number");
       return;
     }
     if (email.trim() && !isValidEmail(email.trim())) {
@@ -139,7 +138,7 @@ const CreateCustomerPage: React.FC = () => {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       companyName: companyName.trim() || undefined,
-      phone: phone.trim(),
+      phone: stripPhone(phone),
       email: email.trim() || undefined,
       notes: notes.trim() || undefined,
       addresses: validAddresses.map((a) => ({
@@ -230,8 +229,10 @@ const CreateCustomerPage: React.FC = () => {
           </IonLabel>
           <IonInput
             type="tel"
-            value={phone}
-            onIonInput={(e) => setPhone(e.detail.value || "")}
+            value={formatPhone(phone)}
+            onIonInput={(e) =>
+              setPhone(stripPhone(e.detail.value || "").slice(0, 10))
+            }
           />
         </IonItem>
 
@@ -387,7 +388,7 @@ const CreateCustomerPage: React.FC = () => {
               !firstName.trim() ||
               !lastName.trim() ||
               !phone.trim() ||
-              !isValidPhone(phone.trim()) ||
+              !isValidPhone(phone) ||
               (email.trim().length > 0 && !isValidEmail(email.trim())) ||
               addresses.filter((a) => a.addressLine1.trim().length > 0)
                 .length === 0

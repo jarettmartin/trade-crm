@@ -10,8 +10,9 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function isValidPhone(phone: string): boolean {
-  // Accepts: +1 555-123-4567, (555) 123-4567, 5551234567, etc.
-  return /^\+?[\d\s\-().]{7,20}$/.test(phone);
+  // Require exactly 10 digits (area code required)
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10;
 }
 
 /**
