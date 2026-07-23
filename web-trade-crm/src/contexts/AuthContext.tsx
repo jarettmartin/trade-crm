@@ -80,6 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       isAuthenticated: true,
       isLoading: false,
     });
+    // Redirect to home on login to ensure clean app state
+    window.location.href = "/home";
   }, []);
 
   const logout = useCallback(() => {
