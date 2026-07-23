@@ -7,6 +7,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTenantDto {
   @IsString()
@@ -22,6 +23,7 @@ export class CreateTenantDto {
   })
   phone?: string;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   @Max(100)

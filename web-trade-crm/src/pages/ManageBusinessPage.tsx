@@ -28,7 +28,7 @@ const ManageBusinessPage: React.FC = () => {
       businessName: user?.businessName ?? "",
       businessEmail: user?.businessEmail ?? "",
       phone: user?.phone ?? "",
-      defaultTaxPercent: user?.defaultTaxPercent ?? 0,
+      defaultTaxPercent: Number(user?.defaultTaxPercent ?? 0),
       invoicePaymentMethodNote: user?.invoicePaymentMethodNote ?? "",
     }),
     [user],
@@ -44,7 +44,7 @@ const ManageBusinessPage: React.FC = () => {
   );
   const [phone, setPhone] = useState(initialRef.current.phone);
   const [defaultTaxPercent, setDefaultTaxPercent] = useState<number>(
-    initialRef.current.defaultTaxPercent,
+    Number(initialRef.current.defaultTaxPercent),
   );
   const [invoicePaymentMethodNote, setInvoicePaymentMethodNote] = useState(
     initialRef.current.invoicePaymentMethodNote,
