@@ -6,6 +6,7 @@ import {
   IsArray,
   ValidateNested,
   MaxLength,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CustomerType } from '../../common/enums/customer-type.enum';
@@ -34,6 +35,9 @@ export class UpdateCustomerDto {
   @IsString()
   @IsOptional()
   @MaxLength(50)
+  @Matches(/^\+?[\d\s\-().]{7,20}$/, {
+    message: 'Phone number is not valid',
+  })
   phone?: string;
 
   @IsEmail()

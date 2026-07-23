@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsOptional,
   IsNumber,
+  Matches,
   Min,
   Max,
 } from 'class-validator';
@@ -16,6 +17,9 @@ export class CreateTenantDto {
 
   @IsString()
   @IsOptional()
+  @Matches(/^\+?[\d\s\-().]{7,20}$/, {
+    message: 'Phone number is not valid',
+  })
   phone?: string;
 
   @IsNumber()

@@ -24,6 +24,7 @@ import {
 import { addOutline, removeOutline } from "ionicons/icons";
 import { api, CustomerResult } from "../services/api";
 import CustomerSearch from "../components/CustomerSearch";
+import { isValidEmail, isValidPhone } from "../services/validation";
 
 interface AddressForm {
   label: string;
@@ -147,6 +148,16 @@ const ManageCustomersPage: React.FC = () => {
     if (!customer) return;
     setSaving(true);
     try {
+      if (email.trim() && !isValidEmail(email.trim())) {
+        showToastMsg("Please enter a valid email address");
+        setSaving(false);
+        return;
+      }
+      if (phone.trim() && !isValidPhone(phone.trim())) {
+        showToastMsg("Please enter a valid phone number");
+        setSaving(false);
+        return;
+      }
       const validAddresses = addresses.filter(
         (a) => a.addressLine1.trim().length > 0,
       );

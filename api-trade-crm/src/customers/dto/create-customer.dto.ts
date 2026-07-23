@@ -7,6 +7,7 @@ import {
   ValidateNested,
   MinLength,
   MaxLength,
+  Matches,
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -35,6 +36,9 @@ export class CreateCustomerDto {
   @IsString()
   @MinLength(1)
   @MaxLength(50)
+  @Matches(/^\+?[\d\s\-().]{7,20}$/, {
+    message: 'Phone number is not valid',
+  })
   phone!: string;
 
   @IsEmail()

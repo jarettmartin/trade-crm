@@ -23,6 +23,7 @@ import {
 import { addOutline, removeOutline } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import { api, CreateCustomerPayload } from "../services/api";
+import { isValidEmail, isValidPhone } from "../services/validation";
 
 interface AddressForm {
   label: string;
@@ -88,6 +89,14 @@ const CreateCustomerPage: React.FC = () => {
     }
     if (!phone.trim()) {
       setError("Phone is required");
+      return;
+    }
+    if (!isValidPhone(phone.trim())) {
+      setError("Please enter a valid phone number");
+      return;
+    }
+    if (email.trim() && !isValidEmail(email.trim())) {
+      setError("Please enter a valid email address");
       return;
     }
 
@@ -366,6 +375,8 @@ const CreateCustomerPage: React.FC = () => {
               !firstName.trim() ||
               !lastName.trim() ||
               !phone.trim() ||
+              !isValidPhone(phone.trim()) ||
+              (email.trim().length > 0 && !isValidEmail(email.trim())) ||
               addresses.filter((a) => a.addressLine1.trim().length > 0)
                 .length === 0
             }

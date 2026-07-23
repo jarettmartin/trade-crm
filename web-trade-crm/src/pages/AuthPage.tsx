@@ -12,6 +12,7 @@ import {
 } from "@ionic/react";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api";
+import { isValidEmail } from "../services/validation";
 
 const AuthPage: React.FC = () => {
   const { login } = useAuth();
@@ -33,6 +34,10 @@ const AuthPage: React.FC = () => {
       setError("Email and password are required");
       return;
     }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -47,6 +52,14 @@ const AuthPage: React.FC = () => {
   const handleRegister = async () => {
     if (!email || !password || !inviteCode) {
       setError("All fields are required");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
     setLoading(true);
@@ -69,6 +82,10 @@ const AuthPage: React.FC = () => {
   const handleResetPassword = async () => {
     if (!email) {
       setError("Please enter your email address");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
       return;
     }
     setLoading(true);
