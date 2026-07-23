@@ -23,7 +23,12 @@ import {
 import { addOutline, removeOutline } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import { api, CreateCustomerPayload } from "../services/api";
-import { isValidEmail, isValidPhone } from "../services/validation";
+import {
+  isValidEmail,
+  isValidPhone,
+  detectCountryFromPostalCode,
+  validatePostalCode,
+} from "../services/validation";
 
 interface AddressForm {
   label: string;
@@ -62,6 +67,17 @@ const CreateCustomerPage: React.FC = () => {
     setAddresses([...addresses, emptyAddress()]);
   };
 
+  const handleZipChange = (index: number, value: string) => {
+    const updated = [...addresses];
+    updated[index] = { ...updated[index], zipPostalCode: value };
+    // Auto-detect country from zip format
+    const detected = detectCountryFromPostalCode(value);
+    if (detected) {
+      updated[index] = { ...updated[index], countryCode: detected };
+    }
+    setAddresses(updated);
+  };
+
   const removeAddress = (index: number) => {
     setAddresses(addresses.filter((_, i) => i !== index));
   };
@@ -77,6 +93,16 @@ const CreateCustomerPage: React.FC = () => {
   };
 
   const handleSave = async () => {
+    // Validate postal codes
+    for (const addr of addresses) {
+      if (addr.zipPostalCode.trim()) {
+        const error = validatePostalCode(addr.zipPostalCode);
+        if (error) {
+          setError(error);
+          return;
+        }
+      }
+    }
     setError("");
 
     if (!firstName.trim()) {
@@ -332,23 +358,9 @@ const CreateCustomerPage: React.FC = () => {
               <IonLabel position="stacked">ZIP / Postal Code</IonLabel>
               <IonInput
                 value={addr.zipPostalCode}
-                onIonInput={(e) =>
-                  updateAddress(index, "zipPostalCode", e.detail.value || "")
-                }
+                onIonInput={(e) => handleZipChange(index, e.detail.value || "")}
+                placeholder="e.g. 12345 or A1A 1A1"
               />
-            </IonItem>
-
-            <IonItem>
-              <IonLabel position="stacked">Country Code</IonLabel>
-              <IonSelect
-                value={addr.countryCode}
-                onIonChange={(e) =>
-                  updateAddress(index, "countryCode", e.detail.value)
-                }
-              >
-                <IonSelectOption value="US">US</IonSelectOption>
-                <IonSelectOption value="CA">CA</IonSelectOption>
-              </IonSelect>
             </IonItem>
           </div>
         ))}

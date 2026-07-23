@@ -24,7 +24,12 @@ import {
 import { addOutline, removeOutline } from "ionicons/icons";
 import { api, CustomerResult } from "../services/api";
 import CustomerSearch from "../components/CustomerSearch";
-import { isValidEmail, isValidPhone } from "../services/validation";
+import {
+  isValidEmail,
+  isValidPhone,
+  detectCountryFromPostalCode,
+  validatePostalCode,
+} from "../services/validation";
 
 interface AddressForm {
   label: string;
@@ -126,6 +131,16 @@ const ManageCustomersPage: React.FC = () => {
     }
   };
 
+  const handleZipChange = (index: number, value: string) => {
+    const updated = [...addresses];
+    updated[index] = { ...updated[index], zipPostalCode: value };
+    const detected = detectCountryFromPostalCode(value);
+    if (detected) {
+      updated[index] = { ...updated[index], countryCode: detected };
+    }
+    setAddresses(updated);
+  };
+
   const addAddress = () => {
     setAddresses([...addresses, emptyAddress()]);
   };
@@ -148,6 +163,17 @@ const ManageCustomersPage: React.FC = () => {
     if (!customer) return;
     setSaving(true);
     try {
+      // Validate postal codes
+      for (const addr of addresses) {
+        if (addr.zipPostalCode.trim()) {
+          const err = validatePostalCode(addr.zipPostalCode);
+          if (err) {
+            showToastMsg(err);
+            setSaving(false);
+            return;
+          }
+        }
+      }
       if (email.trim() && !isValidEmail(email.trim())) {
         showToastMsg("Please enter a valid email address");
         setSaving(false);
@@ -382,26 +408,10 @@ const ManageCustomersPage: React.FC = () => {
                   <IonInput
                     value={addr.zipPostalCode}
                     onIonInput={(e) =>
-                      updateAddress(
-                        index,
-                        "zipPostalCode",
-                        e.detail.value || "",
-                      )
+                      handleZipChange(index, e.detail.value || "")
                     }
+                    placeholder="e.g. 12345 or A1A 1A1"
                   />
-                </IonItem>
-
-                <IonItem>
-                  <IonLabel position="stacked">Country Code</IonLabel>
-                  <IonSelect
-                    value={addr.countryCode}
-                    onIonChange={(e) =>
-                      updateAddress(index, "countryCode", e.detail.value)
-                    }
-                  >
-                    <IonSelectOption value="US">US</IonSelectOption>
-                    <IonSelectOption value="CA">CA</IonSelectOption>
-                  </IonSelect>
                 </IonItem>
               </div>
             ))}
