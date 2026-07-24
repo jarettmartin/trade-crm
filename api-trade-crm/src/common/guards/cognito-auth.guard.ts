@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
+import { AuthService } from '../../auth/services/auth.service';
 
 export interface AuthenticatedUser {
   uid: string;
@@ -18,10 +19,12 @@ export interface AuthenticatedUser {
 @Injectable()
 export class CognitoAuthGuard implements CanActivate {
   private readonly logger = new Logger(CognitoAuthGuard.name);
-  private readonly jwksUri: string;
   private readonly client: JwksClient;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly authService: AuthService,
+  ) {
     const region = this.configService.get<string>(
       'COGNITO_REGION',
       'us-east-2',
@@ -30,12 +33,13 @@ export class CognitoAuthGuard implements CanActivate {
       'COGNITO_USER_POOL_ID',
       '',
     );
-    this.jwksUri = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
-    this.client = new JwksClient({ jwksUri: this.jwksUri });
+    const jwksUri = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
+    this.client = new JwksClient({ jwksUri });
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+    const response = context.switchToHttp().getResponse();
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
@@ -48,6 +52,7 @@ export class CognitoAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid authorization header format');
     }
 
+    // Try to verify the current token
     try {
       const decoded = await this.verifyToken(token);
       request.user = {
@@ -56,24 +61,45 @@ export class CognitoAuthGuard implements CanActivate {
         emailVerified: decoded.email_verified === true,
       } as AuthenticatedUser;
       return true;
-    } catch (error: any) {
-      this.logger.warn(`Cognito token verification failed: ${error.message}`);
-      throw new UnauthorizedException('Invalid or expired token');
+    } catch (tokenError: any) {
+      // Token is expired or invalid — attempt transparent refresh
+      const refreshToken = (request.headers['x-refresh-token'] as string) || '';
+
+      if (!refreshToken) {
+        throw new UnauthorizedException(
+          'Token expired and no refresh token provided',
+        );
+      }
+
+      try {
+        const result = await this.authService.refreshToken(refreshToken);
+        // Return the new token to the client via response header
+        response.setHeader('x-new-id-token', result.idToken);
+        // Verify the new token
+        const decoded = await this.verifyToken(result.idToken);
+        request.user = {
+          uid: decoded.sub,
+          email: decoded.email || '',
+          emailVerified: decoded.email_verified === true,
+        } as AuthenticatedUser;
+        this.logger.log('Token refreshed successfully via guard');
+        return true;
+      } catch (refreshError: any) {
+        this.logger.warn(`Token refresh failed: ${refreshError.message}`);
+        throw new UnauthorizedException('Session expired, please log in again');
+      }
     }
   }
 
   private async verifyToken(token: string): Promise<any> {
-    // Decode the token header to get the kid
     const decodedHeader = jwt.decode(token, { complete: true });
     if (!decodedHeader || !decodedHeader.header.kid) {
       throw new Error('Invalid token header');
     }
 
-    // Get the signing key from JWKS
     const key = await this.client.getSigningKey(decodedHeader.header.kid);
     const signingKey = key.getPublicKey();
 
-    // Verify the token
     return new Promise((resolve, reject) => {
       jwt.verify(
         token,
@@ -83,11 +109,8 @@ export class CognitoAuthGuard implements CanActivate {
           issuer: `https://cognito-idp.us-east-2.amazonaws.com/us-east-2_vpllPmEOD`,
         },
         (err, decoded) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(decoded);
-          }
+          if (err) reject(err);
+          else resolve(decoded);
         },
       );
     });

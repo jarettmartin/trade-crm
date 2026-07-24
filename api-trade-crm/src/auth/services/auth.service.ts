@@ -66,7 +66,6 @@ export class AuthService {
         `Cognito user creation failed: ${error.message}`,
         error.stack,
       );
-      // Extract a user-friendly message from AWS error
       const awsMessage =
         error.name === 'InvalidPasswordException'
           ? 'Password does not meet policy requirements. Must be at least 8 characters with uppercase, lowercase, and numbers.'
@@ -94,7 +93,6 @@ export class AuthService {
         1,
       );
 
-      // 7. Note: Cognito automatically sends verification email via its email delivery
       this.logger.log(
         `User registered in Cognito, verification email handled by Cognito for ${dto.email}`,
       );
@@ -105,7 +103,6 @@ export class AuthService {
         status: user.status,
       };
     } catch (error: any) {
-      // Rollback: delete the Cognito user if DB save fails
       await this.cognitoService
         .deleteUser(cognitoUser.uid)
         .catch((rollbackError) => {
@@ -131,13 +128,12 @@ export class AuthService {
       'us-east-2',
     );
 
-    // Compute SECRET_HASH for the login request
-    const message = dto.email + clientId;
-    const hmac = crypto.createHmac('sha256', clientSecret);
-    hmac.update(message);
-    const secretHash = hmac.digest('base64');
+    const secretHash = this.computeSecretHash(
+      clientSecret,
+      dto.email,
+      clientId,
+    );
 
-    // Authenticate with Cognito using the InitiateAuth API (USER_PASSWORD_AUTH)
     const response = await fetch(
       `https://cognito-idp.${region}.amazonaws.com`,
       {
@@ -166,14 +162,12 @@ export class AuthService {
     }
 
     const idToken = data.AuthenticationResult?.IdToken;
-    const accessToken = data.AuthenticationResult?.AccessToken;
     const refreshToken = data.AuthenticationResult?.RefreshToken;
 
     if (!idToken) {
       throw new UnauthorizedException('No token returned from Cognito');
     }
 
-    // Look up the local user
     const user = await this.userRepository.findOne({
       where: { email: dto.email },
     });
@@ -182,7 +176,6 @@ export class AuthService {
       throw new UnauthorizedException('User not found in local database');
     }
 
-    // Fetch tenant details if user belongs to a tenant
     let tenant: Tenant | null = null;
     if (user.tenantId) {
       tenant = await this.tenantRepository.findOne({
@@ -205,7 +198,6 @@ export class AuthService {
       invoicePaymentMethodNote: tenant?.invoicePaymentMethodNote,
     };
 
-    // If PENDING, check Cognito for up-to-date verification status
     if (user.status === UserStatus.PENDING) {
       const cognitoUser = await this.cognitoService.getUser(user.cognitoSub);
 
@@ -213,10 +205,6 @@ export class AuthService {
         user.status = UserStatus.ACTIVE;
         user.lastLoginAt = new Date();
         await this.userRepository.save(user);
-
-        this.logger.log(
-          `User ${user.email} auto-verified and activated on login`,
-        );
 
         return {
           idToken,
@@ -234,7 +222,6 @@ export class AuthService {
       throw new UnauthorizedException('Account is disabled');
     }
 
-    // Update last login
     user.lastLoginAt = new Date();
     await this.userRepository.save(user);
 
@@ -245,6 +232,139 @@ export class AuthService {
       localId: user.cognitoSub,
       user: userResponse,
     };
+  }
+
+  async refreshToken(refreshToken: string): Promise<{
+    idToken: string;
+  }> {
+    const clientId = this.configService.get<string>('COGNITO_CLIENT_ID', '');
+    const clientSecret = this.configService.get<string>(
+      'COGNITO_CLIENT_SECRET',
+      '',
+    );
+    const region = this.configService.get<string>(
+      'COGNITO_REGION',
+      'us-east-2',
+    );
+
+    // For REFRESH_TOKEN_AUTH, SECRET_HASH uses the client ID
+    const secretHash = this.computeSecretHash(clientSecret, clientId, clientId);
+
+    const response = await fetch(
+      `https://cognito-idp.${region}.amazonaws.com`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-amz-json-1.1',
+          'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth',
+        },
+        body: JSON.stringify({
+          AuthFlow: 'REFRESH_TOKEN_AUTH',
+          ClientId: clientId,
+          AuthParameters: {
+            REFRESH_TOKEN: refreshToken,
+            SECRET_HASH: secretHash,
+          },
+        }),
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const message = data.message || data.__type || 'Token refresh failed';
+      throw new UnauthorizedException(message);
+    }
+
+    const idToken = data.AuthenticationResult?.IdToken;
+    if (!idToken) {
+      throw new UnauthorizedException('No token returned from refresh');
+    }
+
+    return { idToken };
+  }
+
+  async forgotPassword(email: string) {
+    const clientId = this.configService.get<string>('COGNITO_CLIENT_ID', '');
+    const clientSecret = this.configService.get<string>(
+      'COGNITO_CLIENT_SECRET',
+      '',
+    );
+    const region = this.configService.get<string>(
+      'COGNITO_REGION',
+      'us-east-2',
+    );
+
+    const secretHash = this.computeSecretHash(clientSecret, email, clientId);
+
+    const response = await fetch(
+      `https://cognito-idp.${region}.amazonaws.com`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-amz-json-1.1',
+          'X-Amz-Target': 'AWSCognitoIdentityProviderService.ForgotPassword',
+        },
+        body: JSON.stringify({
+          ClientId: clientId,
+          Username: email,
+          SecretHash: secretHash,
+        }),
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new BadRequestException(
+        data.message || data.__type || 'Failed to send password reset',
+      );
+    }
+  }
+
+  async confirmForgotPassword(
+    email: string,
+    code: string,
+    newPassword: string,
+  ) {
+    const clientId = this.configService.get<string>('COGNITO_CLIENT_ID', '');
+    const clientSecret = this.configService.get<string>(
+      'COGNITO_CLIENT_SECRET',
+      '',
+    );
+    const region = this.configService.get<string>(
+      'COGNITO_REGION',
+      'us-east-2',
+    );
+
+    const secretHash = this.computeSecretHash(clientSecret, email, clientId);
+
+    const response = await fetch(
+      `https://cognito-idp.${region}.amazonaws.com`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-amz-json-1.1',
+          'X-Amz-Target':
+            'AWSCognitoIdentityProviderService.ConfirmForgotPassword',
+        },
+        body: JSON.stringify({
+          ClientId: clientId,
+          Username: email,
+          ConfirmationCode: code,
+          Password: newPassword,
+          SecretHash: secretHash,
+        }),
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new BadRequestException(
+        data.message || data.__type || 'Failed to reset password',
+      );
+    }
   }
 
   async checkVerificationStatus(userId: string) {
@@ -277,6 +397,17 @@ export class AuthService {
       email: user.email,
       status: user.status,
     };
+  }
+
+  private computeSecretHash(
+    secret: string,
+    username: string,
+    clientId: string,
+  ): string {
+    const message = username + clientId;
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(message);
+    return hmac.digest('base64');
   }
 
   private async validateInviteCode(code: string): Promise<void> {

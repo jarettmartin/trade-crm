@@ -1,13 +1,7 @@
 const API_BASE = "http://localhost:3000";
-const COGNITO_REGION = "us-east-2";
-const COGNITO_CLIENT_ID = "53cio0p2dshgeq14olqjcqu1c8";
-const COGNITO_CLIENT_SECRET =
-  "oh4rr8rvj3r2edr3gqr3cq4uai5df4fj158s5kpbsd92rer7uad";
+
 const ID_TOKEN_KEY = "trade_crm_id_token";
 const REFRESH_TOKEN_KEY = "trade_crm_refresh_token";
-const USER_EMAIL_KEY = "trade_crm_user_email";
-
-import { computeSecretHash } from "./hmac";
 
 export interface LoginResponse {
   idToken: string;
@@ -206,15 +200,10 @@ class ApiService {
   private baseUrl = API_BASE;
   private idToken: string | null = null;
   private refreshToken: string | null = null;
-  private userEmail: string | null = null;
 
-  setTokens(idToken: string, refreshToken: string, email?: string) {
+  setTokens(idToken: string, refreshToken: string) {
     this.idToken = idToken;
     this.refreshToken = refreshToken;
-    if (email) {
-      this.userEmail = email;
-      localStorage.setItem(USER_EMAIL_KEY, email);
-    }
     localStorage.setItem(ID_TOKEN_KEY, idToken);
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   }
@@ -222,95 +211,38 @@ class ApiService {
   clearTokens() {
     this.idToken = null;
     this.refreshToken = null;
-    this.userEmail = null;
     localStorage.removeItem(ID_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_EMAIL_KEY);
-  }
-
-  private getEmailForSecretHash(): string {
-    return this.userEmail || localStorage.getItem(USER_EMAIL_KEY) || "";
-  }
-
-  private async refreshIdToken(): Promise<string | null> {
-    const rt = this.refreshToken || localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!rt) return null;
-
-    const email = this.getEmailForSecretHash();
-    const secretHash = computeSecretHash(
-      COGNITO_CLIENT_SECRET,
-      email + COGNITO_CLIENT_ID,
-    );
-
-    try {
-      const res = await fetch(
-        `https://cognito-idp.${COGNITO_REGION}.amazonaws.com`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-amz-json-1.1",
-            "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth",
-          },
-          body: JSON.stringify({
-            AuthFlow: "REFRESH_TOKEN_AUTH",
-            ClientId: COGNITO_CLIENT_ID,
-            AuthParameters: {
-              REFRESH_TOKEN: rt,
-              SECRET_HASH: secretHash,
-            },
-          }),
-        },
-      );
-      const data = await res.json();
-      if (data.AuthenticationResult?.IdToken) {
-        this.idToken = data.AuthenticationResult.IdToken;
-        const newRefreshToken = data.AuthenticationResult.RefreshToken || rt;
-        this.refreshToken = newRefreshToken;
-        localStorage.setItem(ID_TOKEN_KEY, data.AuthenticationResult.IdToken);
-        localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-        return data.AuthenticationResult.IdToken;
-      }
-      return null;
-    } catch {
-      return null;
-    }
   }
 
   private async request<T>(
     path: string,
     options: RequestInit = {},
-    retried = false,
   ): Promise<T> {
-    const token =
-      ((options.headers as Record<string, string>)?.["Authorization"] || "")
-        .replace("Bearer ", "")
-        .substring(0, 20) || "none";
-    console.log(`[API] ${path} — using token: ${token}...`);
+    const token = this.idToken || localStorage.getItem(ID_TOKEN_KEY);
+    const rt =
+      this.refreshToken || localStorage.getItem(REFRESH_TOKEN_KEY) || "";
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      headers["x-refresh-token"] = rt;
+    }
 
     const res = await fetch(`${this.baseUrl}${path}`, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...((options.headers as Record<string, string>) || {}),
-      },
+      headers,
     });
 
-    console.log(`[API] ${path} — response status: ${res.status}`);
-
-    if (res.status === 401 && !retried) {
-      console.log(`[API] ${path} — 401 received, attempting token refresh...`);
-      const newToken = await this.refreshIdToken();
-      if (newToken) {
-        console.log(
-          `[API] ${path} — token refreshed successfully, retrying...`,
-        );
-        const newHeaders = {
-          ...((options.headers as Record<string, string>) || {}),
-          Authorization: `Bearer ${newToken}`,
-        };
-        return this.request<T>(path, { ...options, headers: newHeaders }, true);
-      }
-      console.log(`[API] ${path} — token refresh FAILED`);
+    // If the backend refreshed the token, capture the new token
+    const newToken = res.headers.get("x-new-id-token");
+    if (newToken) {
+      this.idToken = newToken;
+      localStorage.setItem(ID_TOKEN_KEY, newToken);
     }
 
     const data = await res.json();
@@ -323,13 +255,8 @@ class ApiService {
     return data as T;
   }
 
-  private getValidToken(): string | null {
-    return this.idToken || localStorage.getItem("trade_crm_id_token");
-  }
-
   private authHeaders(): HeadersInit {
-    const token = this.getValidToken();
-    return { Authorization: `Bearer ${token}` };
+    return {};
   }
 
   async login(email: string, password: string) {
@@ -337,7 +264,7 @@ class ApiService {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    this.setTokens(res.idToken, res.refreshToken, email);
+    this.setTokens(res.idToken, res.refreshToken);
     return res;
   }
 
@@ -351,7 +278,6 @@ class ApiService {
   async createTenant(payload: CreateTenantPayload) {
     return this.request<CreateTenantResponse>("/tenants", {
       method: "POST",
-      headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
   }
@@ -359,7 +285,6 @@ class ApiService {
   async updateTenant(tenantId: string, payload: UpdateTenantPayload) {
     return this.request<CreateTenantResponse>(`/tenants/${tenantId}`, {
       method: "PATCH",
-      headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
   }
@@ -367,30 +292,23 @@ class ApiService {
   async searchCustomers(q: string) {
     return this.request<CustomerResult[]>(
       `/customers/search?q=${encodeURIComponent(q)}`,
-      {
-        headers: this.authHeaders(),
-      },
     );
   }
 
   async createCustomer(payload: CreateCustomerPayload) {
     return this.request<CustomerResult>("/customers", {
       method: "POST",
-      headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
   }
 
   async fetchCustomer(id: string) {
-    return this.request<CustomerResult>(`/customers/${id}`, {
-      headers: this.authHeaders(),
-    });
+    return this.request<CustomerResult>(`/customers/${id}`);
   }
 
   async updateCustomer(id: string, payload: Record<string, unknown>) {
     return this.request(`/customers/${id}`, {
       method: "PATCH",
-      headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
   }
@@ -398,7 +316,6 @@ class ApiService {
   async createJob(payload: CreateJobPayload) {
     return this.request("/jobs", {
       method: "POST",
-      headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
   }
@@ -408,21 +325,16 @@ class ApiService {
     if (status) {
       path += `&status=${encodeURIComponent(status)}`;
     }
-    return this.request<PaginatedJobsResponse>(path, {
-      headers: this.authHeaders(),
-    });
+    return this.request<PaginatedJobsResponse>(path);
   }
 
   async fetchJob(id: string) {
-    return this.request<JobDetailResult>(`/jobs/${id}`, {
-      headers: this.authHeaders(),
-    });
+    return this.request<JobDetailResult>(`/jobs/${id}`);
   }
 
   async updateJob(id: string, payload: Record<string, unknown>) {
     return this.request(`/jobs/${id}`, {
       method: "PATCH",
-      headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
   }
@@ -438,7 +350,6 @@ class ApiService {
   ) {
     return this.request(`/jobs/${jobId}/invoices`, {
       method: "POST",
-      headers: this.authHeaders(),
       body: JSON.stringify(payload),
     });
   }
@@ -446,13 +357,12 @@ class ApiService {
   async updateInvoiceStatus(invoiceId: string, status: string) {
     return this.request(`/invoices/${invoiceId}`, {
       method: "PATCH",
-      headers: this.authHeaders(),
       body: JSON.stringify({ status }),
     });
   }
 
   async downloadInvoicePdf(invoiceId: string): Promise<Blob> {
-    const token = this.getValidToken();
+    const token = this.idToken || localStorage.getItem(ID_TOKEN_KEY);
     const res = await fetch(`${this.baseUrl}/invoices/${invoiceId}/pdf`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -465,31 +375,10 @@ class ApiService {
   }
 
   async sendPasswordResetEmail(email: string): Promise<void> {
-    const secretHash = computeSecretHash(
-      COGNITO_CLIENT_SECRET,
-      email + COGNITO_CLIENT_ID,
-    );
-    const res = await fetch(
-      `https://cognito-idp.${COGNITO_REGION}.amazonaws.com`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-amz-json-1.1",
-          "X-Amz-Target": "AWSCognitoIdentityProviderService.ForgotPassword",
-        },
-        body: JSON.stringify({
-          ClientId: COGNITO_CLIENT_ID,
-          Username: email,
-          SecretHash: secretHash,
-        }),
-      },
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(
-        data.message || data.__type || "Failed to send password reset",
-      );
-    }
+    return this.request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
   }
 
   async confirmPasswordReset(
@@ -497,34 +386,10 @@ class ApiService {
     code: string,
     newPassword: string,
   ): Promise<void> {
-    const secretHash = computeSecretHash(
-      COGNITO_CLIENT_SECRET,
-      email + COGNITO_CLIENT_ID,
-    );
-    const res = await fetch(
-      `https://cognito-idp.${COGNITO_REGION}.amazonaws.com`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-amz-json-1.1",
-          "X-Amz-Target":
-            "AWSCognitoIdentityProviderService.ConfirmForgotPassword",
-        },
-        body: JSON.stringify({
-          ClientId: COGNITO_CLIENT_ID,
-          Username: email,
-          ConfirmationCode: code,
-          Password: newPassword,
-          SecretHash: secretHash,
-        }),
-      },
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(
-        data.message || data.__type || "Failed to reset password",
-      );
-    }
+    return this.request("/auth/confirm-forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email, code, newPassword }),
+    });
   }
 }
 

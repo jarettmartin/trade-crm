@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
 import { User } from '../../users/entities/user.entity';
+import { AuthService } from '../../auth/services/auth.service';
 
 export interface AuthenticatedTenantUser {
   uid: string;
@@ -29,6 +30,7 @@ export class TenantGuard implements CanActivate {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly configService: ConfigService,
+    private readonly authService: AuthService,
   ) {
     const region = this.configService.get<string>(
       'COGNITO_REGION',
@@ -44,6 +46,7 @@ export class TenantGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+    const response = context.switchToHttp().getResponse();
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
@@ -56,13 +59,29 @@ export class TenantGuard implements CanActivate {
       throw new UnauthorizedException('Invalid authorization header format');
     }
 
-    // Verify Cognito token
+    // Try to verify the current token
     let decodedToken: any;
     try {
       decodedToken = await this.verifyToken(token);
-    } catch (error: any) {
-      this.logger.warn(`Cognito token verification failed: ${error.message}`);
-      throw new UnauthorizedException('Invalid or expired token');
+    } catch (tokenError: any) {
+      // Token expired — attempt transparent refresh
+      const refreshToken = (request.headers['x-refresh-token'] as string) || '';
+
+      if (!refreshToken) {
+        throw new UnauthorizedException(
+          'Token expired and no refresh token provided',
+        );
+      }
+
+      try {
+        const result = await this.authService.refreshToken(refreshToken);
+        response.setHeader('x-new-id-token', result.idToken);
+        decodedToken = await this.verifyToken(result.idToken);
+        this.logger.log('Token refreshed successfully via TenantGuard');
+      } catch (refreshError: any) {
+        this.logger.warn(`Token refresh failed: ${refreshError.message}`);
+        throw new UnauthorizedException('Session expired, please log in again');
+      }
     }
 
     // Look up the local user with tenantId
