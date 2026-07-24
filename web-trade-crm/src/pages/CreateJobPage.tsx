@@ -30,9 +30,15 @@ const CreateJobPage: React.FC = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [toastIsError, setToastIsError] = useState(false);
+
+  const showToastMsg = (msg: string, isError = true) => {
+    setToastMessage(msg);
+    setToastIsError(isError);
+    setShowToast(true);
+  };
 
   const handleSelectCustomer = (customer: CustomerResult) => {
     setSelectedCustomer(customer);
@@ -52,18 +58,16 @@ const CreateJobPage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    setError("");
-
     if (!selectedCustomer) {
-      setError("Please select a customer first");
+      showToastMsg("Please select a customer first");
       return;
     }
     if (!title.trim()) {
-      setError("Job title is required");
+      showToastMsg("Job title is required");
       return;
     }
     if (!selectedAddressId) {
-      setError("Please select a customer address");
+      showToastMsg("Please select a customer address");
       return;
     }
 
@@ -81,7 +85,7 @@ const CreateJobPage: React.FC = () => {
       setToastMessage("Job created successfully");
       setShowToast(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create job");
+      showToastMsg(err instanceof Error ? err.message : "Failed to create job");
     } finally {
       setSaving(false);
     }
@@ -98,12 +102,6 @@ const CreateJobPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        {error && (
-          <IonText color="danger">
-            <p style={{ marginBottom: "16px" }}>{error}</p>
-          </IonText>
-        )}
-
         <CustomerSearch onSelect={handleSelectCustomer} />
 
         {selectedCustomer && (
@@ -242,9 +240,14 @@ const CreateJobPage: React.FC = () => {
         <IonToast
           isOpen={showToast}
           message={toastMessage}
-          duration={5000}
+          color={toastIsError ? "danger" : "success"}
+          duration={toastIsError ? undefined : 5000}
+          buttons={
+            toastIsError
+              ? [{ text: "Dismiss", handler: () => setShowToast(false) }]
+              : undefined
+          }
           onDidDismiss={() => setShowToast(false)}
-          color="success"
         />
       </IonContent>
     </IonPage>

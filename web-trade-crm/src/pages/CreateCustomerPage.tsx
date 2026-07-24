@@ -63,9 +63,9 @@ const CreateCustomerPage: React.FC = () => {
   const [notes, setNotes] = useState("");
   const [addresses, setAddresses] = useState<AddressForm[]>([emptyAddress()]);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [toastIsError, setToastIsError] = useState(false);
 
   const addAddress = () => {
     setAddresses([...addresses, emptyAddress()]);
@@ -95,44 +95,55 @@ const CreateCustomerPage: React.FC = () => {
     setAddresses(updated);
   };
 
+  const showToastMsg = (msg: string, isError = true) => {
+    setToastMessage(msg);
+    setToastIsError(isError);
+    setShowToast(true);
+  };
+
   const handleSave = async () => {
     for (const addr of addresses) {
       if (addr.zipPostalCode.trim()) {
         const err = validatePostalCode(addr.zipPostalCode);
         if (err) {
-          setError(err);
+          showToastMsg(err);
           return;
         }
       }
     }
-    setError("");
 
     if (!firstName.trim()) {
-      setError("First name is required");
+      showToastMsg("First name is required");
       return;
     }
     if (!lastName.trim()) {
-      setError("Last name is required");
+      showToastMsg("Last name is required");
       return;
     }
     if (!phone.trim()) {
-      setError("Phone is required");
+      showToastMsg("Phone is required");
       return;
     }
     if (!isValidPhone(phone)) {
-      setError("Please enter a valid 10-digit phone number");
+      showToastMsg("Please enter a valid 10-digit phone number");
       return;
     }
     if (email.trim() && !isValidEmail(email.trim())) {
-      setError("Please enter a valid email address");
+      showToastMsg("Please enter a valid email address");
       return;
     }
 
     const validAddresses = addresses.filter(
-      (a) => a.addressLine1.trim().length > 0,
+      (a) =>
+        a.addressLine1.trim().length > 0 &&
+        a.city.trim().length > 0 &&
+        a.stateProvince.trim().length > 0 &&
+        a.zipPostalCode.trim().length > 0,
     );
     if (validAddresses.length === 0) {
-      setError("At least one address is required");
+      showToastMsg(
+        "At least one address must have Address Line 1, City, State/Province, and ZIP/Postal Code filled in",
+      );
       return;
     }
 
@@ -163,7 +174,7 @@ const CreateCustomerPage: React.FC = () => {
       setToastMessage("Customer created successfully");
       setShowToast(true);
     } catch (err) {
-      setError(
+      showToastMsg(
         err instanceof Error ? err.message : "Failed to create customer",
       );
     } finally {
@@ -182,12 +193,6 @@ const CreateCustomerPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        {error && (
-          <IonText color="danger">
-            <p style={{ marginBottom: "16px" }}>{error}</p>
-          </IonText>
-        )}
-
         <IonSegment
           value={type}
           onIonChange={(e) => setType((e.detail.value as string) || "PERSON")}
@@ -396,8 +401,13 @@ const CreateCustomerPage: React.FC = () => {
               !phone.trim() ||
               !isValidPhone(phone) ||
               (email.trim().length > 0 && !isValidEmail(email.trim())) ||
-              addresses.filter((a) => a.addressLine1.trim().length > 0)
-                .length === 0
+              addresses.filter(
+                (a) =>
+                  a.addressLine1.trim().length > 0 &&
+                  a.city.trim().length > 0 &&
+                  a.stateProvince.trim().length > 0 &&
+                  a.zipPostalCode.trim().length > 0,
+              ).length === 0
             }
           >
             {saving ? <IonSpinner /> : "Save Customer"}
@@ -407,9 +417,14 @@ const CreateCustomerPage: React.FC = () => {
         <IonToast
           isOpen={showToast}
           message={toastMessage}
-          duration={5000}
+          color={toastIsError ? "danger" : "success"}
+          duration={toastIsError ? undefined : 5000}
+          buttons={
+            toastIsError
+              ? [{ text: "Dismiss", handler: () => setShowToast(false) }]
+              : undefined
+          }
           onDidDismiss={() => setShowToast(false)}
-          color="success"
         />
       </IonContent>
     </IonPage>

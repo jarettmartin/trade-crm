@@ -51,8 +51,15 @@ const ManageBusinessPage: React.FC = () => {
     initialRef.current.invoicePaymentMethodNote,
   );
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [toastIsError, setToastIsError] = useState(false);
+
+  const showToastMsg = (msg: string, isError = true) => {
+    setToastMessage(msg);
+    setToastIsError(isError);
+    setShowToast(true);
+  };
 
   const hasChanges =
     businessName !== initialRef.current.businessName ||
@@ -64,7 +71,6 @@ const ManageBusinessPage: React.FC = () => {
   const handleSave = async () => {
     if (!user?.tenantId) return;
     setSaving(true);
-    setError("");
     try {
       const result = await api.updateTenant(user.tenantId, {
         businessName: businessName || undefined,
@@ -89,9 +95,11 @@ const ManageBusinessPage: React.FC = () => {
         defaultTaxPercent: result.defaultTaxPercent ?? 0,
         invoicePaymentMethodNote: result.invoicePaymentMethodNote ?? "",
       };
+      setToastMessage("Business details updated successfully");
+      setToastIsError(false);
       setShowToast(true);
     } catch (err: any) {
-      setError(err.message || "Failed to update business");
+      showToastMsg(err.message || "Failed to update business");
     } finally {
       setSaving(false);
     }
@@ -173,12 +181,6 @@ const ManageBusinessPage: React.FC = () => {
             />
           </IonItem>
 
-          {error && (
-            <IonText color="danger">
-              <p style={{ fontSize: 13, margin: "12px 0 0" }}>{error}</p>
-            </IonText>
-          )}
-
           <IonButton
             expand="block"
             onClick={handleSave}
@@ -191,10 +193,15 @@ const ManageBusinessPage: React.FC = () => {
 
         <IonToast
           isOpen={showToast}
-          message="Business details updated successfully"
-          duration={5000}
+          message={toastMessage}
+          color={toastIsError ? "danger" : "success"}
+          duration={toastIsError ? undefined : 5000}
+          buttons={
+            toastIsError
+              ? [{ text: "Dismiss", handler: () => setShowToast(false) }]
+              : undefined
+          }
           onDidDismiss={() => setShowToast(false)}
-          color="success"
         />
       </IonContent>
     </IonPage>

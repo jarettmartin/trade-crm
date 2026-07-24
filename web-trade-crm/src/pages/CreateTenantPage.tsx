@@ -7,9 +7,9 @@ import {
   IonInput,
   IonTextarea,
   IonButton,
-  IonText,
   IonSpinner,
   IonNote,
+  IonToast,
 } from "@ionic/react";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api";
@@ -23,15 +23,22 @@ const CreateTenantPage: React.FC = () => {
   const [defaultTaxPercent, setDefaultTaxPercent] = useState<number>(0);
   const [invoicePaymentMethodNote, setInvoicePaymentMethodNote] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
+  const [toastIsError, setToastIsError] = useState(false);
+
+  const showToastMsg = (msg: string, isError = true) => {
+    setToastMessage(msg);
+    setToastIsError(isError);
+    setShowToast(true);
+  };
 
   const handleCreate = async () => {
     if (!businessName || !businessEmail) {
-      setError("Business name and email are required");
+      showToastMsg("Business name and email are required");
       return;
     }
     setLoading(true);
-    setError("");
     try {
       const result = await api.createTenant({
         businessName,
@@ -49,7 +56,7 @@ const CreateTenantPage: React.FC = () => {
         invoicePaymentMethodNote: result.invoicePaymentMethodNote,
       });
     } catch (err: any) {
-      setError(err.message || "Failed to create tenant");
+      showToastMsg(err.message || "Failed to create tenant");
     } finally {
       setLoading(false);
     }
@@ -139,12 +146,6 @@ const CreateTenantPage: React.FC = () => {
             />
           </IonItem>
 
-          {error && (
-            <IonText color="danger">
-              <p style={{ fontSize: 13, margin: "12px 0 0" }}>{error}</p>
-            </IonText>
-          )}
-
           <IonButton
             expand="block"
             onClick={handleCreate}
@@ -164,6 +165,19 @@ const CreateTenantPage: React.FC = () => {
             Logout
           </IonButton>
         </div>
+
+        <IonToast
+          isOpen={showToast}
+          message={toastMessage}
+          color={toastIsError ? "danger" : "success"}
+          duration={toastIsError ? undefined : 5000}
+          buttons={
+            toastIsError
+              ? [{ text: "Dismiss", handler: () => setShowToast(false) }]
+              : undefined
+          }
+          onDidDismiss={() => setShowToast(false)}
+        />
       </IonContent>
     </IonPage>
   );
