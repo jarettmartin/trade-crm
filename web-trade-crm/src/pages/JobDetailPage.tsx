@@ -49,6 +49,7 @@ const JobDetailPage: React.FC = () => {
   const { user } = useAuth();
   const [job, setJob] = useState<JobDetailResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [status, setStatus] = useState("");
   const [statusRef, setStatusRef] = useState("");
 
@@ -82,11 +83,15 @@ const JobDetailPage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadJob();
+    loadJob(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const loadJob = async () => {
-    setLoading(true);
+  const loadJob = async (isInitial = false) => {
+    // Only show the full-screen spinner on the very first load
+    if (isInitial || !initialLoadDone) {
+      setLoading(true);
+    }
     try {
       const data = await api.fetchJob(id);
       setJob(data);
@@ -99,6 +104,7 @@ const JobDetailPage: React.FC = () => {
         ? Number(latestInv.taxPercent)
         : (user?.defaultTaxPercent ?? 0);
       setTaxPercent(Number(tax));
+      setInitialLoadDone(true);
     } catch {
       showToastMsg("Failed to load job");
     } finally {
@@ -125,7 +131,6 @@ const JobDetailPage: React.FC = () => {
     const notePayload = { note: newNote.trim(), userId: user.id };
     try {
       const notes = job?.notes || [];
-      // We send the full notes array with the new one appended
       await api.updateJob(id, {
         notes: [
           ...notes.map((n) => ({ note: n.note, userId: n.user.id })),
