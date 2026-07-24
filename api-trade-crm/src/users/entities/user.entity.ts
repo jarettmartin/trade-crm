@@ -20,7 +20,7 @@ export class User extends BaseEntity {
 
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 128 })
-  firebaseUid!: string;
+  cognitoSub!: string;
 
   @Column({ type: 'varchar', length: 255 })
   email!: string;

@@ -23,10 +23,10 @@ export class TenantService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async create(dto: CreateTenantDto, firebaseUid: string) {
-    // Find the local user by Firebase UID
+  async create(dto: CreateTenantDto, cognitoSub: string) {
+    // Find the local user by Cognito sub
     const user = await this.userRepository.findOne({
-      where: { firebaseUid },
+      where: { cognitoSub },
     });
 
     if (!user) {

@@ -5,31 +5,23 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
-import { User } from '../../users/entities/user.entity';
 
-export interface AuthenticatedTenantUser {
+export interface AuthenticatedUser {
   uid: string;
   email: string;
   emailVerified: boolean;
-  tenantId: string;
-  localUserId: string;
 }
 
 @Injectable()
-export class TenantGuard implements CanActivate {
-  private readonly logger = new Logger(TenantGuard.name);
+export class CognitoAuthGuard implements CanActivate {
+  private readonly logger = new Logger(CognitoAuthGuard.name);
+  private readonly jwksUri: string;
   private readonly client: JwksClient;
 
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    private readonly configService: ConfigService,
-  ) {
+  constructor(private readonly configService: ConfigService) {
     const region = this.configService.get<string>(
       'COGNITO_REGION',
       'us-east-2',
@@ -38,8 +30,8 @@ export class TenantGuard implements CanActivate {
       'COGNITO_USER_POOL_ID',
       '',
     );
-    const jwksUri = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
-    this.client = new JwksClient({ jwksUri });
+    this.jwksUri = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
+    this.client = new JwksClient({ jwksUri: this.jwksUri });
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -56,51 +48,32 @@ export class TenantGuard implements CanActivate {
       throw new UnauthorizedException('Invalid authorization header format');
     }
 
-    // Verify Cognito token
-    let decodedToken: any;
     try {
-      decodedToken = await this.verifyToken(token);
+      const decoded = await this.verifyToken(token);
+      request.user = {
+        uid: decoded.sub,
+        email: decoded.email || '',
+        emailVerified: decoded.email_verified === true,
+      } as AuthenticatedUser;
+      return true;
     } catch (error: any) {
       this.logger.warn(`Cognito token verification failed: ${error.message}`);
       throw new UnauthorizedException('Invalid or expired token');
     }
-
-    // Look up the local user with tenantId
-    const user = await this.userRepository.findOne({
-      where: { cognitoSub: decodedToken.sub },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('User not found in local database');
-    }
-
-    if (!user.tenantId) {
-      throw new UnauthorizedException(
-        'User must belong to a tenant to perform this action',
-      );
-    }
-
-    // Attach full user context to request
-    request.user = {
-      uid: decodedToken.sub,
-      email: decodedToken.email || '',
-      emailVerified: decodedToken.email_verified || false,
-      tenantId: user.tenantId,
-      localUserId: user.id,
-    } as AuthenticatedTenantUser;
-
-    return true;
   }
 
   private async verifyToken(token: string): Promise<any> {
+    // Decode the token header to get the kid
     const decodedHeader = jwt.decode(token, { complete: true });
     if (!decodedHeader || !decodedHeader.header.kid) {
       throw new Error('Invalid token header');
     }
 
+    // Get the signing key from JWKS
     const key = await this.client.getSigningKey(decodedHeader.header.kid);
     const signingKey = key.getPublicKey();
 
+    // Verify the token
     return new Promise((resolve, reject) => {
       jwt.verify(
         token,
@@ -110,8 +83,11 @@ export class TenantGuard implements CanActivate {
           issuer: `https://cognito-idp.us-east-2.amazonaws.com/us-east-2_vpllPmEOD`,
         },
         (err, decoded) => {
-          if (err) reject(err);
-          else resolve(decoded);
+          if (err) {
+            reject(err);
+          } else {
+            resolve(decoded);
+          }
         },
       );
     });

@@ -8,7 +8,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
-import { FirebaseService } from './firebase.service';
+import * as crypto from 'crypto';
+import { CognitoService } from './cognito.service';
 import { InviteCode } from '../entities/invite-code.entity';
 import { User } from '../../users/entities/user.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
@@ -22,7 +23,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly firebaseService: FirebaseService,
+    private readonly cognitoService: CognitoService,
     private readonly configService: ConfigService,
     @InjectRepository(InviteCode)
     private readonly inviteCodeRepository: Repository<InviteCode>,
@@ -45,33 +46,38 @@ export class AuthService {
       throw new ConflictException('A user with this email already exists');
     }
 
-    // 3. Check if user already exists in Firebase
-    const existingFirebaseUser = await this.firebaseService.getUserByEmail(
+    // 3. Check if user already exists in Cognito
+    const existingCognitoUser = await this.cognitoService.getUserByEmail(
       dto.email,
     );
-    if (existingFirebaseUser) {
+    if (existingCognitoUser) {
       throw new ConflictException('A user with this email already exists');
     }
 
-    // 4. Create user in Firebase Auth
-    let firebaseUser;
+    // 4. Create user in Cognito
+    let cognitoUser;
     try {
-      firebaseUser = await this.firebaseService.createUser(
+      cognitoUser = await this.cognitoService.createUser(
         dto.email,
         dto.password,
       );
     } catch (error: any) {
       this.logger.error(
-        `Firebase user creation failed: ${error.message}`,
+        `Cognito user creation failed: ${error.message}`,
         error.stack,
       );
-      throw new BadRequestException(`Failed to create user: ${error.message}`);
+      // Extract a user-friendly message from AWS error
+      const awsMessage =
+        error.name === 'InvalidPasswordException'
+          ? 'Password does not meet policy requirements. Must be at least 8 characters with uppercase, lowercase, and numbers.'
+          : error.message;
+      throw new BadRequestException(awsMessage);
     }
 
     // 5. Create user in local database
     try {
       const user = this.userRepository.create({
-        firebaseUid: firebaseUser.uid,
+        cognitoSub: cognitoUser.uid,
         email: dto.email,
         firstName: '',
         lastName: '',
@@ -88,57 +94,10 @@ export class AuthService {
         1,
       );
 
-      // 7. Send verification email via Firebase REST API
-      try {
-        const apiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
-
-        // Sign in to get an idToken
-        const signInRes = await fetch(
-          `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: dto.email,
-              password: dto.password,
-              returnSecureToken: true,
-            }),
-          },
-        );
-        const signInData = await signInRes.json();
-
-        if (signInData.idToken) {
-          // Send the verification email
-          const verifyRes = await fetch(
-            `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                requestType: 'VERIFY_EMAIL',
-                idToken: signInData.idToken,
-              }),
-            },
-          );
-          const verifyData = await verifyRes.json();
-
-          if (verifyRes.ok) {
-            this.logger.log(`Verification email sent to ${dto.email}`);
-          } else {
-            this.logger.warn(
-              `Failed to send verification email: ${verifyData.error?.message}`,
-            );
-          }
-        } else {
-          this.logger.warn(
-            `Could not sign in to send verification email: ${signInData.error?.message}`,
-          );
-        }
-      } catch (emailError: any) {
-        this.logger.warn(
-          `Failed to send verification email for ${dto.email}: ${emailError.message}`,
-        );
-      }
+      // 7. Note: Cognito automatically sends verification email via its email delivery
+      this.logger.log(
+        `User registered in Cognito, verification email handled by Cognito for ${dto.email}`,
+      );
 
       return {
         id: user.id,
@@ -146,12 +105,12 @@ export class AuthService {
         status: user.status,
       };
     } catch (error: any) {
-      // Rollback: delete the Firebase user if DB save fails
-      await this.firebaseService
-        .deleteUser(firebaseUser.uid)
+      // Rollback: delete the Cognito user if DB save fails
+      await this.cognitoService
+        .deleteUser(cognitoUser.uid)
         .catch((rollbackError) => {
           this.logger.error(
-            `Failed to rollback Firebase user ${firebaseUser.uid}: ${rollbackError.message}`,
+            `Failed to rollback Cognito user ${cognitoUser.uid}: ${rollbackError.message}`,
           );
         });
 
@@ -162,18 +121,39 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const apiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
+    const clientId = this.configService.get<string>('COGNITO_CLIENT_ID', '');
+    const clientSecret = this.configService.get<string>(
+      'COGNITO_CLIENT_SECRET',
+      '',
+    );
+    const region = this.configService.get<string>(
+      'COGNITO_REGION',
+      'us-east-2',
+    );
 
-    // Authenticate with Firebase using the REST API (signInWithPassword)
+    // Compute SECRET_HASH for the login request
+    const message = dto.email + clientId;
+    const hmac = crypto.createHmac('sha256', clientSecret);
+    hmac.update(message);
+    const secretHash = hmac.digest('base64');
+
+    // Authenticate with Cognito using the InitiateAuth API (USER_PASSWORD_AUTH)
     const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+      `https://cognito-idp.${region}.amazonaws.com`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/x-amz-json-1.1',
+          'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth',
+        },
         body: JSON.stringify({
-          email: dto.email,
-          password: dto.password,
-          returnSecureToken: true,
+          AuthFlow: 'USER_PASSWORD_AUTH',
+          ClientId: clientId,
+          AuthParameters: {
+            USERNAME: dto.email,
+            PASSWORD: dto.password,
+            SECRET_HASH: secretHash,
+          },
         }),
       },
     );
@@ -181,8 +161,16 @@ export class AuthService {
     const data = await response.json();
 
     if (!response.ok) {
-      const message = data.error?.message || 'Invalid credentials';
+      const message = data.message || data.__type || 'Invalid credentials';
       throw new UnauthorizedException(message);
+    }
+
+    const idToken = data.AuthenticationResult?.IdToken;
+    const accessToken = data.AuthenticationResult?.AccessToken;
+    const refreshToken = data.AuthenticationResult?.RefreshToken;
+
+    if (!idToken) {
+      throw new UnauthorizedException('No token returned from Cognito');
     }
 
     // Look up the local user
@@ -217,11 +205,11 @@ export class AuthService {
       invoicePaymentMethodNote: tenant?.invoicePaymentMethodNote,
     };
 
-    // If PENDING, check Firebase for up-to-date verification status
+    // If PENDING, check Cognito for up-to-date verification status
     if (user.status === UserStatus.PENDING) {
-      const firebaseUser = await this.firebaseService.getUser(user.firebaseUid);
+      const cognitoUser = await this.cognitoService.getUser(user.cognitoSub);
 
-      if (firebaseUser && firebaseUser.emailVerified) {
+      if (cognitoUser && cognitoUser.emailVerified) {
         user.status = UserStatus.ACTIVE;
         user.lastLoginAt = new Date();
         await this.userRepository.save(user);
@@ -231,10 +219,10 @@ export class AuthService {
         );
 
         return {
-          idToken: data.idToken,
-          refreshToken: data.refreshToken,
-          expiresIn: data.expiresIn,
-          localId: data.localId,
+          idToken,
+          refreshToken: refreshToken || '',
+          expiresIn: String(data.AuthenticationResult?.ExpiresIn || 3600),
+          localId: user.cognitoSub,
           user: { ...userResponse, status: user.status },
         };
       }
@@ -251,10 +239,10 @@ export class AuthService {
     await this.userRepository.save(user);
 
     return {
-      idToken: data.idToken,
-      refreshToken: data.refreshToken,
-      expiresIn: data.expiresIn,
-      localId: data.localId,
+      idToken,
+      refreshToken: refreshToken || '',
+      expiresIn: String(data.AuthenticationResult?.ExpiresIn || 3600),
+      localId: user.cognitoSub,
       user: userResponse,
     };
   }
@@ -272,13 +260,13 @@ export class AuthService {
       return { id: user.id, email: user.email, status: user.status };
     }
 
-    const firebaseUser = await this.firebaseService.getUser(user.firebaseUid);
+    const cognitoUser = await this.cognitoService.getUser(user.cognitoSub);
 
-    if (!firebaseUser) {
-      throw new BadRequestException('Firebase user not found');
+    if (!cognitoUser) {
+      throw new BadRequestException('Cognito user not found');
     }
 
-    if (firebaseUser.emailVerified) {
+    if (cognitoUser.emailVerified) {
       user.status = UserStatus.ACTIVE;
       await this.userRepository.save(user);
       this.logger.log(`User ${user.email} verified and activated`);
