@@ -132,6 +132,7 @@ const ManageBusinessPage: React.FC = () => {
             <IonLabel position="stacked">Phone</IonLabel>
             <IonInput
               type="tel"
+              inputMode="numeric"
               value={formatPhone(phone)}
               onIonInput={(e) =>
                 setPhone(stripPhone(e.detail.value || "").slice(0, 10))

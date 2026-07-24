@@ -113,7 +113,7 @@ const AuthPage: React.FC = () => {
         }}
       >
         <div style={{ maxWidth: 400, width: "100%", margin: "auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ textAlign: "center" }}>
             <h1
               style={{
                 fontSize: 24,
@@ -122,9 +122,21 @@ const AuthPage: React.FC = () => {
                 margin: 0,
               }}
             >
-              Trade CRM
+              Sprout CRM
             </h1>
-            <p style={{ color: "#666", marginTop: 4 }}>
+            <p
+              style={{
+                color: "#666",
+                marginTop: 4,
+                fontSize: 15,
+              }}
+            >
+              Simple customer management and invoicing for growing businesses.
+            </p>
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: 48, marginBottom: 24 }}>
+            <p style={{ color: "#666", margin: 0 }}>
               {mode === "login"
                 ? "Sign in to your account"
                 : mode === "register"

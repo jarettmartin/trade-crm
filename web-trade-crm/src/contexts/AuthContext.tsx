@@ -80,8 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       isAuthenticated: true,
       isLoading: false,
     });
-    // Redirect to home on login to ensure clean app state
-    window.location.href = "/home";
+    // Hard redirect to clear old nav state, but only if user has a tenant
+    // (otherwise the create-tenant page handles the flow)
+    if (res.user.tenantId) {
+      window.location.href = "/home";
+    }
   }, []);
 
   const logout = useCallback(() => {
