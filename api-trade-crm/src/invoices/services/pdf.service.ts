@@ -93,16 +93,33 @@ export class PdfService implements OnModuleDestroy {
       city: snapshot?.serviceAddress?.city ?? '',
       stateProvince: snapshot?.serviceAddress?.stateProvince ?? '',
       zipPostalCode: snapshot?.serviceAddress?.zipPostalCode ?? '',
-      lineItems: (snapshot?.lineItems ?? []).map(
-        (item: any, index: number) => ({
-          sortOrder: item.sortOrder ?? index + 1,
+      services: (snapshot?.lineItems ?? [])
+        .filter((item: any) => item.type === 'SERVICE')
+        .map((item: any, index: number) => ({
+          sortOrder: index + 1,
           description: item.description,
-          type: item.type,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           lineTotal: item.lineTotal,
-        }),
-      ),
+        })),
+      materials: (snapshot?.lineItems ?? [])
+        .filter((item: any) => item.type === 'MATERIAL')
+        .map((item: any, index: number) => ({
+          sortOrder: index + 1,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+        })),
+      fees: (snapshot?.lineItems ?? [])
+        .filter((item: any) => item.type === 'FEE')
+        .map((item: any, index: number) => ({
+          sortOrder: index + 1,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+        })),
       subtotal: Number(invoice.subtotal),
       taxPercent: Number(invoice.taxPercent),
       taxAmount: Number(invoice.taxAmount),
