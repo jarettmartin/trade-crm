@@ -16,10 +16,14 @@ import { isValidEmail } from "../services/validation";
 
 const AuthPage: React.FC = () => {
   const { login } = useAuth();
-  const [mode, setMode] = useState<"login" | "register" | "reset">("login");
+  const [mode, setMode] = useState<
+    "login" | "register" | "reset" | "reset-confirm"
+  >("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
@@ -92,10 +96,35 @@ const AuthPage: React.FC = () => {
     setError("");
     try {
       await api.sendPasswordResetEmail(email);
-      setToast("Password reset email sent! Check your inbox.");
-      setMode("login");
+      setToast("Password reset code sent! Check your inbox.");
+      setMode("reset-confirm");
     } catch (err: any) {
       setError(err.message || "Failed to send password reset");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmReset = async () => {
+    if (!resetCode || !newPassword) {
+      setError("Code and new password are required");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await api.confirmPasswordReset(email, resetCode, newPassword);
+      setToast("Password reset successfully! You can now sign in.");
+      setMode("login");
+      setResetCode("");
+      setNewPassword("");
+      setPassword("");
+    } catch (err: any) {
+      setError(err.message || "Failed to reset password");
     } finally {
       setLoading(false);
     }
@@ -141,7 +170,9 @@ const AuthPage: React.FC = () => {
                 ? "Sign in to your account"
                 : mode === "register"
                   ? "Create a new account"
-                  : "Reset your password"}
+                  : mode === "reset"
+                    ? "Reset your password"
+                    : "Enter the code from your email"}
             </p>
           </div>
 
@@ -155,7 +186,7 @@ const AuthPage: React.FC = () => {
             />
           </IonItem>
 
-          {mode !== "reset" && (
+          {mode !== "reset" && mode !== "reset-confirm" && (
             <IonItem>
               <IonLabel position="stacked">Password</IonLabel>
               <IonInput
@@ -178,6 +209,28 @@ const AuthPage: React.FC = () => {
             </IonItem>
           )}
 
+          {mode === "reset-confirm" && (
+            <>
+              <IonItem>
+                <IonLabel position="stacked">Reset Code</IonLabel>
+                <IonInput
+                  value={resetCode}
+                  onIonInput={(e) => setResetCode(e.detail.value!)}
+                  placeholder="Enter the code from your email"
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">New Password</IonLabel>
+                <IonInput
+                  type="password"
+                  value={newPassword}
+                  onIonInput={(e) => setNewPassword(e.detail.value!)}
+                  placeholder="••••••••"
+                />
+              </IonItem>
+            </>
+          )}
+
           {error && (
             <IonText color="danger">
               <p style={{ fontSize: 13, margin: "8px 0 0" }}>{error}</p>
@@ -191,7 +244,9 @@ const AuthPage: React.FC = () => {
                 ? handleLogin
                 : mode === "register"
                   ? handleRegister
-                  : handleResetPassword
+                  : mode === "reset"
+                    ? handleResetPassword
+                    : handleConfirmReset
             }
             disabled={loading}
             style={{ marginTop: 16 }}
@@ -202,8 +257,10 @@ const AuthPage: React.FC = () => {
               "Sign In"
             ) : mode === "register" ? (
               "Register"
+            ) : mode === "reset" ? (
+              "Send Reset Code"
             ) : (
-              "Send Reset Email"
+              "Reset Password"
             )}
           </IonButton>
 
@@ -223,20 +280,22 @@ const AuthPage: React.FC = () => {
                 </IonText>
               </div>
             )}
-            {mode === "reset" && (
+            {(mode === "reset" || mode === "reset-confirm") && (
               <IonText color="primary">
                 <span
                   style={{ cursor: "pointer", fontSize: 14 }}
                   onClick={() => {
                     setMode("login");
                     setError("");
+                    setResetCode("");
+                    setNewPassword("");
                   }}
                 >
                   Back to Sign In
                 </span>
               </IonText>
             )}
-            {mode !== "reset" && (
+            {mode !== "reset" && mode !== "reset-confirm" && (
               <IonText color="primary">
                 <span
                   style={{ cursor: "pointer", fontSize: 14 }}

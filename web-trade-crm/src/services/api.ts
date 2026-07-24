@@ -491,6 +491,41 @@ class ApiService {
       );
     }
   }
+
+  async confirmPasswordReset(
+    email: string,
+    code: string,
+    newPassword: string,
+  ): Promise<void> {
+    const secretHash = computeSecretHash(
+      COGNITO_CLIENT_SECRET,
+      email + COGNITO_CLIENT_ID,
+    );
+    const res = await fetch(
+      `https://cognito-idp.${COGNITO_REGION}.amazonaws.com`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-amz-json-1.1",
+          "X-Amz-Target":
+            "AWSCognitoIdentityProviderService.ConfirmForgotPassword",
+        },
+        body: JSON.stringify({
+          ClientId: COGNITO_CLIENT_ID,
+          Username: email,
+          ConfirmationCode: code,
+          Password: newPassword,
+          SecretHash: secretHash,
+        }),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(
+        data.message || data.__type || "Failed to reset password",
+      );
+    }
+  }
 }
 
 export const api = new ApiService();
