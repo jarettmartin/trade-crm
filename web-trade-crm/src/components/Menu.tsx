@@ -64,7 +64,14 @@ const Menu: React.FC = () => {
     <IonMenu contentId="main" type="overlay">
       <IonContent>
         <IonList id="inbox-list">
-          <IonListHeader>Trade CRM</IonListHeader>
+          <div style={{ padding: "16px 16px 8px" }}>
+            <img
+              src="/logo.png"
+              alt="Sprout CRM"
+              style={{ maxWidth: "60px", height: "auto" }}
+            />
+          </div>
+          <IonListHeader>Sprout CRM</IonListHeader>
           <IonNote>{user?.email}</IonNote>
           {appPages.map((appPage, index) => {
             return (

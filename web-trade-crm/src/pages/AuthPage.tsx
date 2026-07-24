@@ -143,20 +143,18 @@ const AuthPage: React.FC = () => {
       >
         <div style={{ maxWidth: 400, width: "100%", margin: "auto" }}>
           <div style={{ textAlign: "center" }}>
-            <h1
+            <img
+              src="/logowithname.png"
+              alt="Sprout CRM"
               style={{
-                fontSize: 24,
-                fontWeight: 700,
-                color: "var(--ion-color-primary)",
-                margin: 0,
+                maxWidth: "240px",
+                height: "auto",
               }}
-            >
-              Sprout CRM
-            </h1>
+            />
             <p
               style={{
                 color: "#666",
-                marginTop: 4,
+                marginTop: 8,
                 fontSize: 15,
               }}
             >
