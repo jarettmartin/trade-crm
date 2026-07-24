@@ -16,6 +16,7 @@ import {
   IonSelectOption,
   IonItem,
   IonLabel,
+  IonToast,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { api, CustomerResult, CreateJobPayload } from "../services/api";
@@ -30,6 +31,8 @@ const CreateJobPage: React.FC = () => {
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
 
   const handleSelectCustomer = (customer: CustomerResult) => {
     setSelectedCustomer(customer);
@@ -75,6 +78,8 @@ const CreateJobPage: React.FC = () => {
     try {
       await api.createJob(payload);
       history.goBack();
+      setToastMessage("Job created successfully");
+      setShowToast(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create job");
     } finally {
@@ -233,6 +238,14 @@ const CreateJobPage: React.FC = () => {
             {saving ? <IonSpinner /> : "Save Job"}
           </IonButton>
         </div>
+
+        <IonToast
+          isOpen={showToast}
+          message={toastMessage}
+          duration={5000}
+          onDidDismiss={() => setShowToast(false)}
+          color="success"
+        />
       </IonContent>
     </IonPage>
   );

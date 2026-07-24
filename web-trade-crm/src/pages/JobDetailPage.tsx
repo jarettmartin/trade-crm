@@ -235,6 +235,7 @@ const JobDetailPage: React.FC = () => {
         total: grandTotal,
       });
       await loadJob();
+      showToastMsg("Invoice created successfully", false);
     } catch (err) {
       showToastMsg(
         err instanceof Error ? err.message : "Failed to create invoice",

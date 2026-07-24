@@ -19,6 +19,7 @@ import {
   IonText,
   IonIcon,
   IonSpinner,
+  IonToast,
 } from "@ionic/react";
 import { addOutline, removeOutline } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
@@ -63,6 +64,8 @@ const CreateCustomerPage: React.FC = () => {
   const [addresses, setAddresses] = useState<AddressForm[]>([emptyAddress()]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
 
   const addAddress = () => {
     setAddresses([...addresses, emptyAddress()]);
@@ -157,6 +160,8 @@ const CreateCustomerPage: React.FC = () => {
     try {
       await api.createCustomer(payload);
       history.goBack();
+      setToastMessage("Customer created successfully");
+      setShowToast(true);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create customer",
@@ -398,6 +403,14 @@ const CreateCustomerPage: React.FC = () => {
             {saving ? <IonSpinner /> : "Save Customer"}
           </IonButton>
         </div>
+
+        <IonToast
+          isOpen={showToast}
+          message={toastMessage}
+          duration={5000}
+          onDidDismiss={() => setShowToast(false)}
+          color="success"
+        />
       </IonContent>
     </IonPage>
   );
