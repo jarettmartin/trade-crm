@@ -1,8 +1,8 @@
-# Trade CRM — Project Context
+# Sprout CRM — Project Context
 
 ## Overview
 
-Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and an Ionic React frontend. Uses Firebase Authentication for user management and Playwright + Handlebars for PDF invoice generation.
+Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and an Ionic React frontend. Uses AWS Cognito for authentication and Playwright + Handlebars for PDF invoice generation.
 
 ---
 
@@ -24,8 +24,9 @@ Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and
 - Constructor injection for all dependencies
 - Global `ValidationPipe` with `transform: true` for automatic DTO transformation
 - Global `SwaggerModule` at `/api/docs` for API documentation
-- `TenantGuard` resolves tenant from Firebase JWT + local DB
-- `FirebaseAuthGuard` verifies Firebase ID tokens on every authenticated request
+- `TenantGuard` resolves tenant from Cognito JWT + local DB
+- `CognitoAuthGuard` verifies Cognito ID tokens on every authenticated request
+- Both guards support **transparent token refresh** — when a JWT is expired, they use the `x-refresh-token` header to get a new token from Cognito and return it via `x-new-id-token` response header
 - `CurrentUser` decorator extracts user info from the JWT
 - Business logic lives in services, never in controllers
 - Transactions via `DataSource.transaction()` where atomicity is required (e.g., customer + address creation)
@@ -35,13 +36,24 @@ Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and
 - Invoice numbers start at `88880001` and increment globally per tenant
 - Invoice versioning increments per job (each new invoice for a job increments the version)
 
+### Authentication (AWS Cognito)
+
+- All Cognito API calls are handled server-side by the Node.js backend using `@aws-sdk/client-cognito-identity-provider`
+- The client never communicates with Cognito directly — no `SECRET_HASH` computation in the browser
+- Every authenticated request sends both `Authorization: Bearer <idToken>` and `x-refresh-token` headers
+- Token refresh is transparent: guards detect expired tokens, refresh via Cognito, and return the new token in the response
+- Registration uses Cognito `SignUp` API which sends a verification link email
+- Login uses Cognito `InitiateAuth` with `USER_PASSWORD_AUTH`
+- Password reset uses Cognito `ForgotPassword` + `ConfirmForgotPassword` APIs
+- IAM credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`) are used for admin operations (user lookup, deletion)
+
 ### Frontend (Ionic React)
 
 - SPA with `IonReactRouter` + `IonSplitPane` layout (sidemenu + content area)
 - `AuthProvider` context wraps the entire app — provides `user`, `login`, `logout`, `updateUser`
 - `api.ts` singleton class handles all HTTP requests:
   - In-memory token cache + localStorage fallback
-  - Auto-refresh on 401 via Firebase `securetoken.googleapis.com`
+  - Auto-refresh on 401 via backend `POST /auth/refresh`
   - Generic `request<T>()` method for type-safe API calls
 - Pages use Ionic lifecycle hooks:
   - `useIonViewWillEnter` for data fetching on page entry (Home job list)
@@ -75,50 +87,42 @@ Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and
 src/
 ├── main.ts                          # Bootstrap, CORS, ValidationPipe, Swagger
 ├── app.module.ts                    # Root module
-├── auth/                            # Firebase auth, registration, login
-│   ├── auth.module.ts
-│   ├── controllers/auth.controller.ts
-│   ├── dto/ (register.dto.ts, login.dto.ts)
-│   ├── entities/invite-code.entity.ts
-│   ├── repositories/
-│   └── services/ (auth.service.ts, firebase.service.ts)
+├── auth/                            # Cognito auth, registration, login, token refresh, password reset
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   └── services/
 ├── common/                          # Shared guards, decorators, DTOs, entities, enums
-│   ├── common.module.ts
-│   ├── guards/ (firebase-auth.guard.ts, tenant.guard.ts)
-│   ├── decorators/current-user.decorator.ts
-│   ├── dto/pagination.dto.ts
-│   ├── entities/ (base.entity.ts, tenant-scoped.entity.ts)
-│   └── enums/ (customer-type, invoice-status, job-status, job-line-item-type, user-role, user-status)
+│   ├── guards/                      # CognitoAuthGuard, TenantGuard
+│   ├── decorators/
+│   ├── dto/
+│   ├── entities/                    # BaseEntity, TenantScopedEntity
+│   └── enums/
 ├── config/                          # TypeORM data-source + config
-│   ├── data-source.ts
-│   └── typeorm.config.ts
 ├── customers/                       # Customer CRUD with nested addresses
-│   ├── customer.module.ts
-│   ├── controllers/customer.controller.ts
-│   ├── dto/ (create-customer.dto.ts, update-customer.dto.ts, create-address.dto.ts, search-customer.dto.ts)
-│   ├── entities/ (customer.entity.ts, customer-address.entity.ts)
-│   └── services/customer.service.ts
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   └── services/
 ├── invoices/                        # Invoice creation, PDF generation
-│   ├── invoice.module.ts
-│   ├── controllers/invoice.controller.ts
-│   ├── dto/create-invoice.dto.ts
-│   ├── entities/invoice.entity.ts
-│   └── services/ (invoice.service.ts, pdf.service.ts)
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   ├── services/
+│   └── templates/                   # Handlebars invoice template
 ├── jobs/                            # Job CRUD with nested notes + line items
-│   ├── job.module.ts
-│   ├── controllers/job.controller.ts
-│   ├── dto/ (create-job.dto.ts, update-job.dto.ts, query-jobs.dto.ts, create-job-note.dto.ts, create-job-line-item.dto.ts)
-│   ├── entities/ (job.entity.ts, job-note.entity.ts, job-line-item.entity.ts)
-│   └── services/job.service.ts
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   └── services/
 ├── migrations/                      # TypeORM migrations
 ├── tenants/                         # Tenant (business) CRUD
-│   ├── tenant.module.ts
-│   ├── controllers/tenant.controller.ts
-│   ├── dto/ (create-tenant.dto.ts, update-tenant.dto.ts)
-│   ├── entities/tenant.entity.ts
-│   └── services/tenant.service.ts
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   └── services/
 └── users/                           # User entity
-    └── entities/user.entity.ts
+    └── entities/
 ```
 
 ### Frontend (`web-trade-crm/src/`)
@@ -127,29 +131,11 @@ src/
 src/
 ├── App.tsx                          # Root app with routing + auth gating
 ├── main.tsx                         # Entry point
-├── components/                      # Reusable components
-│   ├── CustomerSearch.tsx           # Debounced customer search + create button
-│   ├── Menu.tsx                     # Sidemenu with nav items + logout
-│   └── Menu.css
-├── contexts/
-│   └── AuthContext.tsx              # Auth state provider (user, login, logout, updateUser)
-├── pages/                           # Route-level pages
-│   ├── AuthPage.tsx                 # Login / Register / Forgot Password
-│   ├── Home.tsx                     # Job dashboard (recent jobs, status filter, load more)
-│   ├── CreateTenantPage.tsx         # Initial tenant (business) setup
-│   ├── ManageBusinessPage.tsx       # Edit tenant details
-│   ├── CreateJobPage.tsx            # Create job (search customer → add items → save)
-│   ├── JobDetailPage.tsx            # Full job view: summary, notes, line items, costing, invoices
-│   ├── ManageCustomersPage.tsx      # Search + edit customer details + addresses
-│   ├── CreateCustomerPage.tsx       # Create new customer with addresses
-│   └── InvoicePreviewPage.tsx       # Full-page PDF viewer via iframe
-├── services/                        # API and utility services
-│   ├── api.ts                       # HTTP client (token mgmt, auth, all endpoints)
-│   ├── pdfCache.ts                  # In-memory PDF blob cache + download helper
-│   ├── format.ts                    # Invoice number formatting (8-digit padded with optional space)
-│   └── validation.ts                # Client-side validation helpers (email, phone)
-└── theme/
-    └── variables.css                # Ionic theme overrides
+├── components/                      # Reusable components (CustomerSearch, Menu)
+├── contexts/                        # AuthContext (user, login, logout, updateUser)
+├── pages/                           # Route-level pages (Auth, Home, Create/Manage pages)
+├── services/                        # API client, PDF cache, formatting, validation
+└── theme/                           # Ionic theme overrides
 ```
 
 ---
@@ -167,7 +153,7 @@ src/
 
 ### User
 
-- `email`, `firstName`, `lastName`, `firebaseUid`, `status`, `role`, `tenantId?`
+- `email`, `firstName`, `lastName`, `cognitoSub`, `status`, `role`, `tenantId?`
 
 ### Customer + CustomerAddress
 
@@ -183,40 +169,6 @@ src/
 ### Invoice
 
 - `jobId`, `invoiceNumber` (8-digit, starts at 88880001), `version` (per job), `status` (DRAFT/ISSUED/PAID/VOID/SUPERSEDED), `subtotal`, `taxPercent`, `taxAmount`, `total`, `issuedAt`, `paidAt`, `snapshot` (JSONB — frozen copy of job data at time of invoice)
-
----
-
-## API Endpoints
-
-### Auth
-
-- `POST /auth/login` — Firebase sign-in + local user lookup
-- `POST /auth/register` — Create user with invite code
-
-### Customers
-
-- `POST /customers` — Create customer + addresses (transaction)
-- `GET /customers/search?q=` — Fuzzy search across customer + address fields
-- `GET /customers/:id` — Get customer with addresses + jobs
-- `PATCH /customers/:id` — Update customer + replace addresses
-
-### Jobs
-
-- `POST /jobs` — Create job
-- `GET /jobs` — Paginated list with optional status filter
-- `GET /jobs/:id` — Get job with customer, address, notes (with user), line items, invoices
-- `PATCH /jobs/:id` — Update job fields + replace notes + replace line items
-
-### Invoices
-
-- `POST /jobs/:jobId/invoices` — Create invoice (snapshots job data, supersedes DRAFTs)
-- `PATCH /invoices/:invoiceId` — Update invoice status (PAID sets paidAt timestamp)
-- `GET /invoices/:invoiceId/pdf` — Generate and download PDF via Playwright + Handlebars
-
-### Tenants
-
-- `POST /tenants` — Create tenant
-- `PATCH /tenants/:id` — Update tenant (business details)
 
 ---
 
@@ -244,6 +196,7 @@ src/
 - `useIonViewWillEnter` for Ionic lifecycle-safe data loading
 - Error toasts are dismiss-only (never auto-hide)
 - Invoice numbers formatted as `8888 0001` via shared `formatInvoiceNumber()` utility
+- Phone inputs use `inputMode="numeric"` + `stripPhone()` + immediate `e.target.value` override
 
 ### PDF Generation
 
