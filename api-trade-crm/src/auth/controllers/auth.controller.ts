@@ -27,7 +27,7 @@ export class AuthController {
 
   @Post('refresh')
   async refresh(@Body() dto: RefreshDto) {
-    return this.authService.refreshToken(dto.refreshToken);
+    return this.authService.refreshToken(dto.refreshToken, dto.username || '');
   }
 
   @Post('forgot-password')

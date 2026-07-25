@@ -71,8 +71,15 @@ export class CognitoAuthGuard implements CanActivate {
         );
       }
 
+      // Decode the expired ID token to get the sub (Cognito username) for SECRET_HASH
+      const expiredDecoded = jwt.decode(token) as { sub?: string } | null;
+      const cognitoSub = expiredDecoded?.sub || '';
+
       try {
-        const result = await this.authService.refreshToken(refreshToken);
+        const result = await this.authService.refreshToken(
+          refreshToken,
+          cognitoSub,
+        );
         // Return the new token to the client via response header
         response.setHeader('x-new-id-token', result.idToken);
         // Verify the new token

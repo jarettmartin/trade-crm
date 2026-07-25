@@ -73,8 +73,15 @@ export class TenantGuard implements CanActivate {
         );
       }
 
+      // Decode the expired ID token to get the sub (Cognito username) for SECRET_HASH
+      const expiredDecoded = jwt.decode(token) as { sub?: string } | null;
+      const cognitoSub = expiredDecoded?.sub || '';
+
       try {
-        const result = await this.authService.refreshToken(refreshToken);
+        const result = await this.authService.refreshToken(
+          refreshToken,
+          cognitoSub,
+        );
         response.setHeader('x-new-id-token', result.idToken);
         decodedToken = await this.verifyToken(result.idToken);
         this.logger.log('Token refreshed successfully via TenantGuard');

@@ -234,7 +234,10 @@ export class AuthService {
     };
   }
 
-  async refreshToken(refreshToken: string): Promise<{
+  async refreshToken(
+    refreshToken: string,
+    username: string,
+  ): Promise<{
     idToken: string;
   }> {
     const clientId = this.configService.get<string>('COGNITO_CLIENT_ID', '');
@@ -247,8 +250,7 @@ export class AuthService {
       'us-east-2',
     );
 
-    // For REFRESH_TOKEN_AUTH, SECRET_HASH uses the client ID
-    const secretHash = this.computeSecretHash(clientSecret, clientId, clientId);
+    const secretHash = this.computeSecretHash(clientSecret, username, clientId);
 
     const response = await fetch(
       `https://cognito-idp.${region}.amazonaws.com`,
