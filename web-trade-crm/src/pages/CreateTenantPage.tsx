@@ -107,9 +107,14 @@ const CreateTenantPage: React.FC = () => {
               type="tel"
               inputMode="numeric"
               value={formatPhone(phone)}
-              onIonInput={(e) =>
-                setPhone(stripPhone(e.detail.value || "").slice(0, 10))
-              }
+              onIonInput={(e) => {
+                const digits = stripPhone(e.detail.value || "").slice(0, 10);
+                setPhone(digits);
+                // Force the cleaned value back into the input immediately
+                if (e.target) {
+                  (e.target as HTMLIonInputElement).value = formatPhone(digits);
+                }
+              }}
               placeholder="(555) 555-0100"
             />
           </IonItem>

@@ -278,9 +278,14 @@ const ManageCustomersPage: React.FC = () => {
                 type="tel"
                 inputMode="numeric"
                 value={formatPhone(phone)}
-                onIonInput={(e) =>
-                  setPhone(stripPhone(e.detail.value || "").slice(0, 10))
-                }
+                onIonInput={(e) => {
+                  const digits = stripPhone(e.detail.value || "").slice(0, 10);
+                  setPhone(digits);
+                  if (e.target) {
+                    (e.target as HTMLIonInputElement).value =
+                      formatPhone(digits);
+                  }
+                }}
               />
             </IonItem>
 
