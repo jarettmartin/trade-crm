@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { api, LoginResponse } from "../services/api";
 
@@ -35,6 +36,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     isLoading: true,
   });
 
+  // Keep a stable reference to logout so the effect doesn't re-run
+  const logoutRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     const userJson = localStorage.getItem(USER_KEY);
@@ -60,6 +64,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setState((s) => ({ ...s, isLoading: false }));
     }
+  }, []);
+
+  // Register the global unauthorized handler once
+  useEffect(() => {
+    api.onUnauthorized(() => logoutRef.current());
   }, []);
 
   const updateUser = useCallback((partial: Partial<LoginResponse["user"]>) => {
@@ -98,6 +107,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       isLoading: false,
     });
   }, []);
+
+  // Keep the ref in sync so the api callback always calls the latest logout
+  logoutRef.current = logout;
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>

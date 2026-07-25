@@ -200,6 +200,11 @@ class ApiService {
   private baseUrl = API_BASE;
   private idToken: string | null = null;
   private refreshToken: string | null = null;
+  private onUnauthorizedCallback: (() => void) | null = null;
+
+  onUnauthorized(callback: () => void) {
+    this.onUnauthorizedCallback = callback;
+  }
 
   setTokens(idToken: string, refreshToken: string) {
     this.idToken = idToken;
@@ -248,6 +253,11 @@ class ApiService {
     const data = await res.json();
 
     if (!res.ok) {
+      // If the server returned 401, the token is fully expired — log out
+      if (res.status === 401) {
+        this.clearTokens();
+        this.onUnauthorizedCallback?.();
+      }
       const message = data.message || data.error?.message || "Request failed";
       throw new Error(Array.isArray(message) ? message[0] : message);
     }
