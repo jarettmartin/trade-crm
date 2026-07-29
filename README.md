@@ -1,6 +1,6 @@
 # Sprout CRM
 
-Multi-tenant trade business CRM — a full-stack application for managing customers, jobs, invoicing, and PDF generation.
+Multi-tenant service-business CRM MVP — a full-stack application for managing customers, jobs, invoicing, and PDF generation.
 
 ## Architecture
 
@@ -62,29 +62,41 @@ npm run dev                  # http://localhost:8100
 
 ## Deployment
 
-The app is deployed on AWS:
+The app is deployed on AWS, accessible via custom domain through CloudFront + Cloudflare:
 
-- **API**: ECS Fargate behind an Application Load Balancer
-- **Frontend**: Static files hosted on S3 with public read policy
+### Live URLs
+
+| Service          | URL                                 |
+| ---------------- | ----------------------------------- |
+| **Frontend**     | **https://sprout-crm.com**          |
+| **API**          | **https://api.sprout-crm.com**      |
+| **Swagger Docs** | https://api.sprout-crm.com/api/docs |
+
+### Infrastructure
+
+- **API**: ECS Fargate behind an ALB, fronted by CloudFront
+- **Frontend**: Static files on S3, fronted by CloudFront
+- **CDN/DNS**: CloudFront + Cloudflare (proxied)
 - **Database**: RDS PostgreSQL 15
 - **Auth**: AWS Cognito User Pool
+- **SSL**: AWS Certificate Manager (us-east-1)
 
 ### Deploy API
 
 ```bash
 cd api-trade-crm
 docker build -t sprout-crm-api .
-docker tag sprout-crm-api:latest <ecr-repo-uri>:latest
-docker push <ecr-repo-uri>:latest
-# Then force new ECS deployment
+docker tag sprout-crm-api:latest 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
+docker push 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
+aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --force-new-deployment
 ```
 
 ### Deploy Frontend
 
 ```bash
 cd web-trade-crm
-VITE_API_BASE=<api-endpoint> npm run build
-aws s3 sync dist/ s3://<bucket-name>/ --delete
+VITE_API_BASE=https://api.sprout-crm.com npm run build
+aws s3 sync dist/ s3://sprout-crm-web/ --delete
 ```
 
 ## Environment Variables

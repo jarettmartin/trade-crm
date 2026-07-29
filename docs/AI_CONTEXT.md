@@ -10,16 +10,24 @@ Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and
 
 The application is deployed on AWS using the following services:
 
+### Live URLs
+
+| Service          | URL                                 |
+| ---------------- | ----------------------------------- |
+| **Frontend**     | **https://sprout-crm.com**          |
+| **API**          | **https://api.sprout-crm.com**      |
+| **Swagger Docs** | https://api.sprout-crm.com/api/docs |
+
 ### Architecture Diagram
 
 ```
-Browser
+Browser → Cloudflare (proxied)
   │
-  ├── http://sprout-crm-web.s3-website.us-east-2.amazonaws.com
-  │     └── S3 Bucket (static frontend files)
+  ├── https://sprout-crm.com
+  │     └── CloudFront → S3 Bucket (static frontend files)
   │
-  └── http://sprout-crm-alb-1744534197.us-east-2.elb.amazonaws.com
-        └── ALB (port 80)
+  └── https://api.sprout-crm.com
+        └── CloudFront → ALB (port 80)
               └── ECS Fargate (1 vCPU, 2GB)
                     └── NestJS API (port 3000)
                           └── RDS PostgreSQL 15
@@ -76,8 +84,15 @@ aws ecs run-task --cluster sprout-crm-cluster --task-definition sprout-crm-api-t
 ### IAM User
 
 - **Username**: `sprout-crm-api`
-- **Policies**: `AmazonEC2ContainerRegistryFullAccess`, `AmazonECS_FullAccess`, `AmazonS3FullAccess`, `AmazonRDSReadOnlyAccess`
+- **Policies**: `AmazonEC2ContainerRegistryFullAccess`, `AmazonECS_FullAccess`, `AmazonS3FullAccess`, `AmazonRDSReadOnlyAccess`, `CloudFrontFullAccess`
 - **Note**: Cannot create IAM roles or modify RDS — those operations require the AWS console
+
+### Security Notes
+
+- **Never commit AWS config files to the repository.** Task definition JSON files, ECS service configs, and any other files containing AWS credentials, Cognito secrets, or database passwords must be created in `/tmp/` and deleted after use.
+- The `.env` file is gitignored — never commit it.
+- The `.env.sample` file contains placeholder values only — never put real credentials in it.
+- IAM user `sprout-crm-api` has limited permissions and cannot create IAM roles or modify RDS — those operations require the AWS console with admin credentials.
 
 ---
 

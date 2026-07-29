@@ -97,16 +97,18 @@ src/
 
 ## Deployment
 
+The frontend is live at **https://sprout-crm.com** (via CloudFront + Cloudflare).
+
 ### Build for Production
 
 ```bash
-VITE_API_BASE=<api-endpoint> npm run build
+VITE_API_BASE=https://api.sprout-crm.com npm run build
 ```
 
 ### Deploy to S3
 
 ```bash
-aws s3 sync dist/ s3://<bucket-name>/ --delete
+aws s3 sync dist/ s3://sprout-crm-web/ --delete
 ```
 
 ### Docker Build (for containerized deployment)

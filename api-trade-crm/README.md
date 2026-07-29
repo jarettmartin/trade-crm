@@ -101,20 +101,30 @@ src/
 
 ## Deployment
 
+The API is deployed on AWS ECS Fargate, accessible at **https://api.sprout-crm.com** (via CloudFront + Cloudflare).
+
+### Live Endpoints
+
+| Endpoint         | URL                                 |
+| ---------------- | ----------------------------------- |
+| **API**          | https://api.sprout-crm.com          |
+| **Swagger Docs** | https://api.sprout-crm.com/api/docs |
+
 ### Docker Build
 
 ```bash
 docker build -t sprout-crm-api .
-docker tag sprout-crm-api:latest <ecr-repo-uri>:latest
-docker push <ecr-repo-uri>:latest
+docker tag sprout-crm-api:latest 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
+docker push 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
+aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --force-new-deployment
 ```
 
 ### Run Migrations on RDS
 
 ```bash
-aws ecs run-task --cluster sprout-crm-cluster --task-definition sprout-crm-api-task:2 \
+aws ecs run-task --cluster sprout-crm-cluster --task-definition sprout-crm-api-task:3 \
   --launch-type FARGATE \
-  --network-configuration "awsvpcConfiguration={subnets=[...],securityGroups=[...],assignPublicIp=ENABLED}" \
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-0d9cbc7f0b871e0b6,subnet-0a559858ee3635bfa,subnet-05a0a6b7458b7cdb1],securityGroups=[sg-0af0645c8bd61a9b0],assignPublicIp=ENABLED}" \
   --override '{"containerOverrides":[{"name":"sprout-crm-api","command":["node","node_modules/typeorm/cli.js","migration:run","-d","dist/config/data-source.js"]}]}'
 ```
 
