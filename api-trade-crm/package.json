@@ -22,7 +22,9 @@
     "migration:create": "typeorm migration:create",
     "migration:generate": "tsx ./node_modules/typeorm/cli.js migration:generate -d src/config/data-source.ts",
     "migration:run": "tsx ./node_modules/typeorm/cli.js migration:run -d src/config/data-source.ts",
-    "migration:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d src/config/data-source.ts"
+    "migration:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d src/config/data-source.ts",
+    "db:seed": "tsx src/config/seed.ts",
+    "db:reset": "tsx src/config/reset-database.ts && npm run migration:run && npm run db:seed"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1094.0",

@@ -22,11 +22,13 @@ NestJS backend for the Sprout CRM multi-tenant trade business application.
 ```bash
 cp .env.sample .env
 npm install
-npm run migration:run
+npm run db:reset
 npm run start:dev
 ```
 
 The API will be available at `http://localhost:3000` with Swagger docs at `/api/docs`.
+
+> **Note:** `npm run db:reset` drops the database, recreates it, runs all migrations, and seeds an invite code (`INV` with 1000 max uses) for registration. On a fresh install this is all you need. If you only need to seed data without resetting, use `npm run db:seed` instead.
 
 ### Environment Variables
 
@@ -47,16 +49,18 @@ See `.env.sample` for all required variables. Key ones:
 
 ## Available Scripts
 
-| Command                      | Description              |
-| ---------------------------- | ------------------------ |
-| `npm run start:dev`          | Start in watch mode      |
-| `npm run build`              | Compile TypeScript       |
-| `npm run start:prod`         | Run compiled app         |
-| `npm test`                   | Run unit tests           |
-| `npm run test:e2e`           | Run E2E tests            |
-| `npm run migration:run`      | Run pending migrations   |
-| `npm run migration:generate` | Generate a new migration |
-| `npm run migration:revert`   | Revert last migration    |
+| Command                      | Description                            |
+| ---------------------------- | -------------------------------------- |
+| `npm run start:dev`          | Start in watch mode                    |
+| `npm run build`              | Compile TypeScript                     |
+| `npm run start:prod`         | Run compiled app                       |
+| `npm test`                   | Run unit tests                         |
+| `npm run test:e2e`           | Run E2E tests                          |
+| `npm run migration:run`      | Run pending migrations                 |
+| `npm run migration:generate` | Generate a new migration               |
+| `npm run migration:revert`   | Revert last migration                  |
+| `npm run db:seed`            | Seed invite code `INV` (1000 max uses) |
+| `npm run db:reset`           | Drop DB → recreate → migrate → seed    |
 
 ## Project Structure
 
