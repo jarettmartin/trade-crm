@@ -66,11 +66,11 @@ The app is deployed on AWS, accessible via custom domain through CloudFront + Cl
 
 ### Live URLs
 
-| Service          | URL                                 |
-| ---------------- | ----------------------------------- |
-| **Frontend**     | **https://sprout-crm.com**          |
-| **API**          | **https://api.sprout-crm.com**      |
-| **Swagger Docs** | https://api.sprout-crm.com/api/docs |
+| Service          | URL                                     |
+| ---------------- | --------------------------------------- |
+| **Frontend**     | **https://sprout-crm.com**              |
+| **API**          | **https://api.sprout-crm.com**          |
+| **Swagger Docs** | **https://api.sprout-crm.com/api/docs** |
 
 ### Infrastructure
 
