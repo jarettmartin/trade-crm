@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
 const ID_TOKEN_KEY = "trade_crm_id_token";
 const REFRESH_TOKEN_KEY = "trade_crm_refresh_token";

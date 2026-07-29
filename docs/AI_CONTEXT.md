@@ -6,6 +6,81 @@ Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and
 
 ---
 
+## AWS Infrastructure (Production)
+
+The application is deployed on AWS using the following services:
+
+### Architecture Diagram
+
+```
+Browser
+  │
+  ├── http://sprout-crm-web.s3-website.us-east-2.amazonaws.com
+  │     └── S3 Bucket (static frontend files)
+  │
+  └── http://sprout-crm-alb-1744534197.us-east-2.elb.amazonaws.com
+        └── ALB (port 80)
+              └── ECS Fargate (1 vCPU, 2GB)
+                    └── NestJS API (port 3000)
+                          └── RDS PostgreSQL 15
+```
+
+### Services
+
+| Service             | Name                     | Details                                           |
+| ------------------- | ------------------------ | ------------------------------------------------- |
+| **RDS**             | `sprout-crm-qa`          | PostgreSQL 15, `db.t3.micro`, publicly accessible |
+| **ECR**             | `sprout-crm-api`         | Private Docker image repository                   |
+| **ECS Cluster**     | `sprout-crm-cluster`     | Fargate (serverless), us-east-2                   |
+| **Task Definition** | `sprout-crm-api-task:2`  | 1 vCPU, 2GB memory, 16 env vars                   |
+| **Service**         | `sprout-crm-api-service` | 1 desired task, auto-recovery                     |
+| **ALB**             | `sprout-crm-alb`         | Internet-facing, port 80 → port 3000              |
+| **S3**              | `sprout-crm-web`         | Static website hosting, public read policy        |
+
+### Security Groups
+
+| Group                               | Rules                                     |
+| ----------------------------------- | ----------------------------------------- |
+| **RDS SG** (`sg-0388a48bfa98ba692`) | Port 5432 from ECS SG + developer IP      |
+| **ECS SG** (`sg-0af0645c8bd61a9b0`) | Port 3000 from ALB, Port 80 from internet |
+
+### Deployment Commands
+
+#### API
+
+```bash
+cd api-trade-crm
+docker build -t sprout-crm-api .
+docker tag sprout-crm-api:latest 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
+docker push 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
+aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --force-new-deployment
+```
+
+#### Frontend
+
+```bash
+cd web-trade-crm
+VITE_API_BASE=http://sprout-crm-alb-1744534197.us-east-2.elb.amazonaws.com npm run build
+aws s3 sync dist/ s3://sprout-crm-web/ --delete
+```
+
+#### Database Migrations
+
+```bash
+aws ecs run-task --cluster sprout-crm-cluster --task-definition sprout-crm-api-task:2 \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-0d9cbc7f0b871e0b6,subnet-0a559858ee3635bfa,subnet-05a0a6b7458b7cdb1],securityGroups=[sg-0af0645c8bd61a9b0],assignPublicIp=ENABLED}" \
+  --override '{"containerOverrides":[{"name":"sprout-crm-api","command":["node","node_modules/typeorm/cli.js","migration:run","-d","dist/config/data-source.js"]}]}'
+```
+
+### IAM User
+
+- **Username**: `sprout-crm-api`
+- **Policies**: `AmazonEC2ContainerRegistryFullAccess`, `AmazonECS_FullAccess`, `AmazonS3FullAccess`, `AmazonRDSReadOnlyAccess`
+- **Note**: Cannot create IAM roles or modify RDS — those operations require the AWS console
+
+---
+
 ## Architecture Principles
 
 ### Multi-Tenancy
