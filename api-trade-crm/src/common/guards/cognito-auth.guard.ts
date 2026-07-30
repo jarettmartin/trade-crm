@@ -20,6 +20,7 @@ export interface AuthenticatedUser {
 export class CognitoAuthGuard implements CanActivate {
   private readonly logger = new Logger(CognitoAuthGuard.name);
   private readonly client: JwksClient;
+  private readonly issuer: string;
 
   constructor(
     private readonly configService: ConfigService,
@@ -34,6 +35,7 @@ export class CognitoAuthGuard implements CanActivate {
       '',
     );
     const jwksUri = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
+    this.issuer = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`;
     this.client = new JwksClient({ jwksUri });
   }
 
@@ -113,7 +115,7 @@ export class CognitoAuthGuard implements CanActivate {
         signingKey,
         {
           algorithms: ['RS256'],
-          issuer: `https://cognito-idp.us-east-2.amazonaws.com/us-east-2_vpllPmEOD`,
+          issuer: this.issuer,
         },
         (err, decoded) => {
           if (err) reject(err);
