@@ -373,9 +373,12 @@ class ApiService {
 
   async downloadInvoicePdf(invoiceId: string): Promise<Blob> {
     const token = this.idToken || localStorage.getItem(ID_TOKEN_KEY);
+    const rt =
+      this.refreshToken || localStorage.getItem(REFRESH_TOKEN_KEY) || "";
     const res = await fetch(`${this.baseUrl}/invoices/${invoiceId}/pdf`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        "x-refresh-token": rt,
       },
     });
     if (!res.ok) {

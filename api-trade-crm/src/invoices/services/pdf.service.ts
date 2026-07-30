@@ -38,7 +38,10 @@ export class PdfService implements OnModuleDestroy {
 
   private async getBrowser() {
     if (!this.browser) {
-      this.browser = await chromium.launch();
+      this.browser = await chromium.launch({
+        executablePath: '/usr/bin/chromium-browser',
+        args: ['--no-sandbox'],
+      });
     }
     return this.browser;
   }
