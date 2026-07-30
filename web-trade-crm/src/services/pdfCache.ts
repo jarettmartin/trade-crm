@@ -5,6 +5,14 @@ import { formatInvoiceNumber } from "./format";
 const pdfCache = new Map<string, Blob>();
 
 /**
+ * Clear the cached PDF blob for a given invoice ID.
+ * Call this when the invoice data changes (e.g. status) to force a re-fetch.
+ */
+export function clearPdfCache(invoiceId: string): void {
+  pdfCache.delete(invoiceId);
+}
+
+/**
  * Get a PDF blob for the given invoice ID.
  * Downloads from the API if not already cached.
  */

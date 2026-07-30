@@ -31,7 +31,7 @@ import { useParams, useHistory } from "react-router-dom";
 import { api, JobDetailResult } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { formatInvoiceNumber } from "../services/format";
-import { downloadPdf } from "../services/pdfCache";
+import { downloadPdf, clearPdfCache } from "../services/pdfCache";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Draft",
@@ -265,6 +265,8 @@ const JobDetailPage: React.FC = () => {
     });
     try {
       await api.updateInvoiceStatus(invoiceId, newStatus);
+      // Clear the PDF cache so the next preview/download reflects the new status
+      clearPdfCache(invoiceId);
     } catch (err) {
       // Revert on failure
       setJob((prev) => {
@@ -741,7 +743,9 @@ const JobDetailPage: React.FC = () => {
                       ? "warning"
                       : inv.status === "PAID"
                         ? "success"
-                        : "primary"
+                        : inv.status === "VOID"
+                          ? "danger"
+                          : "primary"
                 }
                 onClick={() => setStatusSheetInvoice(inv.id)}
               >
