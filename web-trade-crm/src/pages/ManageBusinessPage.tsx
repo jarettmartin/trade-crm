@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   IonContent,
   IonPage,
@@ -22,6 +22,10 @@ import { api } from "../services/api";
 import { formatPhone, stripPhone } from "../services/format";
 
 const ManageBusinessPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Manage Business";
+  }, []);
+
   const { user, updateUser } = useAuth();
 
   const makeSnapshot = useCallback(

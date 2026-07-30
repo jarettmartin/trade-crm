@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   IonContent,
   IonHeader,
@@ -15,6 +15,10 @@ import { useParams } from "react-router-dom";
 import { getPdfBlob } from "../services/pdfCache";
 
 const InvoicePreviewPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Invoice Preview";
+  }, []);
+
   const { id } = useParams<{ id: string }>();
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState("");

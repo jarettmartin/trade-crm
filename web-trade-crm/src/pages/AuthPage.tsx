@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IonContent,
   IonPage,
@@ -15,6 +15,9 @@ import { api } from "../services/api";
 import { isValidEmail } from "../services/validation";
 
 const AuthPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Sign In";
+  }, []);
   const { login } = useAuth();
   const [mode, setMode] = useState<
     "login" | "register" | "reset" | "reset-confirm"

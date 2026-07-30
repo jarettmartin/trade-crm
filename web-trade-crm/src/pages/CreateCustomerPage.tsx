@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IonContent,
   IonHeader,
@@ -53,6 +53,10 @@ const emptyAddress = (): AddressForm => ({
 });
 
 const CreateCustomerPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Create Customer";
+  }, []);
+
   const history = useHistory();
   const [type, setType] = useState<string>("PERSON");
   const [firstName, setFirstName] = useState("");

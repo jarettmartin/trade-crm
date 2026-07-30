@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IonButton,
   IonCard,
@@ -44,6 +44,10 @@ const statusColor: Record<string, string> = {
 };
 
 const Home: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Home";
+  }, []);
+
   const history = useHistory();
   const [jobs, setJobs] = useState<JobResult[]>([]);
   const [page, setPage] = useState(1);

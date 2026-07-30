@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IonContent,
   IonHeader,
@@ -23,6 +23,10 @@ import { api, CustomerResult, CreateJobPayload } from "../services/api";
 import CustomerSearch from "../components/CustomerSearch";
 
 const CreateJobPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Create Job";
+  }, []);
+
   const history = useHistory();
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerResult | null>(null);

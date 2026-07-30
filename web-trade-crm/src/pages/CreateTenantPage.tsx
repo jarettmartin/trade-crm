@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IonContent,
   IonPage,
@@ -16,6 +16,10 @@ import { api } from "../services/api";
 import { formatPhone, stripPhone } from "../services/format";
 
 const CreateTenantPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Create Business";
+  }, []);
+
   const { updateUser, logout } = useAuth();
   const [businessName, setBusinessName] = useState("");
   const [businessEmail, setBusinessEmail] = useState("");

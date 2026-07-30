@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   IonApp,
   IonRouterOutlet,
@@ -45,6 +46,10 @@ import "./theme/variables.css";
 setupIonicReact();
 
 const AppContent: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM";
+  }, []);
+
   const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {

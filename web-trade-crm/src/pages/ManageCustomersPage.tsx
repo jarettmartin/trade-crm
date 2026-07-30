@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   IonContent,
   IonHeader,
@@ -53,6 +53,10 @@ const emptyAddress = (): AddressForm => ({
 });
 
 const ManageCustomersPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Manage Customers";
+  }, []);
+
   const [customer, setCustomer] = useState<CustomerResult | null>(null);
   const [type, setType] = useState<string>("PERSON");
   const [firstName, setFirstName] = useState("");

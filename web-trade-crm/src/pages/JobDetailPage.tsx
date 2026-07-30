@@ -44,6 +44,10 @@ const statusLabel: Record<string, string> = {
 type LineItemType = "SERVICE" | "MATERIAL" | "FEE";
 
 const JobDetailPage: React.FC = () => {
+  useEffect(() => {
+    document.title = "Sprout CRM - Job Details";
+  }, []);
+
   const { id } = useParams<{ id: string }>();
   const history = useHistory();
   const { user } = useAuth();
