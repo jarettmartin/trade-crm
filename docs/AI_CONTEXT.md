@@ -68,8 +68,9 @@ aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-ser
 
 ```bash
 cd web-trade-crm
-VITE_API_BASE=http://sprout-crm-alb-1744534197.us-east-2.elb.amazonaws.com npm run build
+npm run build                            # Uses VITE_API_BASE from .env.production
 aws s3 sync dist/ s3://sprout-crm-web/ --delete
+aws cloudfront create-invalidation --distribution-id E3BYN5AYDQO0IE --paths "/*"
 ```
 
 #### Database Migrations
@@ -90,6 +91,7 @@ aws ecs run-task --cluster sprout-crm-cluster --task-definition sprout-crm-api-t
 ### Security Notes
 
 - **Never commit AWS config files to the repository.** Task definition JSON files, ECS service configs, and any other files containing AWS credentials, Cognito secrets, or database passwords must be created in `/tmp/` and deleted after use.
+- **ECS task definition revisions**: When pushing a new Docker image to ECR with the `:latest` tag, you must register a new task definition revision to force ECS to re-resolve the image digest. `--force-new-deployment` alone re-deploys the same revision and uses the cached image. The deployment command is: `aws ecs register-task-definition --family sprout-crm-api-task --cli-input-json "$(aws ecs describe-task-definition --task-definition sprout-crm-api-task --query 'taskDefinition | {containerDefinitions: containerDefinitions, executionRoleArn: executionRoleArn, networkMode: networkMode, volumes: volumes, cpu: cpu, memory: memory, requiresCompatibilities: requiresCompatibilities}' --output json)"` then `aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --task-definition sprout-crm-api-task:<N> --force-new-deployment`.
 - The `.env` file is gitignored — never commit it.
 - The `.env.sample` file contains placeholder values only — never put real credentials in it.
 - IAM user `sprout-crm-api` has limited permissions and cannot create IAM roles or modify RDS — those operations require the AWS console with admin credentials.
@@ -294,3 +296,5 @@ src/
 - Playwright Chromium browser for HTML→PDF conversion
 - Invoice snapshots stored as JSONB at creation time
 - Template path resolved via `path.join(__dirname, '..', 'templates', 'invoice.hbs')`
+- **Docker**: `chromium.launch()` must specify `executablePath: '/usr/bin/chromium-browser'` and `args: ['--no-sandbox']` — the Alpine `chromium` package installs the binary at `/usr/bin/chromium-browser`, not in Playwright's expected path. Without this, rebuilds can break if the Playwright version changes.
+- **PDF download (frontend)**: The `downloadInvoicePdf()` method in `api.ts` uses raw `fetch` (not the `request<T>()` method), so it must explicitly include the `x-refresh-token` header for token refresh to work on expired tokens.
