@@ -13,6 +13,14 @@ export function clearPdfCache(invoiceId: string): void {
 }
 
 /**
+ * Clear all cached PDF blobs.
+ * Call this on logout / login to prevent stale data between sessions.
+ */
+export function clearAllPdfCache(): void {
+  pdfCache.clear();
+}
+
+/**
  * Get a PDF blob for the given invoice ID.
  * Downloads from the API if not already cached.
  */

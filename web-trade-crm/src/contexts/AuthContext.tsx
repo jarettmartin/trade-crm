@@ -7,6 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { api, LoginResponse } from "../services/api";
+import { clearAllPdfCache } from "../services/pdfCache";
 
 interface AuthState {
   user: LoginResponse["user"] | null;
@@ -89,10 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       isAuthenticated: true,
       isLoading: false,
     });
+    // Clear any stale cached data from previous sessions
+    clearAllPdfCache();
     // Hard redirect to clear old nav state, but only if user has a tenant
     // (otherwise the create-tenant page handles the flow)
     if (res.user.tenantId) {
-      window.location.href = "/home";
+      window.location.href = "/manage-jobs";
     }
   }, []);
 
@@ -100,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     api.clearTokens();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    clearAllPdfCache();
     setState({
       user: null,
       idToken: null,
