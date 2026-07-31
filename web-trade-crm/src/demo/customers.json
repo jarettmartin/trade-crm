@@ -1,0 +1,65 @@
+[
+  {
+    "id": "demo-customer-1",
+    "type": "RESIDENTIAL",
+    "firstName": "Sarah",
+    "lastName": "Johnson",
+    "companyName": null,
+    "phone": "(555) 234-5678",
+    "email": "sarah.j@example.com",
+    "notes": "Prefers communication via email",
+    "addresses": [
+      {
+        "id": "demo-addr-1",
+        "addressLine1": "123 Maple Street",
+        "addressLine2": null,
+        "city": "Oakville",
+        "stateProvince": "ON",
+        "zipPostalCode": "L6J 2T1",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-2",
+    "type": "COMMERCIAL",
+    "firstName": "Mike",
+    "lastName": "Chen",
+    "companyName": "Chen Properties Inc.",
+    "phone": "(555) 345-6789",
+    "email": "mike@chenproperties.com",
+    "notes": null,
+    "addresses": [
+      {
+        "id": "demo-addr-2",
+        "addressLine1": "456 Commerce Drive",
+        "addressLine2": "Suite 200",
+        "city": "Burlington",
+        "stateProvince": "ON",
+        "zipPostalCode": "L7L 4X5",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-3",
+    "type": "RESIDENTIAL",
+    "firstName": "Emily",
+    "lastName": "Rodriguez",
+    "companyName": null,
+    "phone": "(555) 456-7890",
+    "email": "emily.r@example.com",
+    "notes": "Has a dog - please secure gates",
+    "addresses": [
+      {
+        "id": "demo-addr-3",
+        "addressLine1": "789 Oak Avenue",
+        "addressLine2": null,
+        "city": "Milton",
+        "stateProvince": "ON",
+        "zipPostalCode": "L9T 5K1",
+        "isDefault": true
+      }
+    ]
+  }
+]

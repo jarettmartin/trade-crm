@@ -1,0 +1,8 @@
+{
+  "id": "demo-tenant-1",
+  "businessName": "Sprout Landscaping",
+  "businessEmail": "hello@sproutlandscaping.com",
+  "phone": "(555) 123-4567",
+  "defaultTaxPercent": 13,
+  "invoicePaymentMethodNote": "Payment due within 30 days. Thank you for your business."
+}

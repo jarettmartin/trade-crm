@@ -1,0 +1,240 @@
+[
+  {
+    "id": "demo-job-1",
+    "title": "Spring Cleanup - Maple Street",
+    "description": "Full spring cleanup including leaf removal, pruning, and garden bed preparation.",
+    "status": "COMPLETED",
+    "createdAt": "2026-04-15T08:00:00.000Z",
+    "customerId": "demo-customer-1",
+    "customerAddressId": "demo-addr-1",
+    "notes": [
+      {
+        "id": "demo-note-1",
+        "note": "Customer was very happy with the cleanup. Left a positive review.",
+        "createdAt": "2026-04-16T10:30:00.000Z",
+        "user": { "id": "demo-user-1", "firstName": "Demo", "lastName": "User" }
+      }
+    ],
+    "lineItems": [
+      {
+        "id": "demo-li-1",
+        "type": "LABOUR",
+        "description": "Leaf removal and disposal",
+        "quantity": 4,
+        "unitPrice": 75,
+        "lineTotal": 300,
+        "sortOrder": 1
+      },
+      {
+        "id": "demo-li-2",
+        "type": "LABOUR",
+        "description": "Tree pruning",
+        "quantity": 2,
+        "unitPrice": 85,
+        "lineTotal": 170,
+        "sortOrder": 2
+      },
+      {
+        "id": "demo-li-3",
+        "type": "MATERIAL",
+        "description": "Garden soil and mulch",
+        "quantity": 5,
+        "unitPrice": 12,
+        "lineTotal": 60,
+        "sortOrder": 3
+      },
+      {
+        "id": "demo-li-4",
+        "type": "LABOUR",
+        "description": "Garden bed preparation",
+        "quantity": 3,
+        "unitPrice": 65,
+        "lineTotal": 195,
+        "sortOrder": 4
+      }
+    ],
+    "invoices": [
+      {
+        "id": "demo-inv-1",
+        "invoiceNumber": 1001,
+        "version": 1,
+        "status": "PAID",
+        "subtotal": 725,
+        "taxPercent": 13,
+        "taxAmount": 94.25,
+        "total": 819.25,
+        "createdAt": "2026-04-16T12:00:00.000Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-job-2",
+    "title": "Commercial Snow Removal - Chen Properties",
+    "description": "Ongoing snow removal contract for the parking lot and walkways. Services as needed throughout winter season.",
+    "status": "IN_PROGRESS",
+    "createdAt": "2026-05-01T06:00:00.000Z",
+    "customerId": "demo-customer-2",
+    "customerAddressId": "demo-addr-2",
+    "notes": [
+      {
+        "id": "demo-note-2",
+        "note": "Signed annual contract for snow removal season. 4-hour response time guaranteed.",
+        "createdAt": "2026-05-01T09:00:00.000Z",
+        "user": { "id": "demo-user-1", "firstName": "Demo", "lastName": "User" }
+      },
+      {
+        "id": "demo-note-3",
+        "note": "Plowed after 15cm snowfall on May 15. All clear by 8 AM.",
+        "createdAt": "2026-05-15T08:30:00.000Z",
+        "user": { "id": "demo-user-1", "firstName": "Demo", "lastName": "User" }
+      }
+    ],
+    "lineItems": [
+      {
+        "id": "demo-li-5",
+        "type": "LABOUR",
+        "description": "Snow plowing - parking lot",
+        "quantity": 3,
+        "unitPrice": 200,
+        "lineTotal": 600,
+        "sortOrder": 1
+      },
+      {
+        "id": "demo-li-6",
+        "type": "LABOUR",
+        "description": "Walkway clearing and salting",
+        "quantity": 2,
+        "unitPrice": 80,
+        "lineTotal": 160,
+        "sortOrder": 2
+      },
+      {
+        "id": "demo-li-7",
+        "type": "MATERIAL",
+        "description": "Rock salt (bags)",
+        "quantity": 10,
+        "unitPrice": 8,
+        "lineTotal": 80,
+        "sortOrder": 3
+      }
+    ],
+    "invoices": [
+      {
+        "id": "demo-inv-2",
+        "invoiceNumber": 1002,
+        "version": 1,
+        "status": "SENT",
+        "subtotal": 840,
+        "taxPercent": 13,
+        "taxAmount": 109.2,
+        "total": 949.2,
+        "createdAt": "2026-05-16T12:00:00.000Z"
+      }
+    ]
+  },
+  {
+    "id": "demo-job-3",
+    "title": "Interior Painting - Oak Avenue",
+    "description": "Two-coat interior painting for living room and dining room. Customer selected colours: Warm Beige and Soft White.",
+    "status": "ASSIGNED",
+    "createdAt": "2026-07-10T09:00:00.000Z",
+    "customerId": "demo-customer-3",
+    "customerAddressId": "demo-addr-3",
+    "notes": [
+      {
+        "id": "demo-note-4",
+        "note": "Color samples approved by customer. Paint ordered from Sherwin Williams.",
+        "createdAt": "2026-07-11T14:00:00.000Z",
+        "user": { "id": "demo-user-1", "firstName": "Demo", "lastName": "User" }
+      }
+    ],
+    "lineItems": [
+      {
+        "id": "demo-li-8",
+        "type": "LABOUR",
+        "description": "Living room painting (two coats)",
+        "quantity": 8,
+        "unitPrice": 55,
+        "lineTotal": 440,
+        "sortOrder": 1
+      },
+      {
+        "id": "demo-li-9",
+        "type": "LABOUR",
+        "description": "Dining room painting (two coats)",
+        "quantity": 6,
+        "unitPrice": 55,
+        "lineTotal": 330,
+        "sortOrder": 2
+      },
+      {
+        "id": "demo-li-10",
+        "type": "MATERIAL",
+        "description": "Paint and supplies",
+        "quantity": 1,
+        "unitPrice": 180,
+        "lineTotal": 180,
+        "sortOrder": 3
+      },
+      {
+        "id": "demo-li-11",
+        "type": "MATERIAL",
+        "description": "Drop cloths and tape",
+        "quantity": 1,
+        "unitPrice": 35,
+        "lineTotal": 35,
+        "sortOrder": 4
+      }
+    ],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-4",
+    "title": "Deck Repair and Staining",
+    "description": "Replace 3 rotten deck boards, sand entire surface, apply weatherproof stain. Estimated 2 days.",
+    "status": "DRAFT",
+    "createdAt": "2026-07-20T11:00:00.000Z",
+    "customerId": "demo-customer-1",
+    "customerAddressId": "demo-addr-1",
+    "notes": [],
+    "lineItems": [
+      {
+        "id": "demo-li-12",
+        "type": "MATERIAL",
+        "description": "Deck boards (6ft pressure treated)",
+        "quantity": 3,
+        "unitPrice": 18,
+        "lineTotal": 54,
+        "sortOrder": 1
+      },
+      {
+        "id": "demo-li-13",
+        "type": "MATERIAL",
+        "description": "Weatherproof stain (gallon)",
+        "quantity": 2,
+        "unitPrice": 45,
+        "lineTotal": 90,
+        "sortOrder": 2
+      },
+      {
+        "id": "demo-li-14",
+        "type": "LABOUR",
+        "description": "Deck repair labour",
+        "quantity": 4,
+        "unitPrice": 60,
+        "lineTotal": 240,
+        "sortOrder": 3
+      },
+      {
+        "id": "demo-li-15",
+        "type": "LABOUR",
+        "description": "Sanding and staining labour",
+        "quantity": 8,
+        "unitPrice": 55,
+        "lineTotal": 440,
+        "sortOrder": 4
+      }
+    ],
+    "invoices": []
+  }
+]

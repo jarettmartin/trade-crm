@@ -27,20 +27,51 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const TOKEN_KEY = "trade_crm_id_token";
 const USER_KEY = "trade_crm_user";
 
+const demoUser: LoginResponse["user"] = {
+  id: "demo-user-1",
+  email: "demo@sprout-crm.com",
+  status: "ACTIVE",
+  role: "ADMIN",
+  firstName: "Demo",
+  lastName: "User",
+  tenantId: "demo-tenant-1",
+  businessName: "Sprout Landscaping",
+  businessEmail: "hello@sproutlandscaping.com",
+  phone: "(555) 123-4567",
+  defaultTaxPercent: 13,
+  invoicePaymentMethodNote:
+    "Payment due within 30 days. Thank you for your business.",
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    idToken: null,
-    isAuthenticated: false,
-    isLoading: true,
+  const [state, setState] = useState<AuthState>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") === "true") {
+      api.setDemoMode(true);
+      return {
+        user: demoUser,
+        idToken: "demo-token",
+        isAuthenticated: true,
+        isLoading: false,
+      };
+    }
+    return {
+      user: null,
+      idToken: null,
+      isAuthenticated: false,
+      isLoading: true,
+    };
   });
 
   // Keep a stable reference to logout so the effect doesn't re-run
   const logoutRef = useRef<() => void>(() => {});
 
   useEffect(() => {
+    // If already initialized (e.g. demo mode), skip localStorage restore
+    if (!state.isLoading) return;
+
     const token = localStorage.getItem(TOKEN_KEY);
     const userJson = localStorage.getItem(USER_KEY);
     if (token && userJson) {
@@ -65,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setState((s) => ({ ...s, isLoading: false }));
     }
-  }, []);
+  }, [state.isLoading]);
 
   // Register the global unauthorized handler once
   useEffect(() => {

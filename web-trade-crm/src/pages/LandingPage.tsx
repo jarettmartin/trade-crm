@@ -67,7 +67,13 @@ const LandingPage: React.FC = () => {
             <IonText color="medium">
               <p>Experience Sprout immediately, no account required.</p>
             </IonText>
-            <IonButton expand="block" style={{ marginTop: 16 }} disabled>
+            <IonButton
+              expand="block"
+              style={{ marginTop: 16 }}
+              onClick={() => {
+                window.location.href = "/manage-jobs?demo=true";
+              }}
+            >
               Explore Demo
             </IonButton>
           </IonCardContent>

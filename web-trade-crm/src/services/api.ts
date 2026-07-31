@@ -1,3 +1,5 @@
+import { demoService } from "../demo/demoService";
+
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
 const ID_TOKEN_KEY = "trade_crm_id_token";
@@ -49,7 +51,7 @@ export interface CreateTenantResponse {
   businessName: string;
   businessEmail: string;
   phone?: string;
-  defaultTaxPercent: number;
+  defaultTaxPercent?: number;
   invoicePaymentMethodNote?: string;
 }
 
@@ -201,9 +203,18 @@ class ApiService {
   private idToken: string | null = null;
   private refreshToken: string | null = null;
   private onUnauthorizedCallback: (() => void) | null = null;
+  private demoMode = false;
 
   onUnauthorized(callback: () => void) {
     this.onUnauthorizedCallback = callback;
+  }
+
+  setDemoMode(enabled: boolean) {
+    this.demoMode = enabled;
+  }
+
+  isDemoMode(): boolean {
+    return this.demoMode;
   }
 
   setTokens(idToken: string, refreshToken: string) {
@@ -286,6 +297,9 @@ class ApiService {
   }
 
   async createTenant(payload: CreateTenantPayload) {
+    if (this.demoMode) {
+      return demoService.createTenant(payload);
+    }
     return this.request<CreateTenantResponse>("/tenants", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -293,6 +307,9 @@ class ApiService {
   }
 
   async updateTenant(tenantId: string, payload: UpdateTenantPayload) {
+    if (this.demoMode) {
+      return demoService.updateTenant(tenantId, payload);
+    }
     return this.request<CreateTenantResponse>(`/tenants/${tenantId}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
@@ -300,12 +317,18 @@ class ApiService {
   }
 
   async searchCustomers(q: string) {
+    if (this.demoMode) {
+      return demoService.searchCustomers(q);
+    }
     return this.request<CustomerResult[]>(
       `/customers/search?q=${encodeURIComponent(q)}`,
     );
   }
 
   async createCustomer(payload: CreateCustomerPayload) {
+    if (this.demoMode) {
+      return demoService.createCustomer(payload);
+    }
     return this.request<CustomerResult>("/customers", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -313,10 +336,16 @@ class ApiService {
   }
 
   async fetchCustomer(id: string) {
+    if (this.demoMode) {
+      return demoService.fetchCustomer(id);
+    }
     return this.request<CustomerResult>(`/customers/${id}`);
   }
 
   async updateCustomer(id: string, payload: Record<string, unknown>) {
+    if (this.demoMode) {
+      return demoService.updateCustomer(id, payload);
+    }
     return this.request(`/customers/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
@@ -324,6 +353,9 @@ class ApiService {
   }
 
   async createJob(payload: CreateJobPayload) {
+    if (this.demoMode) {
+      return demoService.createJob(payload);
+    }
     return this.request("/jobs", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -331,6 +363,9 @@ class ApiService {
   }
 
   async fetchJobs(page: number = 1, limit: number = 10, status?: string) {
+    if (this.demoMode) {
+      return demoService.fetchJobs(page, limit, status);
+    }
     let path = `/jobs?page=${page}&limit=${limit}`;
     if (status) {
       path += `&status=${encodeURIComponent(status)}`;
@@ -339,10 +374,16 @@ class ApiService {
   }
 
   async fetchJob(id: string) {
+    if (this.demoMode) {
+      return demoService.fetchJob(id);
+    }
     return this.request<JobDetailResult>(`/jobs/${id}`);
   }
 
   async updateJob(id: string, payload: Record<string, unknown>) {
+    if (this.demoMode) {
+      return demoService.updateJob(id, payload);
+    }
     return this.request(`/jobs/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
@@ -358,6 +399,9 @@ class ApiService {
       total: number;
     },
   ) {
+    if (this.demoMode) {
+      return demoService.createInvoice(jobId, payload);
+    }
     return this.request(`/jobs/${jobId}/invoices`, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -365,6 +409,9 @@ class ApiService {
   }
 
   async updateInvoiceStatus(invoiceId: string, status: string) {
+    if (this.demoMode) {
+      return demoService.updateInvoiceStatus(invoiceId, status);
+    }
     return this.request(`/invoices/${invoiceId}`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
@@ -372,6 +419,9 @@ class ApiService {
   }
 
   async downloadInvoicePdf(invoiceId: string): Promise<Blob> {
+    if (this.demoMode) {
+      return demoService.downloadInvoicePdf(invoiceId);
+    }
     const token = this.idToken || localStorage.getItem(ID_TOKEN_KEY);
     const rt =
       this.refreshToken || localStorage.getItem(REFRESH_TOKEN_KEY) || "";
