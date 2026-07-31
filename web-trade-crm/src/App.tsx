@@ -7,10 +7,11 @@ import {
   setupIonicReact,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { Redirect, Route } from "react-router-dom";
+import { Redirect, Route, Switch } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Menu from "./components/Menu";
 import AuthPage from "./pages/AuthPage";
+import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
 import CreateTenantPage from "./pages/CreateTenantPage";
 import CreateJobPage from "./pages/CreateJobPage";
@@ -69,55 +70,61 @@ const AppContent: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <IonApp>
-        <AuthPage />
-      </IonApp>
-    );
-  }
-
-  // Force create tenant page if user has no tenant
-  if (!user?.tenantId) {
-    return (
-      <IonApp>
-        <CreateTenantPage />
-      </IonApp>
-    );
-  }
-
   return (
     <IonApp>
       <IonReactRouter>
-        <IonSplitPane contentId="main">
-          <Menu />
-          <IonRouterOutlet id="main">
+        {isAuthenticated && user?.tenantId ? (
+          <IonSplitPane contentId="main">
+            <Menu />
+            <IonRouterOutlet id="main">
+              <Route path="/manage-jobs" exact={true}>
+                <Home />
+              </Route>
+              <Route path="/manage-business" exact={true}>
+                <ManageBusinessPage />
+              </Route>
+              <Route path="/create-job" exact={true}>
+                <CreateJobPage />
+              </Route>
+              <Route path="/create-customer" exact={true}>
+                <CreateCustomerPage />
+              </Route>
+              <Route path="/job/:id" exact={true}>
+                <JobDetailPage />
+              </Route>
+              <Route path="/manage-customers" exact={true}>
+                <ManageCustomersPage />
+              </Route>
+              <Route path="/invoice-preview/:id" exact={true}>
+                <InvoicePreviewPage />
+              </Route>
+              <Route>
+                <Redirect to="/manage-jobs" />
+              </Route>
+            </IonRouterOutlet>
+          </IonSplitPane>
+        ) : isAuthenticated && !user?.tenantId ? (
+          <Switch>
+            <Route path="/create-tenant" exact={true}>
+              <CreateTenantPage />
+            </Route>
+            <Route>
+              <Redirect to="/create-tenant" />
+            </Route>
+          </Switch>
+        ) : (
+          <Switch>
             <Route path="/" exact={true}>
-              <Redirect to="/home" />
+              <LandingPage />
             </Route>
-            <Route path="/home" exact={true}>
-              <Home />
+            <Route path="/sign-in" exact={true}>
+              <AuthPage />
             </Route>
-            <Route path="/manage-business" exact={true}>
-              <ManageBusinessPage />
+            <Route>
+              <Redirect to="/" />
             </Route>
-            <Route path="/create-job" exact={true}>
-              <CreateJobPage />
-            </Route>
-            <Route path="/create-customer" exact={true}>
-              <CreateCustomerPage />
-            </Route>
-            <Route path="/job/:id" exact={true}>
-              <JobDetailPage />
-            </Route>
-            <Route path="/manage-customers" exact={true}>
-              <ManageCustomersPage />
-            </Route>
-            <Route path="/invoice-preview/:id" exact={true}>
-              <InvoicePreviewPage />
-            </Route>
-          </IonRouterOutlet>
-        </IonSplitPane>
+          </Switch>
+        )}
       </IonReactRouter>
     </IonApp>
   );

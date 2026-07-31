@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useHistory } from "react-router-dom";
 import {
   IonContent,
   IonPage,
@@ -18,6 +19,7 @@ const AuthPage: React.FC = () => {
   useEffect(() => {
     document.title = "Sprout CRM - Sign In";
   }, []);
+  const history = useHistory();
   const { login } = useAuth();
   const [mode, setMode] = useState<
     "login" | "register" | "reset" | "reset-confirm"
@@ -152,7 +154,9 @@ const AuthPage: React.FC = () => {
               style={{
                 maxWidth: "240px",
                 height: "auto",
+                cursor: "pointer",
               }}
+              onClick={() => history.push("/")}
             />
             <p
               style={{
@@ -165,7 +169,7 @@ const AuthPage: React.FC = () => {
             </p>
           </div>
 
-          <div style={{ textAlign: "center", marginTop: 48, marginBottom: 24 }}>
+          <div style={{ textAlign: "center", marginTop: 24, marginBottom: 24 }}>
             <p style={{ color: "#666", margin: 0 }}>
               {mode === "login"
                 ? "Sign in to your account"

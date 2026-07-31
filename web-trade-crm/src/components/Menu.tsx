@@ -33,19 +33,19 @@ interface AppPage {
 
 const appPages: AppPage[] = [
   {
-    title: "Home",
-    url: "/home",
+    title: "Jobs",
+    url: "/manage-jobs",
     iosIcon: homeOutline,
     mdIcon: homeSharp,
   },
   {
-    title: "Manage Customers",
+    title: "Customers",
     url: "/manage-customers",
     iosIcon: peopleOutline,
     mdIcon: peopleSharp,
   },
   {
-    title: "Manage Business",
+    title: "Business Settings",
     url: "/manage-business",
     iosIcon: businessOutline,
     mdIcon: businessSharp,

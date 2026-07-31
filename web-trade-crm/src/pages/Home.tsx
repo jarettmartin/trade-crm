@@ -45,7 +45,7 @@ const statusColor: Record<string, string> = {
 
 const Home: React.FC = () => {
   useEffect(() => {
-    document.title = "Sprout CRM - Home";
+    document.title = "Sprout CRM - Manage Jobs";
   }, []);
 
   const history = useHistory();
@@ -126,14 +126,10 @@ const Home: React.FC = () => {
           <IonButtons slot="start">
             <IonMenuButton />
           </IonButtons>
-          <IonTitle>Home</IonTitle>
+          <IonTitle>Manage Jobs</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <IonText>
-          <h2 style={{ marginTop: 0, marginBottom: "12px" }}>Recent Jobs</h2>
-        </IonText>
-
         <div
           style={{
             display: "flex",
