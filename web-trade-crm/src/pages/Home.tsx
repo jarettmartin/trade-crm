@@ -185,27 +185,26 @@ const Home: React.FC = () => {
             button
             onClick={() => history.push(`/job/${job.id}`)}
           >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                padding: "16px 16px 0 16px",
+                marginBottom: "4px",
+              }}
+            >
+              <IonChip color={statusColor[job.status] || "medium"}>
+                {statusLabel[job.status] || job.status}
+              </IonChip>
+            </div>
             <IonCardHeader>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
-              >
-                <div>
-                  <IonCardTitle>{job.title}</IonCardTitle>
-                  <IonCardSubtitle>
-                    {job.customer.firstName} {job.customer.lastName}
-                    {job.customer.companyName
-                      ? ` — ${job.customer.companyName}`
-                      : ""}
-                  </IonCardSubtitle>
-                </div>
-                <IonChip color={statusColor[job.status] || "medium"}>
-                  {statusLabel[job.status] || job.status}
-                </IonChip>
-              </div>
+              <IonCardTitle>{job.title}</IonCardTitle>
+              <IonCardSubtitle>
+                {job.customer.firstName} {job.customer.lastName}
+                {job.customer.companyName
+                  ? ` — ${job.customer.companyName}`
+                  : ""}
+              </IonCardSubtitle>
             </IonCardHeader>
             <IonCardContent>
               {job.description && (
