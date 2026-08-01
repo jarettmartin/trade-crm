@@ -112,9 +112,9 @@ const LandingPage: React.FC = () => {
               <IonText color="medium">
                 <p>
                   Sprout CRM is a SaaS application built as both a real product
-                  and a platform engineering portfolio. It demonstrates modern
-                  cloud architecture, containerization, CI/CD, infrastructure
-                  automation, and scalable backend design.
+                  and a platform engineering portfolio. It's goal is to
+                  demonstrate modern cloud architecture, containerization,
+                  CI/CD, infrastructure automation, and scalable backend design.
                 </p>
               </IonText>
             </IonCardContent>
