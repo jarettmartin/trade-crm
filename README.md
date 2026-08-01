@@ -2,6 +2,10 @@
 
 Multi-tenant service-business CRM MVP — a full-stack application for managing customers, jobs, invoicing, and PDF generation.
 
+## Platform Engineering Roadmap
+
+Track the future of the projects platform enginerring priorities on the [GitHub Projects kanban board](https://github.com/users/jarettmartin/projects/9).
+
 ## Architecture
 
 - **Backend**: NestJS + TypeORM + PostgreSQL (API container)
