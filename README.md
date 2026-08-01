@@ -101,6 +101,7 @@ aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-ser
 cd web-trade-crm
 VITE_API_BASE=https://api.sprout-crm.com npm run build
 aws s3 sync dist/ s3://sprout-crm-web/ --delete
+aws cloudfront create-invalidation --distribution-id E3BYN5AYDQO0IE --paths "/*"
 ```
 
 ## Environment Variables
