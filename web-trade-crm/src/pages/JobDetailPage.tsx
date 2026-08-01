@@ -836,9 +836,17 @@ const JobDetailPage: React.FC = () => {
                   <IonButton
                     size="small"
                     fill="clear"
-                    onClick={() =>
-                      downloadPdf(inv.id, inv.invoiceNumber, user?.businessName)
-                    }
+                    onClick={async () => {
+                      try {
+                        await downloadPdf(
+                          inv.id,
+                          inv.invoiceNumber,
+                          user?.businessName,
+                        );
+                      } catch (err: any) {
+                        showToastMsg(err?.message || "Failed to download PDF");
+                      }
+                    }}
                   >
                     <IonIcon icon={downloadOutline} slot="start" />
                     Download

@@ -37,8 +37,8 @@ const InvoicePreviewPage: React.FC = () => {
         const url = URL.createObjectURL(blob);
         blobUrlRef.current = url;
         setObjectUrl(url);
-      } catch {
-        setError("Failed to load PDF");
+      } catch (err: any) {
+        setError(err?.message || "Failed to load PDF");
       }
     })();
   });

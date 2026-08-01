@@ -1,6 +1,6 @@
-import tenantSeed from "./tenant.json";
-import customersSeed from "./customers.json";
-import jobsSeed from "./jobs.json";
+import tenantSeed from "./api/tenant.json";
+import customersSeed from "./api/customers.json";
+import jobsSeed from "./api/jobs.json";
 import type {
   CustomerResult,
   JobResult,
@@ -111,6 +111,34 @@ function buildJobResult(j: JobSeed): JobResult {
       stateProvince: "",
     },
   };
+}
+
+// Which seeded invoice IDs have a pre-generated PDF available.
+// Filenames follow the pattern: {tenantId}-{invoiceNumber}-invoice.pdf
+const seedInvoicePdfIds = new Set<string>(["demo-inv-1", "demo-inv-2"]);
+
+/**
+ * Get the invoice number for a given invoice ID from the seed jobs data.
+ */
+function findInvoiceNumber(invoiceId: string): number | undefined {
+  for (const j of jobs) {
+    const inv = j.invoices.find((i) => i.id === invoiceId);
+    if (inv) {
+      return inv.invoiceNumber;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Build the public URL for a pre-generated demo invoice PDF.
+ * Files live in public/demo/invoice-pdfs/ and are served at /demo/invoice-pdfs/.
+ * Filenames follow the pattern: {tenantId}-{invoiceNumber}-invoice.pdf
+ */
+function buildInvoicePdfUrl(invoiceId: string): string | undefined {
+  const invoiceNumber = findInvoiceNumber(invoiceId);
+  if (!invoiceNumber) return undefined;
+  return `/demo/invoice-pdfs/${tenant.id}-${invoiceNumber}-invoice.pdf`;
 }
 
 // ---------------------------------------------------------------------------
@@ -288,8 +316,27 @@ export const demoService = {
     throw new Error("Invoice not found");
   },
 
-  downloadInvoicePdf(_invoiceId: string): Blob {
-    // Return a simple placeholder blob for demo mode
-    return new Blob(["Demo invoice PDF content"], { type: "application/pdf" });
+  async downloadInvoicePdf(invoiceId: string): Promise<Blob> {
+    // Only pre-generated seed invoice PDFs are available in demo mode
+    if (!seedInvoicePdfIds.has(invoiceId)) {
+      throw new Error(
+        "Cannot generate new PDFs in demo mode. Please select an existing one for preview or download.",
+      );
+    }
+
+    // Fetch the pre-generated PDF from the public static assets
+    const pdfUrl = buildInvoicePdfUrl(invoiceId);
+    if (!pdfUrl) {
+      throw new Error(
+        "Cannot generate new PDFs in demo mode. Please select an existing one for preview or download.",
+      );
+    }
+    const res = await fetch(pdfUrl);
+    if (!res.ok) {
+      throw new Error(
+        "Cannot generate new PDFs in demo mode. Please select an existing one for preview or download.",
+      );
+    }
+    return res.blob();
   },
 };

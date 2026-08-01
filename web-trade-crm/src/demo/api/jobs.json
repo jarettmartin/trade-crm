@@ -18,7 +18,7 @@
     "lineItems": [
       {
         "id": "demo-li-1",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Leaf removal and disposal",
         "quantity": 4,
         "unitPrice": 75,
@@ -27,7 +27,7 @@
       },
       {
         "id": "demo-li-2",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Tree pruning",
         "quantity": 2,
         "unitPrice": 85,
@@ -45,7 +45,7 @@
       },
       {
         "id": "demo-li-4",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Garden bed preparation",
         "quantity": 3,
         "unitPrice": 65,
@@ -92,7 +92,7 @@
     "lineItems": [
       {
         "id": "demo-li-5",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Snow plowing - parking lot",
         "quantity": 3,
         "unitPrice": 200,
@@ -101,7 +101,7 @@
       },
       {
         "id": "demo-li-6",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Walkway clearing and salting",
         "quantity": 2,
         "unitPrice": 80,
@@ -151,7 +151,7 @@
     "lineItems": [
       {
         "id": "demo-li-8",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Living room painting (two coats)",
         "quantity": 8,
         "unitPrice": 55,
@@ -160,7 +160,7 @@
       },
       {
         "id": "demo-li-9",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Dining room painting (two coats)",
         "quantity": 6,
         "unitPrice": 55,
@@ -218,7 +218,7 @@
       },
       {
         "id": "demo-li-14",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Deck repair labour",
         "quantity": 4,
         "unitPrice": 60,
@@ -227,7 +227,7 @@
       },
       {
         "id": "demo-li-15",
-        "type": "LABOUR",
+        "type": "SERVICE",
         "description": "Sanding and staining labour",
         "quantity": 8,
         "unitPrice": 55,

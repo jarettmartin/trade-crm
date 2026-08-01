@@ -15,6 +15,46 @@ Handlebars.registerHelper('formatNumber', (value: number) => {
   });
 });
 
+export interface InvoicePdfData {
+  invoiceNumber: number;
+  version: number;
+  status: string;
+  subtotal: number;
+  taxPercent: number;
+  taxAmount: number;
+  total: number;
+  issuedAt?: string | Date;
+  snapshot: {
+    customer?: {
+      name?: string;
+      companyName?: string | null;
+      phone?: string;
+      email?: string;
+    };
+    serviceAddress?: {
+      label?: string;
+      addressLine1?: string;
+      addressLine2?: string | null;
+      city?: string;
+      stateProvince?: string;
+      zipPostalCode?: string;
+    };
+    lineItems?: Array<{
+      type: string;
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      lineTotal: number;
+    }>;
+  };
+  tenant?: {
+    businessName?: string;
+    businessEmail?: string;
+    phone?: string | null;
+    invoicePaymentMethodNote?: string | null;
+  };
+}
+
 @Injectable()
 export class PdfService implements OnModuleDestroy {
   private readonly logger = new Logger(PdfService.name);
@@ -38,12 +78,103 @@ export class PdfService implements OnModuleDestroy {
 
   private async getBrowser() {
     if (!this.browser) {
-      this.browser = await chromium.launch({
-        executablePath: '/usr/bin/chromium-browser',
-        args: ['--no-sandbox'],
-      });
+      const executablePath = process.env.CHROMIUM_PATH;
+      this.browser = await chromium.launch(
+        executablePath
+          ? { executablePath, args: ['--no-sandbox'] }
+          : { args: ['--no-sandbox'] },
+      );
     }
     return this.browser;
+  }
+
+  /**
+   * Generate a PDF from raw invoice/tenant data without hitting the DB.
+   * Used by the dev-only preview endpoint and for bulk generation of demo PDFs.
+   */
+  async generatePdfFromData(data: InvoicePdfData): Promise<Buffer> {
+    const tenant = data.tenant ?? {};
+    const snapshot = data.snapshot ?? {};
+    const now = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const formattedInvoiceNumber = String(data.invoiceNumber)
+      .padStart(8, '0')
+      .replace(/(\d{4})(\d{4})/, '$1 $2');
+
+    const html = this.template!({
+      businessName: tenant.businessName ?? 'Business',
+      businessEmail: tenant.businessEmail ?? '',
+      businessPhone: tenant.phone ?? '',
+      invoiceNumber: formattedInvoiceNumber,
+      issuedAt: data.issuedAt
+        ? new Date(data.issuedAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+        : now,
+      status: data.status,
+      customerName: snapshot.customer?.name ?? '',
+      customerCompany: snapshot.customer?.companyName,
+      customerPhone: snapshot.customer?.phone ?? '',
+      customerEmail: snapshot.customer?.email ?? '',
+      addressLabel: snapshot.serviceAddress?.label ?? '',
+      addressLine1: snapshot.serviceAddress?.addressLine1 ?? '',
+      addressLine2: snapshot.serviceAddress?.addressLine2,
+      city: snapshot.serviceAddress?.city ?? '',
+      stateProvince: snapshot.serviceAddress?.stateProvince ?? '',
+      zipPostalCode: snapshot.serviceAddress?.zipPostalCode ?? '',
+      services: (snapshot.lineItems ?? [])
+        .filter((item) => item.type === 'SERVICE')
+        .map((item, index) => ({
+          sortOrder: index + 1,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+        })),
+      materials: (snapshot.lineItems ?? [])
+        .filter((item) => item.type === 'MATERIAL')
+        .map((item, index) => ({
+          sortOrder: index + 1,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+        })),
+      fees: (snapshot.lineItems ?? [])
+        .filter((item) => item.type === 'FEE')
+        .map((item, index) => ({
+          sortOrder: index + 1,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+        })),
+      subtotal: Number(data.subtotal),
+      taxPercent: Number(data.taxPercent),
+      taxAmount: Number(data.taxAmount),
+      total: Number(data.total),
+      paymentNote: tenant.invoicePaymentMethodNote,
+    });
+
+    const browser = await this.getBrowser();
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle' });
+
+    const pdfBuffer = await page.pdf({
+      format: 'Letter',
+      margin: { top: '0', bottom: '0', left: '0', right: '0' },
+      printBackground: true,
+    });
+
+    await page.close();
+
+    return Buffer.from(pdfBuffer);
   }
 
   async generateInvoicePdf(
@@ -62,87 +193,23 @@ export class PdfService implements OnModuleDestroy {
       where: { id: tenantId },
     });
 
-    const snapshot = invoice.snapshot as any;
-    const now = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
-    const formattedInvoiceNumber = String(invoice.invoiceNumber)
-      .padStart(8, '0')
-      .replace(/(\d{4})(\d{4})/, '$1 $2');
-
-    const html = this.template!({
-      businessName: tenant?.businessName ?? 'Business',
-      businessEmail: tenant?.businessEmail ?? '',
-      businessPhone: tenant?.phone ?? '',
-      invoiceNumber: formattedInvoiceNumber,
-      issuedAt: invoice.issuedAt
-        ? new Date(invoice.issuedAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })
-        : now,
+    return this.generatePdfFromData({
+      invoiceNumber: invoice.invoiceNumber,
+      version: invoice.version,
       status: invoice.status,
-      customerName: snapshot?.customer?.name ?? '',
-      customerCompany: snapshot?.customer?.companyName,
-      customerPhone: snapshot?.customer?.phone ?? '',
-      customerEmail: snapshot?.customer?.email ?? '',
-      addressLabel: snapshot?.serviceAddress?.label ?? '',
-      addressLine1: snapshot?.serviceAddress?.addressLine1 ?? '',
-      addressLine2: snapshot?.serviceAddress?.addressLine2,
-      city: snapshot?.serviceAddress?.city ?? '',
-      stateProvince: snapshot?.serviceAddress?.stateProvince ?? '',
-      zipPostalCode: snapshot?.serviceAddress?.zipPostalCode ?? '',
-      services: (snapshot?.lineItems ?? [])
-        .filter((item: any) => item.type === 'SERVICE')
-        .map((item: any, index: number) => ({
-          sortOrder: index + 1,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          lineTotal: item.lineTotal,
-        })),
-      materials: (snapshot?.lineItems ?? [])
-        .filter((item: any) => item.type === 'MATERIAL')
-        .map((item: any, index: number) => ({
-          sortOrder: index + 1,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          lineTotal: item.lineTotal,
-        })),
-      fees: (snapshot?.lineItems ?? [])
-        .filter((item: any) => item.type === 'FEE')
-        .map((item: any, index: number) => ({
-          sortOrder: index + 1,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          lineTotal: item.lineTotal,
-        })),
       subtotal: Number(invoice.subtotal),
       taxPercent: Number(invoice.taxPercent),
       taxAmount: Number(invoice.taxAmount),
       total: Number(invoice.total),
-      paymentNote: tenant?.invoicePaymentMethodNote,
+      issuedAt: invoice.issuedAt,
+      snapshot: invoice.snapshot as any,
+      tenant: {
+        businessName: tenant?.businessName,
+        businessEmail: tenant?.businessEmail,
+        phone: tenant?.phone,
+        invoicePaymentMethodNote: tenant?.invoicePaymentMethodNote,
+      },
     });
-
-    const browser = await this.getBrowser();
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle' });
-
-    const pdfBuffer = await page.pdf({
-      format: 'Letter',
-      margin: { top: '0', bottom: '0', left: '0', right: '0' },
-      printBackground: true,
-    });
-
-    await page.close();
-
-    return Buffer.from(pdfBuffer);
   }
 
   async onModuleDestroy() {

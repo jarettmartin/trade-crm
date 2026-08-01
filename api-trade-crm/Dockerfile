@@ -42,6 +42,7 @@ RUN apk add --no-cache \
 # Set Playwright browser path so it uses the system Chromium
 ENV PLAYWRIGHT_BROWSERS_PATH=/usr/bin/chromium
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV CHROMIUM_PATH=/usr/bin/chromium-browser
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
