@@ -92,6 +92,16 @@ ion-segment-button.md::part(indicator-background) {
   display: none;
 }
 
+/* ===== SHARED PAGE LAYOUT =====
+ * Applies a consistent mobile-friendly content width across all pages.
+ * Pages wrap their IonContent children in this class. */
+.page-container {
+  width: 100%;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* ===== DARK MODE ===== */
 @media (prefers-color-scheme: dark) {
   :root {

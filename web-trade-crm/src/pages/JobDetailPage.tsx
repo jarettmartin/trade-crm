@@ -339,584 +339,592 @@ const JobDetailPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        {/* === SUMMARY === */}
-        <IonText>
-          <h2 style={{ marginTop: 0 }}>{job.title}</h2>
-        </IonText>
-        <IonText color="medium">
-          <p style={{ margin: "2px 0" }}>
-            Created:{" "}
-            {new Date(job.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
-        </IonText>
-        <IonText color="medium">
-          <p style={{ margin: "2px 0" }}>
-            Customer: {job.customer.firstName} {job.customer.lastName}
-            {job.customer.companyName ? ` — ${job.customer.companyName}` : ""}
-          </p>
-        </IonText>
-        {job.customerAddress && job.customerAddress.addressLine1 && (
+        <div className="page-container">
+          {/* === SUMMARY === */}
+          <IonText>
+            <h2 style={{ marginTop: 0 }}>{job.title}</h2>
+          </IonText>
           <IonText color="medium">
             <p style={{ margin: "2px 0" }}>
-              Location: {job.customerAddress.addressLine1}
-              {job.customerAddress.city ? `, ${job.customerAddress.city}` : ""}
+              Created:{" "}
+              {new Date(job.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
             </p>
           </IonText>
-        )}
-        {job.description && (
-          <IonText>
-            <p>{job.description}</p>
-          </IonText>
-        )}
-
-        {/* === STATUS === */}
-        <IonItem style={{ marginTop: "16px" }}>
-          <IonLabel>Status</IonLabel>
-          <IonSelect
-            value={status}
-            onIonChange={(e) => handleStatusChange(e.detail.value)}
-            interface="popover"
-          >
-            {Object.entries(statusLabel).map(([val, label]) => (
-              <IonSelectOption key={val} value={val}>
-                {label}
-              </IonSelectOption>
-            ))}
-          </IonSelect>
-        </IonItem>
-
-        {/* === NOTES === */}
-        <IonText>
-          <h3 style={{ marginBottom: "8px" }}>Notes</h3>
-        </IonText>
-
-        {job.notes.length === 0 && (
           <IonText color="medium">
-            <p>No notes yet.</p>
+            <p style={{ margin: "2px 0" }}>
+              Customer: {job.customer.firstName} {job.customer.lastName}
+              {job.customer.companyName ? ` — ${job.customer.companyName}` : ""}
+            </p>
           </IonText>
-        )}
+          {job.customerAddress && job.customerAddress.addressLine1 && (
+            <IonText color="medium">
+              <p style={{ margin: "2px 0" }}>
+                Location: {job.customerAddress.addressLine1}
+                {job.customerAddress.city
+                  ? `, ${job.customerAddress.city}`
+                  : ""}
+              </p>
+            </IonText>
+          )}
+          {job.description && (
+            <IonText>
+              <p>{job.description}</p>
+            </IonText>
+          )}
 
-        {job.notes.map((note) => (
+          {/* === STATUS === */}
+          <IonItem style={{ marginTop: "16px" }}>
+            <IonLabel>Status</IonLabel>
+            <IonSelect
+              value={status}
+              onIonChange={(e) => handleStatusChange(e.detail.value)}
+              interface="popover"
+            >
+              {Object.entries(statusLabel).map(([val, label]) => (
+                <IonSelectOption key={val} value={val}>
+                  {label}
+                </IonSelectOption>
+              ))}
+            </IonSelect>
+          </IonItem>
+
+          {/* === NOTES === */}
+          <IonText>
+            <h3 style={{ marginBottom: "8px" }}>Notes</h3>
+          </IonText>
+
+          {job.notes.length === 0 && (
+            <IonText color="medium">
+              <p>No notes yet.</p>
+            </IonText>
+          )}
+
+          {job.notes.map((note) => (
+            <div
+              key={note.id}
+              style={{
+                padding: "8px 12px",
+                marginBottom: "8px",
+                borderLeft: "3px solid var(--ion-color-primary)",
+                background: "var(--ion-color-light)",
+                borderRadius: "4px",
+              }}
+            >
+              <IonText>
+                <p style={{ margin: "0 0 4px 0" }}>{note.note}</p>
+              </IonText>
+              <IonText color="medium">
+                <small>
+                  {note.user.firstName} {note.user.lastName} —{" "}
+                  {new Date(note.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </small>
+              </IonText>
+            </div>
+          ))}
+
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <IonTextarea
+              rows={2}
+              value={newNote}
+              onIonInput={(e) => setNewNote(e.detail.value || "")}
+              placeholder="Add a note..."
+              style={{ flex: 1 }}
+            />
+            <IonButton onClick={addNote} disabled={!newNote.trim()}>
+              Add
+            </IonButton>
+          </div>
+
+          {/* === LINE ITEMS === */}
+          <IonText>
+            <h3 style={{ marginTop: "24px", marginBottom: "8px" }}>
+              Line Items
+            </h3>
+          </IonText>
+
+          {(["SERVICE", "MATERIAL", "FEE"] as const).map((type) => {
+            const items = lineItemsByType(type);
+            const typeLabel = {
+              SERVICE: "Services",
+              MATERIAL: "Materials",
+              FEE: "Fees",
+            }[type];
+            return (
+              <div key={type} style={{ marginBottom: "16px" }}>
+                <IonText>
+                  <strong>{typeLabel}</strong>
+                </IonText>
+                {items.length === 0 && (
+                  <IonText color="medium">
+                    <p>No {typeLabel.toLowerCase()} yet.</p>
+                  </IonText>
+                )}
+                {items.map((li) => (
+                  <div
+                    key={li.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "6px 0",
+                      borderBottom: "1px solid var(--ion-color-light-shade)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      <IonText>
+                        <p
+                          style={{
+                            margin: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {li.description}
+                        </p>
+                      </IonText>
+                      <IonText color="medium">
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "12px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          x{li.quantity} @ {currency(Number(li.unitPrice))}
+                        </p>
+                      </IonText>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                      }}
+                    >
+                      <IonText>{currency(Number(li.lineTotal))}</IonText>
+                      <IonButton
+                        size="small"
+                        fill="clear"
+                        color="danger"
+                        onClick={() => deleteLineItem(li.id)}
+                      >
+                        <IonIcon icon={trashOutline} />
+                      </IonButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+
+          {/* === ADD LINE ITEM FORM === */}
           <div
-            key={note.id}
             style={{
-              padding: "8px 12px",
-              marginBottom: "8px",
-              borderLeft: "3px solid var(--ion-color-primary)",
-              background: "var(--ion-color-light)",
-              borderRadius: "4px",
+              border: "1px solid var(--ion-color-light-shade)",
+              borderRadius: "8px",
+              padding: "12px",
+              marginTop: "8px",
             }}
           >
             <IonText>
-              <p style={{ margin: "0 0 4px 0" }}>{note.note}</p>
+              <strong>Add Line Item</strong>
             </IonText>
-            <IonText color="medium">
-              <small>
-                {note.user.firstName} {note.user.lastName} —{" "}
-                {new Date(note.createdAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </small>
-            </IonText>
+
+            <IonItem style={{ "--padding-start": "16px", marginTop: "8px" }}>
+              <IonLabel>Type</IonLabel>
+              <IonSelect
+                value={liType}
+                onIonChange={(e) => setLiType(e.detail.value)}
+                interface="popover"
+              >
+                <IonSelectOption value="SERVICE">Service</IonSelectOption>
+                <IonSelectOption value="MATERIAL">Material</IonSelectOption>
+                <IonSelectOption value="FEE">Fee</IonSelectOption>
+              </IonSelect>
+            </IonItem>
+
+            <IonItem style={{ "--padding-start": "16px" }}>
+              <IonLabel position="stacked">Description</IonLabel>
+              <IonInput
+                value={liDesc}
+                onIonInput={(e) => setLiDesc(e.detail.value || "")}
+              />
+            </IonItem>
+
+            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+              <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
+                <IonLabel position="stacked">Quantity</IonLabel>
+                <IonInput
+                  type="number"
+                  value={liQty}
+                  onIonInput={(e) => setLiQty(e.detail.value || "")}
+                />
+              </IonItem>
+              <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
+                <IonLabel position="stacked">Unit Price</IonLabel>
+                <IonInput
+                  type="number"
+                  value={liPrice}
+                  onIonInput={(e) => setLiPrice(e.detail.value || "")}
+                />
+              </IonItem>
+            </div>
+
+            <IonButton
+              expand="block"
+              onClick={addLineItem}
+              disabled={!liDesc.trim() || !liQty || !liPrice}
+              style={{ marginTop: "8px" }}
+            >
+              Add Line Item
+            </IonButton>
           </div>
-        ))}
 
-        <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-          <IonTextarea
-            rows={2}
-            value={newNote}
-            onIonInput={(e) => setNewNote(e.detail.value || "")}
-            placeholder="Add a note..."
-            style={{ flex: 1 }}
-          />
-          <IonButton onClick={addNote} disabled={!newNote.trim()}>
-            Add
-          </IonButton>
-        </div>
+          {/* === COSTING SUMMARY === */}
+          <IonText>
+            <h3 style={{ marginTop: "24px", marginBottom: "8px" }}>Costing</h3>
+          </IonText>
 
-        {/* === LINE ITEMS === */}
-        <IonText>
-          <h3 style={{ marginTop: "24px", marginBottom: "8px" }}>Line Items</h3>
-        </IonText>
+          <div
+            style={{
+              border: "1px solid var(--ion-color-light-shade)",
+              borderRadius: "8px",
+              padding: "12px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "4px 0",
+              }}
+            >
+              <IonText>Services (pre-tax)</IonText>
+              <IonText>{currency(totalServices)}</IonText>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "4px 0",
+              }}
+            >
+              <IonText>Materials (pre-tax)</IonText>
+              <IonText>{currency(totalMaterials)}</IonText>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "4px 0",
+              }}
+            >
+              <IonText>Fees (pre-tax)</IonText>
+              <IonText>{currency(totalFees)}</IonText>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "4px 0",
+                borderTop: "1px solid var(--ion-color-light-shade)",
+                marginTop: "4px",
+              }}
+            >
+              <IonText>Subtotal (pre-tax)</IonText>
+              <IonText>{currency(preTaxTotal)}</IonText>
+            </div>
 
-        {(["SERVICE", "MATERIAL", "FEE"] as const).map((type) => {
-          const items = lineItemsByType(type);
-          const typeLabel = {
-            SERVICE: "Services",
-            MATERIAL: "Materials",
-            FEE: "Fees",
-          }[type];
-          return (
-            <div key={type} style={{ marginBottom: "16px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "4px 0",
+                marginTop: "4px",
+              }}
+            >
+              <IonText>Tax %</IonText>
+              <IonInput
+                type="number"
+                value={taxPercent}
+                onIonInput={(e) => {
+                  const v = parseFloat(e.detail.value || "0");
+                  setTaxPercent(isNaN(v) ? 0 : v);
+                }}
+                style={{
+                  maxWidth: "100px",
+                  textAlign: "right",
+                  "--padding-top": "0",
+                  "--padding-bottom": "0",
+                  border: "1px solid var(--ion-color-light-shade)",
+                  borderRadius: "4px",
+                  "--padding-start": "8px",
+                  "--padding-end": "8px",
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "4px 0",
+              }}
+            >
+              <IonText>Tax Amount</IonText>
+              <IonText>{currency(taxAmount)}</IonText>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "4px 0",
+                borderTop: "1px solid var(--ion-color-light-shade)",
+                fontWeight: "bold",
+              }}
+            >
               <IonText>
-                <strong>{typeLabel}</strong>
+                <strong>Total</strong>
               </IonText>
-              {items.length === 0 && (
-                <IonText color="medium">
-                  <p>No {typeLabel.toLowerCase()} yet.</p>
+              <IonText>
+                <strong>{currency(grandTotal)}</strong>
+              </IonText>
+            </div>
+          </div>
+
+          {/* === INVOICES === */}
+          <IonText>
+            <h3 style={{ marginTop: "24px", marginBottom: "8px" }}>Invoices</h3>
+          </IonText>
+
+          <IonButton
+            expand="block"
+            onClick={handleCreateInvoice}
+            disabled={creatingInvoice || !invoiceOutOfDate}
+            style={{ marginBottom: "12px" }}
+          >
+            {creatingInvoice ? <IonSpinner /> : "Create Invoice"}
+          </IonButton>
+
+          {job.invoices.length === 0 && (
+            <IonText color="medium">
+              <p>No invoices yet.</p>
+            </IonText>
+          )}
+
+          {job.invoices.map((inv) => (
+            <IonCard key={inv.id}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  padding: "16px 16px 0 16px",
+                  marginBottom: "4px",
+                }}
+              >
+                <IonChip
+                  color={
+                    inv.status === "DRAFT"
+                      ? "medium"
+                      : inv.status === "SUPERSEDED"
+                        ? "warning"
+                        : inv.status === "PAID"
+                          ? "success"
+                          : inv.status === "VOID"
+                            ? "danger"
+                            : "primary"
+                  }
+                  onClick={() => setStatusSheetInvoice(inv.id)}
+                >
+                  {inv.status}
+                </IonChip>
+              </div>
+              <div style={{ padding: "0 16px 0 16px" }}>
+                <IonText>
+                  <p style={{ margin: "0 0 2px 0", fontSize: "12px" }}>
+                    INVOICE #
+                  </p>
                 </IonText>
-              )}
-              {items.map((li) => (
+                <IonText>
+                  <h2 style={{ margin: "0 0 4px 0" }}>
+                    {formatInvoiceNumber(inv.invoiceNumber)}
+                  </h2>
+                </IonText>
+                <IonText>
+                  <p style={{ margin: "0 0 2px 0", fontSize: "12px" }}>
+                    {new Date(inv.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </IonText>
+                <IonText>
+                  <p style={{ margin: 0, fontSize: "12px" }}>
+                    VER: {inv.version}
+                  </p>
+                </IonText>
+              </div>
+              <IonCardContent>
                 <div
-                  key={li.id}
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "6px 0",
-                    borderBottom: "1px solid var(--ion-color-light-shade)",
+                    padding: "2px 0",
+                  }}
+                >
+                  <IonText>Subtotal</IonText>
+                  <IonText>{currency(Number(inv.subtotal))}</IonText>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "2px 0",
+                  }}
+                >
+                  <IonText>Tax ({Number(inv.taxPercent)}%)</IonText>
+                  <IonText>{currency(Number(inv.taxAmount))}</IonText>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "2px 0",
+                    fontWeight: "bold",
+                    borderTop: "1px solid var(--ion-color-light-shade)",
+                    marginTop: "4px",
+                    paddingTop: "4px",
+                  }}
+                >
+                  <IonText>
+                    <strong>Total</strong>
+                  </IonText>
+                  <IonText>
+                    <strong>{currency(Number(inv.total))}</strong>
+                  </IonText>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    borderTop: "1px solid var(--ion-color-light-shade)",
+                    marginTop: "8px",
+                    paddingTop: "8px",
                   }}
                 >
                   <div
                     style={{
                       flex: 1,
-                      minWidth: 0,
-                    }}
-                  >
-                    <IonText>
-                      <p
-                        style={{
-                          margin: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {li.description}
-                      </p>
-                    </IonText>
-                    <IonText color="medium">
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: "12px",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        x{li.quantity} @ {currency(Number(li.unitPrice))}
-                      </p>
-                    </IonText>
-                  </div>
-                  <div
-                    style={{
                       display: "flex",
-                      gap: "8px",
+                      justifyContent: "center",
+                      borderRight: "1px solid var(--ion-color-light-shade)",
                     }}
                   >
-                    <IonText>{currency(Number(li.lineTotal))}</IonText>
                     <IonButton
                       size="small"
                       fill="clear"
-                      color="danger"
-                      onClick={() => deleteLineItem(li.id)}
+                      onClick={async () => {
+                        try {
+                          await downloadPdf(
+                            inv.id,
+                            inv.invoiceNumber,
+                            user?.businessName,
+                          );
+                        } catch (err: any) {
+                          showToastMsg(
+                            err?.message || "Failed to download PDF",
+                          );
+                        }
+                      }}
                     >
-                      <IonIcon icon={trashOutline} />
+                      <IonIcon icon={downloadOutline} slot="start" />
+                      Download
+                    </IonButton>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <IonButton
+                      size="small"
+                      fill="clear"
+                      routerLink={`/invoice-preview/${inv.id}`}
+                    >
+                      <IonIcon icon={eyeOutline} slot="start" />
+                      Preview
                     </IonButton>
                   </div>
                 </div>
-              ))}
-            </div>
-          );
-        })}
+              </IonCardContent>
+            </IonCard>
+          ))}
 
-        {/* === ADD LINE ITEM FORM === */}
-        <div
-          style={{
-            border: "1px solid var(--ion-color-light-shade)",
-            borderRadius: "8px",
-            padding: "12px",
-            marginTop: "8px",
-          }}
-        >
-          <IonText>
-            <strong>Add Line Item</strong>
-          </IonText>
-
-          <IonItem style={{ "--padding-start": "16px", marginTop: "8px" }}>
-            <IonLabel>Type</IonLabel>
-            <IonSelect
-              value={liType}
-              onIonChange={(e) => setLiType(e.detail.value)}
-              interface="popover"
-            >
-              <IonSelectOption value="SERVICE">Service</IonSelectOption>
-              <IonSelectOption value="MATERIAL">Material</IonSelectOption>
-              <IonSelectOption value="FEE">Fee</IonSelectOption>
-            </IonSelect>
-          </IonItem>
-
-          <IonItem style={{ "--padding-start": "16px" }}>
-            <IonLabel position="stacked">Description</IonLabel>
-            <IonInput
-              value={liDesc}
-              onIonInput={(e) => setLiDesc(e.detail.value || "")}
-            />
-          </IonItem>
-
-          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
-              <IonLabel position="stacked">Quantity</IonLabel>
-              <IonInput
-                type="number"
-                value={liQty}
-                onIonInput={(e) => setLiQty(e.detail.value || "")}
-              />
-            </IonItem>
-            <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
-              <IonLabel position="stacked">Unit Price</IonLabel>
-              <IonInput
-                type="number"
-                value={liPrice}
-                onIonInput={(e) => setLiPrice(e.detail.value || "")}
-              />
-            </IonItem>
-          </div>
-
-          <IonButton
-            expand="block"
-            onClick={addLineItem}
-            disabled={!liDesc.trim() || !liQty || !liPrice}
-            style={{ marginTop: "8px" }}
-          >
-            Add Line Item
-          </IonButton>
+          <IonActionSheet
+            isOpen={statusSheetInvoice !== null}
+            onDidDismiss={() => setStatusSheetInvoice(null)}
+            header="Change Status"
+            buttons={[
+              {
+                text: "Draft",
+                handler: () => {
+                  if (statusSheetInvoice) {
+                    handleInvoiceStatusChange(statusSheetInvoice, "DRAFT");
+                  }
+                },
+              },
+              {
+                text: "Issued",
+                handler: () => {
+                  if (statusSheetInvoice) {
+                    handleInvoiceStatusChange(statusSheetInvoice, "ISSUED");
+                  }
+                },
+              },
+              {
+                text: "Paid",
+                handler: () => {
+                  if (statusSheetInvoice) {
+                    handleInvoiceStatusChange(statusSheetInvoice, "PAID");
+                  }
+                },
+              },
+              {
+                text: "Void",
+                role: "destructive",
+                handler: () => {
+                  if (statusSheetInvoice) {
+                    handleInvoiceStatusChange(statusSheetInvoice, "VOID");
+                  }
+                },
+              },
+              {
+                text: "Cancel",
+                role: "cancel",
+              },
+            ]}
+          />
         </div>
-
-        {/* === COSTING SUMMARY === */}
-        <IonText>
-          <h3 style={{ marginTop: "24px", marginBottom: "8px" }}>Costing</h3>
-        </IonText>
-
-        <div
-          style={{
-            border: "1px solid var(--ion-color-light-shade)",
-            borderRadius: "8px",
-            padding: "12px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "4px 0",
-            }}
-          >
-            <IonText>Services (pre-tax)</IonText>
-            <IonText>{currency(totalServices)}</IonText>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "4px 0",
-            }}
-          >
-            <IonText>Materials (pre-tax)</IonText>
-            <IonText>{currency(totalMaterials)}</IonText>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "4px 0",
-            }}
-          >
-            <IonText>Fees (pre-tax)</IonText>
-            <IonText>{currency(totalFees)}</IonText>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "4px 0",
-              borderTop: "1px solid var(--ion-color-light-shade)",
-              marginTop: "4px",
-            }}
-          >
-            <IonText>Subtotal (pre-tax)</IonText>
-            <IonText>{currency(preTaxTotal)}</IonText>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "4px 0",
-              marginTop: "4px",
-            }}
-          >
-            <IonText>Tax %</IonText>
-            <IonInput
-              type="number"
-              value={taxPercent}
-              onIonInput={(e) => {
-                const v = parseFloat(e.detail.value || "0");
-                setTaxPercent(isNaN(v) ? 0 : v);
-              }}
-              style={{
-                maxWidth: "100px",
-                textAlign: "right",
-                "--padding-top": "0",
-                "--padding-bottom": "0",
-                border: "1px solid var(--ion-color-light-shade)",
-                borderRadius: "4px",
-                "--padding-start": "8px",
-                "--padding-end": "8px",
-              }}
-            />
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "4px 0",
-            }}
-          >
-            <IonText>Tax Amount</IonText>
-            <IonText>{currency(taxAmount)}</IonText>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "4px 0",
-              borderTop: "1px solid var(--ion-color-light-shade)",
-              fontWeight: "bold",
-            }}
-          >
-            <IonText>
-              <strong>Total</strong>
-            </IonText>
-            <IonText>
-              <strong>{currency(grandTotal)}</strong>
-            </IonText>
-          </div>
-        </div>
-
-        {/* === INVOICES === */}
-        <IonText>
-          <h3 style={{ marginTop: "24px", marginBottom: "8px" }}>Invoices</h3>
-        </IonText>
-
-        <IonButton
-          expand="block"
-          onClick={handleCreateInvoice}
-          disabled={creatingInvoice || !invoiceOutOfDate}
-          style={{ marginBottom: "12px" }}
-        >
-          {creatingInvoice ? <IonSpinner /> : "Create Invoice"}
-        </IonButton>
-
-        {job.invoices.length === 0 && (
-          <IonText color="medium">
-            <p>No invoices yet.</p>
-          </IonText>
-        )}
-
-        {job.invoices.map((inv) => (
-          <IonCard key={inv.id}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                padding: "16px 16px 0 16px",
-                marginBottom: "4px",
-              }}
-            >
-              <IonChip
-                color={
-                  inv.status === "DRAFT"
-                    ? "medium"
-                    : inv.status === "SUPERSEDED"
-                      ? "warning"
-                      : inv.status === "PAID"
-                        ? "success"
-                        : inv.status === "VOID"
-                          ? "danger"
-                          : "primary"
-                }
-                onClick={() => setStatusSheetInvoice(inv.id)}
-              >
-                {inv.status}
-              </IonChip>
-            </div>
-            <div style={{ padding: "0 16px 0 16px" }}>
-              <IonText>
-                <p style={{ margin: "0 0 2px 0", fontSize: "12px" }}>
-                  INVOICE #
-                </p>
-              </IonText>
-              <IonText>
-                <h2 style={{ margin: "0 0 4px 0" }}>
-                  {formatInvoiceNumber(inv.invoiceNumber)}
-                </h2>
-              </IonText>
-              <IonText>
-                <p style={{ margin: "0 0 2px 0", fontSize: "12px" }}>
-                  {new Date(inv.createdAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
-              </IonText>
-              <IonText>
-                <p style={{ margin: 0, fontSize: "12px" }}>
-                  VER: {inv.version}
-                </p>
-              </IonText>
-            </div>
-            <IonCardContent>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "2px 0",
-                }}
-              >
-                <IonText>Subtotal</IonText>
-                <IonText>{currency(Number(inv.subtotal))}</IonText>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "2px 0",
-                }}
-              >
-                <IonText>Tax ({Number(inv.taxPercent)}%)</IonText>
-                <IonText>{currency(Number(inv.taxAmount))}</IonText>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "2px 0",
-                  fontWeight: "bold",
-                  borderTop: "1px solid var(--ion-color-light-shade)",
-                  marginTop: "4px",
-                  paddingTop: "4px",
-                }}
-              >
-                <IonText>
-                  <strong>Total</strong>
-                </IonText>
-                <IonText>
-                  <strong>{currency(Number(inv.total))}</strong>
-                </IonText>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  borderTop: "1px solid var(--ion-color-light-shade)",
-                  marginTop: "8px",
-                  paddingTop: "8px",
-                }}
-              >
-                <div
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    justifyContent: "center",
-                    borderRight: "1px solid var(--ion-color-light-shade)",
-                  }}
-                >
-                  <IonButton
-                    size="small"
-                    fill="clear"
-                    onClick={async () => {
-                      try {
-                        await downloadPdf(
-                          inv.id,
-                          inv.invoiceNumber,
-                          user?.businessName,
-                        );
-                      } catch (err: any) {
-                        showToastMsg(err?.message || "Failed to download PDF");
-                      }
-                    }}
-                  >
-                    <IonIcon icon={downloadOutline} slot="start" />
-                    Download
-                  </IonButton>
-                </div>
-                <div
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    justifyContent: "center",
-                  }}
-                >
-                  <IonButton
-                    size="small"
-                    fill="clear"
-                    routerLink={`/invoice-preview/${inv.id}`}
-                  >
-                    <IonIcon icon={eyeOutline} slot="start" />
-                    Preview
-                  </IonButton>
-                </div>
-              </div>
-            </IonCardContent>
-          </IonCard>
-        ))}
-
-        <IonActionSheet
-          isOpen={statusSheetInvoice !== null}
-          onDidDismiss={() => setStatusSheetInvoice(null)}
-          header="Change Status"
-          buttons={[
-            {
-              text: "Draft",
-              handler: () => {
-                if (statusSheetInvoice) {
-                  handleInvoiceStatusChange(statusSheetInvoice, "DRAFT");
-                }
-              },
-            },
-            {
-              text: "Issued",
-              handler: () => {
-                if (statusSheetInvoice) {
-                  handleInvoiceStatusChange(statusSheetInvoice, "ISSUED");
-                }
-              },
-            },
-            {
-              text: "Paid",
-              handler: () => {
-                if (statusSheetInvoice) {
-                  handleInvoiceStatusChange(statusSheetInvoice, "PAID");
-                }
-              },
-            },
-            {
-              text: "Void",
-              role: "destructive",
-              handler: () => {
-                if (statusSheetInvoice) {
-                  handleInvoiceStatusChange(statusSheetInvoice, "VOID");
-                }
-              },
-            },
-            {
-              text: "Cancel",
-              role: "cancel",
-            },
-          ]}
-        />
 
         <IonToast
           isOpen={showToast}

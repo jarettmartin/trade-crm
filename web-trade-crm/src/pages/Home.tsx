@@ -130,115 +130,119 @@ const Home: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <IonText color="medium">
-              <small>Filter by status</small>
-            </IonText>
-            <IonSelect
-              value={statusFilter}
-              onIonChange={(e) => handleStatusChange(e.detail.value)}
-              interface="popover"
-              style={{ minWidth: "120px" }}
-            >
-              <IonSelectOption value="ALL">All Statuses</IonSelectOption>
-              <IonSelectOption value="DRAFT">Draft</IonSelectOption>
-              <IonSelectOption value="ASSIGNED">Assigned</IonSelectOption>
-              <IonSelectOption value="IN_PROGRESS">In Progress</IonSelectOption>
-              <IonSelectOption value="COMPLETED">Completed</IonSelectOption>
-              <IonSelectOption value="CANCELLED">Cancelled</IonSelectOption>
-            </IonSelect>
-          </div>
-          <IonButton
-            size="small"
-            fill="outline"
-            onClick={() => history.push("/create-job")}
+        <div className="page-container">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
           >
-            New Job
-          </IonButton>
-        </div>
-
-        {loading && (
-          <div style={{ textAlign: "center", padding: "32px" }}>
-            <IonSpinner />
-          </div>
-        )}
-
-        {!loading && jobs.length === 0 && (
-          <IonText color="medium">
-            <p style={{ textAlign: "center", marginTop: "32px" }}>
-              No jobs found.
-            </p>
-          </IonText>
-        )}
-
-        {jobs.map((job) => (
-          <IonCard
-            key={job.id}
-            button
-            onClick={() => history.push(`/job/${job.id}`)}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                padding: "16px 16px 0 16px",
-                marginBottom: "4px",
-              }}
-            >
-              <IonChip color={statusColor[job.status] || "medium"}>
-                {statusLabel[job.status] || job.status}
-              </IonChip>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <IonText color="medium">
+                <small>Filter by status</small>
+              </IonText>
+              <IonSelect
+                value={statusFilter}
+                onIonChange={(e) => handleStatusChange(e.detail.value)}
+                interface="popover"
+                style={{ minWidth: "120px" }}
+              >
+                <IonSelectOption value="ALL">All Statuses</IonSelectOption>
+                <IonSelectOption value="DRAFT">Draft</IonSelectOption>
+                <IonSelectOption value="ASSIGNED">Assigned</IonSelectOption>
+                <IonSelectOption value="IN_PROGRESS">
+                  In Progress
+                </IonSelectOption>
+                <IonSelectOption value="COMPLETED">Completed</IonSelectOption>
+                <IonSelectOption value="CANCELLED">Cancelled</IonSelectOption>
+              </IonSelect>
             </div>
-            <IonCardHeader>
-              <IonCardTitle>{job.title}</IonCardTitle>
-              <IonCardSubtitle>
-                {job.customer.firstName} {job.customer.lastName}
-                {job.customer.companyName
-                  ? ` — ${job.customer.companyName}`
-                  : ""}
-              </IonCardSubtitle>
-            </IonCardHeader>
-            <IonCardContent>
-              {job.description && (
-                <IonText color="medium">
-                  <p style={{ margin: "0 0 8px 0" }}>{job.description}</p>
-                </IonText>
-              )}
+            <IonButton
+              size="small"
+              fill="outline"
+              onClick={() => history.push("/create-job")}
+            >
+              New Job
+            </IonButton>
+          </div>
+
+          {loading && (
+            <div style={{ textAlign: "center", padding: "32px" }}>
+              <IonSpinner />
+            </div>
+          )}
+
+          {!loading && jobs.length === 0 && (
+            <IonText color="medium">
+              <p style={{ textAlign: "center", marginTop: "32px" }}>
+                No jobs found.
+              </p>
+            </IonText>
+          )}
+
+          {jobs.map((job) => (
+            <IonCard
+              key={job.id}
+              button
+              onClick={() => history.push(`/job/${job.id}`)}
+            >
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
+                  justifyContent: "flex-end",
+                  padding: "16px 16px 0 16px",
+                  marginBottom: "4px",
                 }}
               >
-                <IonIcon icon={calendarOutline} size="small" color="medium" />
-                <IonText color="medium">
-                  <small>{formatDate(job.createdAt)}</small>
-                </IonText>
+                <IonChip color={statusColor[job.status] || "medium"}>
+                  {statusLabel[job.status] || job.status}
+                </IonChip>
               </div>
-            </IonCardContent>
-          </IonCard>
-        ))}
+              <IonCardHeader>
+                <IonCardTitle>{job.title}</IonCardTitle>
+                <IonCardSubtitle>
+                  {job.customer.firstName} {job.customer.lastName}
+                  {job.customer.companyName
+                    ? ` — ${job.customer.companyName}`
+                    : ""}
+                </IonCardSubtitle>
+              </IonCardHeader>
+              <IonCardContent>
+                {job.description && (
+                  <IonText color="medium">
+                    <p style={{ margin: "0 0 8px 0" }}>{job.description}</p>
+                  </IonText>
+                )}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <IonIcon icon={calendarOutline} size="small" color="medium" />
+                  <IonText color="medium">
+                    <small>{formatDate(job.createdAt)}</small>
+                  </IonText>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          ))}
 
-        {hasMore && jobs.length > 0 && (
-          <div style={{ textAlign: "center", marginTop: "8px" }}>
-            <IonButton
-              fill="outline"
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-            >
-              {loadingMore ? <IonSpinner /> : "Load More"}
-            </IonButton>
-          </div>
-        )}
+          {hasMore && jobs.length > 0 && (
+            <div style={{ textAlign: "center", marginTop: "8px" }}>
+              <IonButton
+                fill="outline"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? <IonSpinner /> : "Load More"}
+              </IonButton>
+            </div>
+          )}
+        </div>
 
         <IonToast
           isOpen={showToast}

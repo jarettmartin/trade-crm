@@ -120,7 +120,7 @@ const ManageBusinessPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <div style={{ maxWidth: 500, width: "100%", margin: "20px auto" }}>
+        <div className="page-container" style={{ marginTop: "20px" }}>
           <IonItem>
             <IonLabel position="stacked">Business Name</IonLabel>
             <IonInput

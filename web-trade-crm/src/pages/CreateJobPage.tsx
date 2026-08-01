@@ -106,139 +106,148 @@ const CreateJobPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <CustomerSearch onSelect={handleSelectCustomer} />
+        <div className="page-container">
+          <CustomerSearch onSelect={handleSelectCustomer} />
 
-        {selectedCustomer && (
-          <div
-            style={{
-              marginTop: "16px",
-              padding: "12px",
-              border: "1px solid var(--ion-color-light-shade)",
-              borderRadius: "8px",
-              background: "var(--ion-background-color)",
-            }}
-          >
+          {selectedCustomer && (
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
+                marginTop: "16px",
+                padding: "12px",
+                border: "1px solid var(--ion-color-light-shade)",
+                borderRadius: "8px",
+                background: "var(--ion-background-color)",
               }}
             >
-              <div>
-                <IonText>
-                  <strong>
-                    {selectedCustomer.firstName} {selectedCustomer.lastName}
-                  </strong>
-                </IonText>
-                {selectedCustomer.companyName && (
-                  <IonText>
-                    <p style={{ margin: "2px 0" }}>
-                      {selectedCustomer.companyName}
-                    </p>
-                  </IonText>
-                )}
-                <IonText color="medium">
-                  <p style={{ margin: "2px 0" }}>{selectedCustomer.phone}</p>
-                </IonText>
-                {selectedCustomer.email && (
-                  <IonText color="medium">
-                    <p style={{ margin: "2px 0" }}>{selectedCustomer.email}</p>
-                  </IonText>
-                )}
-              </div>
-              <IonButton
-                size="small"
-                fill="clear"
-                color="medium"
-                onClick={handleClearSelection}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
               >
-                Change
-              </IonButton>
-            </div>
-
-            {selectedCustomer.addresses &&
-              selectedCustomer.addresses.length > 0 && (
-                <div style={{ marginTop: "12px" }}>
-                  <IonLabel
-                    style={{
-                      fontSize: "14px",
-                      marginBottom: "4px",
-                      display: "block",
-                    }}
-                  >
-                    Address
-                  </IonLabel>
-                  <IonSelect
-                    value={selectedAddressId}
-                    onIonChange={(e) => setSelectedAddressId(e.detail.value)}
-                    style={{ width: "100%" }}
-                  >
-                    {selectedCustomer.addresses.map((addr) => {
-                      return (
-                        <IonSelectOption key={addr.id} value={addr.id}>
-                          {addr.addressLine1}
-                          {addr.addressLine2 ? `, ${addr.addressLine2}` : ""}
-                          {addr.city ? `, ${addr.city}` : ""}
-                          {addr.stateProvince ? `, ${addr.stateProvince}` : ""}
-                          {addr.isDefault ? " (Default)" : ""}
-                        </IonSelectOption>
-                      );
-                    })}
-                  </IonSelect>
+                <div>
+                  <IonText>
+                    <strong>
+                      {selectedCustomer.firstName} {selectedCustomer.lastName}
+                    </strong>
+                  </IonText>
+                  {selectedCustomer.companyName && (
+                    <IonText>
+                      <p style={{ margin: "2px 0" }}>
+                        {selectedCustomer.companyName}
+                      </p>
+                    </IonText>
+                  )}
+                  <IonText color="medium">
+                    <p style={{ margin: "2px 0" }}>{selectedCustomer.phone}</p>
+                  </IonText>
+                  {selectedCustomer.email && (
+                    <IonText color="medium">
+                      <p style={{ margin: "2px 0" }}>
+                        {selectedCustomer.email}
+                      </p>
+                    </IonText>
+                  )}
                 </div>
-              )}
+                <IonButton
+                  size="small"
+                  fill="clear"
+                  color="medium"
+                  onClick={handleClearSelection}
+                >
+                  Change
+                </IonButton>
+              </div>
+
+              {selectedCustomer.addresses &&
+                selectedCustomer.addresses.length > 0 && (
+                  <div style={{ marginTop: "12px" }}>
+                    <IonLabel
+                      style={{
+                        fontSize: "14px",
+                        marginBottom: "4px",
+                        display: "block",
+                      }}
+                    >
+                      Address
+                    </IonLabel>
+                    <IonSelect
+                      value={selectedAddressId}
+                      onIonChange={(e) => setSelectedAddressId(e.detail.value)}
+                      style={{ width: "100%" }}
+                    >
+                      {selectedCustomer.addresses.map((addr) => {
+                        return (
+                          <IonSelectOption key={addr.id} value={addr.id}>
+                            {addr.addressLine1}
+                            {addr.addressLine2 ? `, ${addr.addressLine2}` : ""}
+                            {addr.city ? `, ${addr.city}` : ""}
+                            {addr.stateProvince
+                              ? `, ${addr.stateProvince}`
+                              : ""}
+                            {addr.isDefault ? " (Default)" : ""}
+                          </IonSelectOption>
+                        );
+                      })}
+                    </IonSelect>
+                  </div>
+                )}
+            </div>
+          )}
+
+          {selectedCustomer && (
+            <>
+              <IonItem style={{ marginTop: "16px" }}>
+                <IonLabel position="stacked">
+                  Job Title <IonText color="danger">*</IonText>
+                </IonLabel>
+                <IonInput
+                  value={title}
+                  onIonInput={(e) => setTitle(e.detail.value || "")}
+                  placeholder="e.g. Repair dishwasher"
+                />
+              </IonItem>
+
+              <IonItem>
+                <IonLabel position="stacked">Description</IonLabel>
+                <IonTextarea
+                  rows={4}
+                  value={description}
+                  onIonInput={(e) => setDescription(e.detail.value || "")}
+                  placeholder="Describe the work to be done..."
+                />
+              </IonItem>
+            </>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              marginTop: "24px",
+            }}
+          >
+            <IonButton
+              expand="block"
+              fill="outline"
+              onClick={() => history.goBack()}
+            >
+              Cancel
+            </IonButton>
+            <IonButton
+              expand="block"
+              onClick={handleSave}
+              disabled={
+                saving ||
+                !selectedCustomer ||
+                !title.trim() ||
+                !selectedAddressId
+              }
+            >
+              {saving ? <IonSpinner /> : "Save Job"}
+            </IonButton>
           </div>
-        )}
-
-        {selectedCustomer && (
-          <>
-            <IonItem style={{ marginTop: "16px" }}>
-              <IonLabel position="stacked">
-                Job Title <IonText color="danger">*</IonText>
-              </IonLabel>
-              <IonInput
-                value={title}
-                onIonInput={(e) => setTitle(e.detail.value || "")}
-                placeholder="e.g. Repair dishwasher"
-              />
-            </IonItem>
-
-            <IonItem>
-              <IonLabel position="stacked">Description</IonLabel>
-              <IonTextarea
-                rows={4}
-                value={description}
-                onIonInput={(e) => setDescription(e.detail.value || "")}
-                placeholder="Describe the work to be done..."
-              />
-            </IonItem>
-          </>
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            marginTop: "24px",
-          }}
-        >
-          <IonButton
-            expand="block"
-            fill="outline"
-            onClick={() => history.goBack()}
-          >
-            Cancel
-          </IonButton>
-          <IonButton
-            expand="block"
-            onClick={handleSave}
-            disabled={
-              saving || !selectedCustomer || !title.trim() || !selectedAddressId
-            }
-          >
-            {saving ? <IonSpinner /> : "Save Job"}
-          </IonButton>
         </div>
 
         <IonToast

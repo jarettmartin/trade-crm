@@ -233,212 +233,228 @@ const ManageCustomersPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <CustomerSearch onSelect={handleSelectCustomer} clearOnSelect={false} />
+        <div className="page-container">
+          <CustomerSearch
+            onSelect={handleSelectCustomer}
+            clearOnSelect={false}
+          />
 
-        {customer && (
-          <>
-            <IonSegment
-              value={type}
-              onIonChange={(e) =>
-                setType((e.detail.value as string) || "PERSON")
-              }
-              style={{ marginTop: "16px" }}
-            >
-              <IonSegmentButton value="PERSON">
-                <IonLabel>Person</IonLabel>
-              </IonSegmentButton>
-              <IonSegmentButton value="BUSINESS">
-                <IonLabel>Business</IonLabel>
-              </IonSegmentButton>
-            </IonSegment>
+          {customer && (
+            <>
+              <IonSegment
+                value={type}
+                onIonChange={(e) =>
+                  setType((e.detail.value as string) || "PERSON")
+                }
+                style={{ marginTop: "16px" }}
+              >
+                <IonSegmentButton value="PERSON">
+                  <IonLabel>Person</IonLabel>
+                </IonSegmentButton>
+                <IonSegmentButton value="BUSINESS">
+                  <IonLabel>Business</IonLabel>
+                </IonSegmentButton>
+              </IonSegment>
 
-            <IonItem>
-              <IonLabel position="stacked">First Name</IonLabel>
-              <IonInput
-                value={firstName}
-                onIonInput={(e) => setFirstName(e.detail.value || "")}
-              />
-            </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">First Name</IonLabel>
+                <IonInput
+                  value={firstName}
+                  onIonInput={(e) => setFirstName(e.detail.value || "")}
+                />
+              </IonItem>
 
-            <IonItem>
-              <IonLabel position="stacked">Last Name</IonLabel>
-              <IonInput
-                value={lastName}
-                onIonInput={(e) => setLastName(e.detail.value || "")}
-              />
-            </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Last Name</IonLabel>
+                <IonInput
+                  value={lastName}
+                  onIonInput={(e) => setLastName(e.detail.value || "")}
+                />
+              </IonItem>
 
-            <IonItem>
-              <IonLabel position="stacked">Company Name</IonLabel>
-              <IonInput
-                value={companyName}
-                onIonInput={(e) => setCompanyName(e.detail.value || "")}
-              />
-            </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Company Name</IonLabel>
+                <IonInput
+                  value={companyName}
+                  onIonInput={(e) => setCompanyName(e.detail.value || "")}
+                />
+              </IonItem>
 
-            <IonItem>
-              <IonLabel position="stacked">Phone</IonLabel>
-              <IonInput
-                type="tel"
-                inputMode="numeric"
-                value={formatPhone(phone)}
-                onIonInput={(e) => {
-                  const digits = stripPhone(e.detail.value || "").slice(0, 10);
-                  setPhone(digits);
-                  if (e.target) {
-                    (e.target as HTMLIonInputElement).value =
-                      formatPhone(digits);
-                  }
-                }}
-              />
-            </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Phone</IonLabel>
+                <IonInput
+                  type="tel"
+                  inputMode="numeric"
+                  value={formatPhone(phone)}
+                  onIonInput={(e) => {
+                    const digits = stripPhone(e.detail.value || "").slice(
+                      0,
+                      10,
+                    );
+                    setPhone(digits);
+                    if (e.target) {
+                      (e.target as HTMLIonInputElement).value =
+                        formatPhone(digits);
+                    }
+                  }}
+                />
+              </IonItem>
 
-            <IonItem>
-              <IonLabel position="stacked">Email</IonLabel>
-              <IonInput
-                type="email"
-                value={email}
-                onIonInput={(e) => setEmail(e.detail.value || "")}
-              />
-            </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Email</IonLabel>
+                <IonInput
+                  type="email"
+                  value={email}
+                  onIonInput={(e) => setEmail(e.detail.value || "")}
+                />
+              </IonItem>
 
-            <IonItem>
-              <IonLabel position="stacked">Notes</IonLabel>
-              <IonTextarea
-                rows={3}
-                value={notes}
-                onIonInput={(e) => setNotes(e.detail.value || "")}
-              />
-            </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Notes</IonLabel>
+                <IonTextarea
+                  rows={3}
+                  value={notes}
+                  onIonInput={(e) => setNotes(e.detail.value || "")}
+                />
+              </IonItem>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: "24px",
-                marginBottom: "12px",
-              }}
-            >
-              <IonText>
-                <strong>Addresses</strong>
-              </IonText>
-              <IonButton size="small" fill="outline" onClick={addAddress}>
-                <IonIcon slot="start" icon={addOutline} />
-                Add Address
-              </IonButton>
-            </div>
-
-            {addresses.map((addr, index) => (
               <div
-                key={index}
                 style={{
-                  border: "1px solid var(--ion-color-light-shade)",
-                  borderRadius: "8px",
-                  padding: "12px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: "24px",
                   marginBottom: "12px",
-                  position: "relative",
                 }}
               >
+                <IonText>
+                  <strong>Addresses</strong>
+                </IonText>
+                <IonButton size="small" fill="outline" onClick={addAddress}>
+                  <IonIcon slot="start" icon={addOutline} />
+                  Add Address
+                </IonButton>
+              </div>
+
+              {addresses.map((addr, index) => (
                 <div
+                  key={index}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "8px",
+                    border: "1px solid var(--ion-color-light-shade)",
+                    borderRadius: "8px",
+                    padding: "12px",
+                    marginBottom: "12px",
+                    position: "relative",
                   }}
                 >
-                  <IonText color="medium">
-                    <small>Address {index + 1}</small>
-                  </IonText>
-                  <IonButton
-                    size="small"
-                    fill="clear"
-                    color="danger"
-                    onClick={() => removeAddress(index)}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "8px",
+                    }}
                   >
-                    <IonIcon icon={removeOutline} />
-                  </IonButton>
+                    <IonText color="medium">
+                      <small>Address {index + 1}</small>
+                    </IonText>
+                    <IonButton
+                      size="small"
+                      fill="clear"
+                      color="danger"
+                      onClick={() => removeAddress(index)}
+                    >
+                      <IonIcon icon={removeOutline} />
+                    </IonButton>
+                  </div>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Label</IonLabel>
+                    <IonInput
+                      value={addr.label}
+                      onIonInput={(e) =>
+                        updateAddress(index, "label", e.detail.value || "")
+                      }
+                      placeholder="e.g. Main, Warehouse"
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Address Line 1</IonLabel>
+                    <IonInput
+                      value={addr.addressLine1}
+                      onIonInput={(e) =>
+                        updateAddress(
+                          index,
+                          "addressLine1",
+                          e.detail.value || "",
+                        )
+                      }
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Address Line 2</IonLabel>
+                    <IonInput
+                      value={addr.addressLine2}
+                      onIonInput={(e) =>
+                        updateAddress(
+                          index,
+                          "addressLine2",
+                          e.detail.value || "",
+                        )
+                      }
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">City</IonLabel>
+                    <IonInput
+                      value={addr.city}
+                      onIonInput={(e) =>
+                        updateAddress(index, "city", e.detail.value || "")
+                      }
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">State / Province</IonLabel>
+                    <IonInput
+                      value={addr.stateProvince}
+                      onIonInput={(e) =>
+                        updateAddress(
+                          index,
+                          "stateProvince",
+                          e.detail.value || "",
+                        )
+                      }
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">ZIP / Postal Code</IonLabel>
+                    <IonInput
+                      value={addr.zipPostalCode}
+                      onIonInput={(e) =>
+                        handleZipChange(index, e.detail.value || "")
+                      }
+                      placeholder="e.g. 12345 or A1A 1A1"
+                    />
+                  </IonItem>
                 </div>
+              ))}
 
-                <IonItem>
-                  <IonLabel position="stacked">Label</IonLabel>
-                  <IonInput
-                    value={addr.label}
-                    onIonInput={(e) =>
-                      updateAddress(index, "label", e.detail.value || "")
-                    }
-                    placeholder="e.g. Main, Warehouse"
-                  />
-                </IonItem>
-
-                <IonItem>
-                  <IonLabel position="stacked">Address Line 1</IonLabel>
-                  <IonInput
-                    value={addr.addressLine1}
-                    onIonInput={(e) =>
-                      updateAddress(index, "addressLine1", e.detail.value || "")
-                    }
-                  />
-                </IonItem>
-
-                <IonItem>
-                  <IonLabel position="stacked">Address Line 2</IonLabel>
-                  <IonInput
-                    value={addr.addressLine2}
-                    onIonInput={(e) =>
-                      updateAddress(index, "addressLine2", e.detail.value || "")
-                    }
-                  />
-                </IonItem>
-
-                <IonItem>
-                  <IonLabel position="stacked">City</IonLabel>
-                  <IonInput
-                    value={addr.city}
-                    onIonInput={(e) =>
-                      updateAddress(index, "city", e.detail.value || "")
-                    }
-                  />
-                </IonItem>
-
-                <IonItem>
-                  <IonLabel position="stacked">State / Province</IonLabel>
-                  <IonInput
-                    value={addr.stateProvince}
-                    onIonInput={(e) =>
-                      updateAddress(
-                        index,
-                        "stateProvince",
-                        e.detail.value || "",
-                      )
-                    }
-                  />
-                </IonItem>
-
-                <IonItem>
-                  <IonLabel position="stacked">ZIP / Postal Code</IonLabel>
-                  <IonInput
-                    value={addr.zipPostalCode}
-                    onIonInput={(e) =>
-                      handleZipChange(index, e.detail.value || "")
-                    }
-                    placeholder="e.g. 12345 or A1A 1A1"
-                  />
-                </IonItem>
-              </div>
-            ))}
-
-            <IonButton
-              expand="block"
-              onClick={handleSave}
-              disabled={saving || !hasChanges}
-              style={{ marginTop: "16px" }}
-            >
-              {saving ? <IonSpinner /> : "Save"}
-            </IonButton>
-          </>
-        )}
+              <IonButton
+                expand="block"
+                onClick={handleSave}
+                disabled={saving || !hasChanges}
+                style={{ marginTop: "16px" }}
+              >
+                {saving ? <IonSpinner /> : "Save"}
+              </IonButton>
+            </>
+          )}
+        </div>
 
         <IonToast
           isOpen={showToast}

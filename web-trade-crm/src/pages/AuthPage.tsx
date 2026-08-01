@@ -146,7 +146,7 @@ const AuthPage: React.FC = () => {
           height: "100vh",
         }}
       >
-        <div style={{ maxWidth: 400, width: "100%", margin: "auto" }}>
+        <div className="page-container">
           <div style={{ textAlign: "center" }}>
             <img
               src="/logowithname.png"
