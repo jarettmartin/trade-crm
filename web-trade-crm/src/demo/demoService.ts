@@ -267,7 +267,33 @@ export const demoService = {
     if (idx === -1) throw new Error("Job not found");
     // Handle special nested fields
     if (payload.notes) {
-      jobs[idx].notes = payload.notes as JobNoteSeed[];
+      // The frontend sends notes as { note, userId } without a user object or
+      // timestamp. Reconstruct full note records so existing seeded notes keep
+      // their metadata and newly added notes get a createdAt + user (mirrors
+      // how the real backend re-creates note rows and auto-assigns createdAt).
+      const incoming = payload.notes as Array<{ note: string; userId: string }>;
+      const existing = [...jobs[idx].notes];
+      jobs[idx].notes = incoming.map((n, i) => {
+        // Match by content first so existing notes retain their original
+        // id/createdAt/user even if one is deleted from the middle.
+        const prev =
+          existing.find((e) => e.note === n.note && e.user.id === n.userId) ??
+          existing[i];
+        if (prev) {
+          // Remove matched note so it can't be reused for duplicates
+          existing.splice(existing.indexOf(prev), 1);
+        }
+        return {
+          id: prev?.id ?? `demo-note-${Date.now()}-${i}`,
+          note: n.note,
+          createdAt: prev?.createdAt ?? new Date().toISOString(),
+          user: prev?.user ?? {
+            id: n.userId,
+            firstName: "Demo",
+            lastName: "User",
+          },
+        };
+      });
       delete payload.notes;
     }
     if (payload.lineItems) {
@@ -301,7 +327,8 @@ export const demoService = {
       total: payload.total,
       createdAt: new Date().toISOString(),
     };
-    j.invoices.push(invoice);
+    // Match real backend ordering: invoices are returned newest-first (createdAt DESC)
+    j.invoices.unshift(invoice);
     return { ...invoice };
   },
 
