@@ -33,7 +33,7 @@
 
 ## Checklist
 
-- [ ] Code follows the project's coding standards (see `docs/AI_CONTEXT.md`)
+- [ ] Code follows the project's coding standards (see `README.md` and `docs/CONTRIBUTING.md`)
 - [ ] Code follows the [Conventional Commits](docs/CONTRIBUTING.md) standard in commit messages
 - [ ] No secrets or AWS credentials committed
 - [ ] Migrations included if schema changed
