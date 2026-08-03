@@ -10,6 +10,15 @@ NestJS backend for the Sprout CRM multi-tenant trade business application.
 - **PDF**: Handlebars templates + Playwright Chromium
 - **Validation**: class-validator + class-transformer
 
+## Versioning
+
+Current version: **`v0.1.0`** (git tag `api-v0.1.0`).
+
+- Semantic Versioning (`MAJOR.MINOR.PATCH`) — mirrored in `package.json` / `package-lock.json`.
+- The API and web frontend are versioned independently (separate deployables with separate release lifecycles).
+- Release tags use the `api-v` prefix (e.g. `api-v0.1.0`, `api-v0.1.1`).
+- See [docs/GITFLOW.md](../docs/GITFLOW.md) for the full branching & release workflow.
+
 ## Local Development
 
 ### Prerequisites
