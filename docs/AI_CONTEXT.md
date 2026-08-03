@@ -6,6 +6,46 @@ Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and
 
 ---
 
+## Development Workflow
+
+This repository follows the **GitFlow** branching model. Full reference: `docs/GITFLOW.md`. Contribution guide: `docs/CONTRIBUTING.md`.
+
+### Branches
+
+| Branch      | Purpose                        | Base      | Merges Into          |
+| ----------- | ------------------------------ | --------- | -------------------- |
+| `main`      | Production-ready code          | —         | —                    |
+| `develop`   | Integration branch             | `main`    | `main` (via release) |
+| `feature/*` | New features / non-urgent work | `develop` | `develop`            |
+| `release/*` | Preparing a production release | `develop` | `main` + `develop`   |
+| `hotfix/*`  | Urgent production fixes        | `main`    | `main` + `develop`   |
+
+### Commits
+
+All commits follow **Conventional Commits** (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`) with an optional scope, e.g. `feat(web): add invoice status dropdown`. Use imperative mood and keep descriptions under 72 characters.
+
+### Pull Requests
+
+- All changes to `main` and `develop` go through PRs (branch protection enforced).
+- Use the template at `.github/PULL_REQUEST_TEMPLATE.md`.
+- Code owners are auto-requested via `.github/CODEOWNERS` (currently `@jarettmartin`).
+
+### Versioning
+
+- API (`api-trade-crm/`) and web (`web-trade-crm/`) are **versioned independently** (SemVer in each `package.json`).
+- Release tags are prefixed per package: `api-v0.1.0`, `web-v0.1.0`.
+- Version bumps happen on `release/*` branches — never on feature branches.
+- Current release: API `v0.1.0` · Web `v0.1.0`.
+
+### Typical Feature Flow
+
+1. Branch from `develop`: `git checkout -b feature/<name> develop`
+2. Implement + commit with Conventional Commits.
+3. Push and open a PR against `develop`.
+4. Address review, keep tests green, merge.
+
+---
+
 ## AWS Infrastructure (Production)
 
 The application is deployed on AWS using the following services:

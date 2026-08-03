@@ -49,7 +49,12 @@ trade-crm/
 │   ├── nginx.conf          # SPA routing config
 │   └── package.json
 ├── docs/
-│   └── AI_CONTEXT.md       # Detailed project context
+│   ├── AI_CONTEXT.md       # Detailed project context
+│   ├── GITFLOW.md          # Branching & release workflow
+│   └── CONTRIBUTING.md     # Commit standard & contribution guide
+├── .github/
+│   ├── PULL_REQUEST_TEMPLATE.md  # PR template
+│   └── CODEOWNERS                # Code ownership
 └── docker-compose.yml      # Local PostgreSQL
 ```
 
@@ -169,3 +174,10 @@ cd web-trade-crm
 npm run test.unit     # Unit tests (vitest)
 npm run test.e2e      # E2E tests (Cypress)
 ```
+
+## Contributing
+
+- **Branching**: GitFlow model — see [docs/GITFLOW.md](docs/GITFLOW.md)
+- **Commits**: Conventional Commits — see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- **Pull requests**: Use the [PR template](.github/PULL_REQUEST_TEMPLATE.md); code owners are auto-requested via [CODEOWNERS](.github/CODEOWNERS)
+- **Architecture**: See [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md)
