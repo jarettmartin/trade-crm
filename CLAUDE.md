@@ -17,8 +17,9 @@ Before doing any work, collect the following from the user. If any information i
 1. **GitFlow task type** — one of: `feature`, `hotfix`, `bugfix`, `release`, `chore`, `docs`, `refactor`. (If the user says "bugfix", treat it as a `fix`-type task; map logically to the GitFlow branch prefixes below.)
 2. **Task name** — likely an issue name or a short description of the problem (e.g. "add customer search").
 3. **Task details** — information about the task, or acceptance criteria, so you understand what "done" means.
+4. **Branch name (optional)** — if the user provides a branch name, use theirs exactly. If not provided, generate one from the task name/details as described below.
 
-If the user provides all three on invocation, proceed without re-asking.
+If the user provides the required information (task type, task name, task details) on invocation, proceed without re-asking. The branch name is optional — only prompt for it if you need clarification.
 
 ## Branch Setup (Do This Before Writing Code)
 
@@ -37,14 +38,16 @@ If the user provides all three on invocation, proceed without re-asking.
    ```bash
    git reset --hard origin/develop    # or origin/main for hotfixes
    ```
-5. **Generate a branch name** — the correct prefix plus a short, hyphenated description (no more than a few words, derived from the task name/details):
-   - `feature/<short-description>` e.g. `feature/add-customer-search`
-   - `hotfix/<short-description>` e.g. `hotfix/fix-cognito-token-refresh`
-   - `release/v<version>` e.g. `release/v0.1.1`
-   - `docs/<short-description>`, `chore/<short-description>`, `refactor/<short-description>` as appropriate
-6. **Create and switch to the branch**:
+5. **Determine the branch name**:
+   - **If the user provided a branch name**, use it exactly as given (they are responsible for the prefix; use it verbatim).
+   - **Otherwise, generate a branch name** — the correct prefix plus a short, hyphenated description (no more than a few words, derived from the task name/details):
+     - `feature/<short-description>` e.g. `feature/add-customer-search`
+     - `hotfix/<short-description>` e.g. `hotfix/fix-cognito-token-refresh`
+     - `release/v<version>` e.g. `release/v0.1.1`
+     - `docs/<short-description>`, `chore/<short-description>`, `refactor/<short-description>` as appropriate
+6. **Create and switch to the branch** (use the user-provided name if given, otherwise the generated name):
    ```bash
-   git checkout -b feature/<short-description>
+   git checkout -b <branch-name>
    ```
 
 ## Doing the Work
