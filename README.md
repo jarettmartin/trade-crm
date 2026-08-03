@@ -6,6 +6,27 @@ Multi-tenant service-business CRM MVP — a full-stack application for managing 
 
 Track the future of the projects platform enginerring priorities on the [GitHub Projects kanban board](https://github.com/users/jarettmartin/projects/9).
 
+## Branching & Versioning
+
+This repository follows the **GitFlow** branching model. See [docs/GITFLOW.md](docs/GITFLOW.md) for the full workflow.
+
+| Branch      | Purpose                        | Base      | Merges Into          |
+| ----------- | ------------------------------ | --------- | -------------------- |
+| `main`      | Production-ready code          | —         | —                    |
+| `develop`   | Integration branch             | `main`    | `main` (via release) |
+| `feature/*` | New features / non-urgent work | `develop` | `develop`            |
+| `release/*` | Preparing a production release | `develop` | `main` + `develop`   |
+| `hotfix/*`  | Urgent production fixes        | `main`    | `main` + `develop`   |
+
+The **API** and **web frontend** are versioned independently (separate deployables, separate release lifecycles):
+
+| Package      | Location         | Version ref    | Tag prefix |
+| ------------ | ---------------- | -------------- | ---------- |
+| API (NestJS) | `api-trade-crm/` | `package.json` | `api-v`    |
+| Web (Ionic)  | `web-trade-crm/` | `package.json` | `web-v`    |
+
+Current release: **API `v0.1.0`** · **Web `v0.1.0`** (tags `api-v0.1.0`, `web-v0.1.0`).
+
 ## Architecture
 
 - **Backend**: NestJS + TypeORM + PostgreSQL (API container)

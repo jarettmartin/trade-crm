@@ -9,6 +9,15 @@ Ionic React SPA for the Sprout CRM multi-tenant trade business application.
 - **Routing**: React Router 5 + Ionic React Router
 - **Testing**: Vitest (unit) + Cypress (E2E)
 
+## Versioning
+
+Current version: **`v0.1.0`** (git tag `web-v0.1.0`).
+
+- Semantic Versioning (`MAJOR.MINOR.PATCH`) — mirrored in `package.json` / `package-lock.json`.
+- The web frontend and API are versioned independently (separate deployables with separate release lifecycles).
+- Release tags use the `web-v` prefix (e.g. `web-v0.1.0`, `web-v0.1.1`).
+- See [docs/GITFLOW.md](../docs/GITFLOW.md) for the full branching & release workflow.
+
 ## Local Development
 
 ### Prerequisites
