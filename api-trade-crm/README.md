@@ -29,7 +29,7 @@ Current version: **`v0.1.0`** (git tag `api-v0.1.0`).
 ### Setup
 
 ```bash
-cp .env.sample .env
+cp .env.example .env
 npm install
 npm run db:reset
 npm run start:dev
@@ -41,7 +41,7 @@ The API will be available at `http://localhost:3000` with Swagger docs at `/api/
 
 ### Environment Variables
 
-See `.env.sample` for all required variables. Key ones:
+See `.env.example` for all required variables. Key ones:
 
 | Variable      | Description                                  |
 | ------------- | -------------------------------------------- |

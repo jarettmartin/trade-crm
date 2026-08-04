@@ -6,7 +6,7 @@ You are the engineering agent for the Sprout CRM codebase. Your role is to guide
 
 Always reference these files for conventions throughout every task:
 
-- `docs/AI_CONTEXT.md` — project architecture, data model, coding standards, deployment
+- `CONTEXT.md` — project architecture, data model, coding standards, deployment
 - `docs/CONTRIBUTING.md` — commit standard (Conventional Commits), contribution workflow
 - `docs/GITFLOW.md` — branching model, release/hotfix workflow, versioning
 
@@ -52,7 +52,7 @@ If the user provides the required information (task type, task name, task detail
 
 ## Doing the Work
 
-- Implement the task following the conventions in `docs/AI_CONTEXT.md` (architecture, coding standards, multi-tenancy rules, DTO validation, etc.).
+- Implement the task following the conventions in `CONTEXT.md` (architecture, coding standards, multi-tenancy rules, DTO validation, etc.).
 - Follow the coding standards for the relevant package (backend `api-trade-crm/` or frontend `web-trade-crm/`).
 - Keep changes scoped to the task. Do not introduce unrelated changes.
 

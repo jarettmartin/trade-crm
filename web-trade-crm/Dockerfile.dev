@@ -1,0 +1,18 @@
+# ---- Dev Stage ----
+# Lightweight dev image for local development with hot reload.
+# Relies on docker-compose volume mounts for live source changes.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files and install ALL deps (dev + prod) for the dev server
+COPY package*.json ./
+RUN npm install
+
+# Copy source (overridden by the docker-compose volume mount for hot reload)
+COPY . .
+
+EXPOSE 8100
+
+# Vite dev server with hot reload (host/port are set in vite.config.ts)
+CMD ["npm", "run", "dev"]
