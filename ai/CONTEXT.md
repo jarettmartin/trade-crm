@@ -133,7 +133,7 @@ aws ecs run-task --cluster sprout-crm-cluster --task-definition sprout-crm-api-t
 - **Never commit AWS config files to the repository.** Task definition JSON files, ECS service configs, and any other files containing AWS credentials, Cognito secrets, or database passwords must be created in `/tmp/` and deleted after use.
 - **ECS task definition revisions**: When pushing a new Docker image to ECR with the `:latest` tag, you must register a new task definition revision to force ECS to re-resolve the image digest. `--force-new-deployment` alone re-deploys the same revision and uses the cached image. The deployment command is: `aws ecs register-task-definition --family sprout-crm-api-task --cli-input-json "$(aws ecs describe-task-definition --task-definition sprout-crm-api-task --query 'taskDefinition | {containerDefinitions: containerDefinitions, executionRoleArn: executionRoleArn, networkMode: networkMode, volumes: volumes, cpu: cpu, memory: memory, requiresCompatibilities: requiresCompatibilities}' --output json)"` then `aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --task-definition sprout-crm-api-task:<N> --force-new-deployment`.
 - The `.env` file is gitignored — never commit it.
-- The `.env.sample` file contains placeholder values only — never put real credentials in it.
+- The `.env.example` file contains placeholder values only — never put real credentials in it.
 - IAM user `sprout-crm-api` has limited permissions and cannot create IAM roles or modify RDS — those operations require the AWS console with admin credentials.
 
 ---

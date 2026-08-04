@@ -48,8 +48,11 @@ trade-crm/
 │   ├── Dockerfile          # Container build (nginx)
 │   ├── nginx.conf          # SPA routing config
 │   └── package.json
+├── ai/
+│   ├── agents/
+│   │   └── TASK.agent.md   # AI task agent instructions
+│   └── CONTEXT.md          # AI project context (architecture, standards)
 ├── docs/
-│   ├── AI_CONTEXT.md       # Detailed project context
 │   ├── GITFLOW.md          # Branching & release workflow
 │   └── CONTRIBUTING.md     # Commit standard & contribution guide
 ├── .github/
@@ -62,33 +65,73 @@ trade-crm/
 
 ### Prerequisites
 
-- Node.js 20+
-- Docker (for local PostgreSQL)
-- PostgreSQL 15 (via Docker or local install)
+- Docker (with the Compose plugin)
+- Node.js 20+ (only needed for the manual / non-Docker workflow below)
 
-### 1. Start the database
+### Option A — One-command Docker startup (recommended)
+
+Bring up the entire stack (PostgreSQL + API + web) with a single command:
 
 ```bash
-docker compose up -d
+docker compose up
 ```
 
-### 2. Backend
+This starts everything with hot reload enabled:
+
+- **API** → http://localhost:3000 (Swagger docs at `/api/docs`)
+- **Web** → http://localhost:8100
+- **PostgreSQL** → localhost:5432
+
+Migrations run automatically and seed data is generated on startup, so no manual
+setup is required. The API and web containers watch your source files and
+reload on change.
+
+> **Hot reload** applies to `src/` files only. Changes to config or static files
+> (e.g. `vite.config.ts`, `nest-cli.json`, `package.json`, Dockerfiles, or
+> `docker-compose.yml`) require a restart: stop with `docker compose down`, then
+> run `docker compose up` again.
+
+Stop the stack with `Ctrl+C`, or use `docker compose down` to remove the
+containers. Common commands are available as npm scripts (see
+[package.json](package.json)): `npm run dev`, `npm run down`, `npm run logs`,
+`npm run reset`, etc.
+
+### Option B — Manual setup (no Docker)
+
+Run the API and web directly on your machine.
 
 ```bash
+# 1. Database (Docker or local PostgreSQL 15)
+docker compose up -d postgres
+
+# 2. Backend
 cd api-trade-crm
-cp .env.sample .env          # Edit as needed
+cp .env.example .env         # Edit as needed
 npm install
 npm run migration:run        # Create tables
+npm run db:seed              # Seed data
 npm run start:dev            # http://localhost:3000
-```
 
-### 3. Frontend
-
-```bash
+# 3. Frontend
 cd web-trade-crm
+cp .env.example .env         # Edit as needed
 npm install
 npm run dev                  # http://localhost:8100
 ```
+
+### Pre-commit hooks
+
+The repo uses [Husky](https://typicode.github.io/husky/) +
+[lint-staged](https://github.com/lint-staged/lint-staged) to run linting and
+formatting on staged files before every commit. Run once from the repo root to
+install the hooks:
+
+```bash
+npm install
+```
+
+This sets up the `pre-commit` hook (via the `prepare` script). If you have
+already installed, you can re-run `npm run prepare` to (re)install them.
 
 ## Deployment
 
@@ -180,4 +223,27 @@ npm run test.e2e      # E2E tests (Cypress)
 - **Branching**: GitFlow model — see [docs/GITFLOW.md](docs/GITFLOW.md)
 - **Commits**: Conventional Commits — see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
 - **Pull requests**: Use the [PR template](.github/PULL_REQUEST_TEMPLATE.md); code owners are auto-requested via [CODEOWNERS](.github/CODEOWNERS)
-- **Architecture**: See [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md)
+- **Architecture**: See [ai/CONTEXT.md](ai/CONTEXT.md)
+
+## AI Agent
+
+This repository includes an AI engineering agent that guides task completion
+end-to-end (task intake, GitFlow branch setup, Conventional Commits, and
+verification). Its instructions live in [ai/agents/TASK.agent.md](ai/agents/TASK.agent.md),
+with the project context it references in [ai/CONTEXT.md](ai/CONTEXT.md).
+
+### Example prompt
+
+Copy this to start a new task with the agent (the `@` reference points to the
+agent file so your AI tool loads it):
+
+```text
+@/ai/agents/TASK.agent.md I'm working on a new task:
+
+# All of the following are optional — the agent will ask for any missing
+# inputs before starting.
+- Task type: feature | hotfix | bugfix | release | chore | docs | refactor
+- Task name: <short description>
+- Task details: <what "done" looks like / acceptance criteria>
+- Branch name: <optional — otherwise the agent generates one>
+```

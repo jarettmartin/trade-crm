@@ -11,6 +11,74 @@ services:
       POSTGRES_DB: trade_crm
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d trade_crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./api-trade-crm
+      dockerfile: Dockerfile.dev
+    container_name: trade-crm-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    # Load the real Cognito/AWS credentials from api-trade-crm/.env (gitignored).
+    # Optional: if the file is missing, compose falls back to the environment
+    # block below. Copy .env.example to .env and fill in your real secrets.
+    env_file:
+      - path: ./api-trade-crm/.env
+        required: false
+    # Local dev defaults (mirrors api-trade-crm/.env.example). These values
+    # override the env_file for the Docker-specific setup (e.g. DB_HOST).
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: trade_crm
+      DB_LOGGING: "false"
+      DB_SSL: "false"
+      PORT: 3000
+      NODE_ENV: development
+      CORS_ORIGIN: http://localhost:8100,http://localhost:5173
+      COGNITO_REGION: us-east-2
+      COGNITO_USER_POOL_ID: us-east-2_vpllPmEOD
+      COGNITO_CLIENT_ID: 53cio0p2dshgeq14olqjcqu1c8
+    volumes:
+      # Live source mount for hot reload (nest start --watch recompiles on change)
+      - ./api-trade-crm/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Run migrations + seed automatically, then start the dev server with hot reload
+    command:
+      [
+        "sh",
+        "-c",
+        "npm run migration:run && npm run db:seed && npm run start:dev",
+      ]
+
+  web:
+    build:
+      context: ./web-trade-crm
+      dockerfile: Dockerfile.dev
+    container_name: trade-crm-web
+    restart: unless-stopped
+    ports:
+      - "8100:8100"
+    environment:
+      # Browser resolves this from the host, so point at the published API port
+      VITE_API_BASE: http://localhost:3000
+    volumes:
+      # Live source mounts for hot reload (vite watches these)
+      - ./web-trade-crm/src:/app/src
+      - ./web-trade-crm/index.html:/app/index.html
+      - ./web-trade-crm/vite.config.ts:/app/vite.config.ts
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
