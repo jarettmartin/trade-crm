@@ -231,3 +231,19 @@ This repository includes an AI engineering agent that guides task completion
 end-to-end (task intake, GitFlow branch setup, Conventional Commits, and
 verification). Its instructions live in [ai/agents/TASK.agent.md](ai/agents/TASK.agent.md),
 with the project context it references in [ai/CONTEXT.md](ai/CONTEXT.md).
+
+### Example prompt
+
+Copy this to start a new task with the agent (the `@` reference points to the
+agent file so your AI tool loads it):
+
+```text
+@ai/agents/TASK.agent.md I'm working on a new task:
+
+# All of the following are optional — the agent will ask for any missing
+# inputs before starting.
+- Task type: feature | hotfix | bugfix | release | chore | docs | refactor
+- Task name: <short description>
+- Task details: <what "done" looks like / acceptance criteria>
+- Branch name: <optional — otherwise the agent generates one>
+```
