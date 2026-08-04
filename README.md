@@ -238,7 +238,7 @@ Copy this to start a new task with the agent (the `@` reference points to the
 agent file so your AI tool loads it):
 
 ```text
-@ai/agents/TASK.agent.md I'm working on a new task:
+@/ai/agents/TASK.agent.md I'm working on a new task:
 
 # All of the following are optional — the agent will ask for any missing
 # inputs before starting.
