@@ -1,0 +1,84 @@
+# Production stack for the single Lightsail instance.
+#
+# Runs on one VM: PostgreSQL, NestJS API, and Caddy (reverse proxy + automatic
+# HTTPS). No ECS/ECR/RDS/ALB required. The frontend SPA is hosted separately on
+# S3 behind CloudFront.
+#
+# Usage (on the instance, or via scripts/deploy.sh):
+#   cp .env.production.example .env.production   # fill in real secrets
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: sprout-crm-db
+    restart: unless-stopped
+    # Bound to localhost only. The API reaches it over the Docker network; for
+    # manual administration use `docker compose exec` or an SSH tunnel.
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-trade_crm}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-trade_crm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./api-trade-crm
+      dockerfile: Dockerfile
+    container_name: sprout-crm-api
+    restart: unless-stopped
+    # Cognito/AWS secrets + CORS_ORIGIN come from .env.production. DB_* are
+    # overridden below to point at the postgres service on the Docker network.
+    env_file:
+      - .env.production
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_DATABASE: ${POSTGRES_DB:-trade_crm}
+      DB_SSL: "false"
+      DB_LOGGING: "false"
+      PORT: "3000"
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Migrations + seed are idempotent, then start the server.
+    command:
+      - sh
+      - -c
+      - |
+        node node_modules/typeorm/cli.js migration:run -d dist/config/data-source.js &&
+        node dist/config/seed.js &&
+        node dist/main
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: sprout-crm-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env.production}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env.production}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

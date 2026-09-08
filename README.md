@@ -2,9 +2,9 @@
 
 Multi-tenant service-business CRM MVP — a full-stack application for managing customers, jobs, invoicing, and PDF generation.
 
-## Platform Engineering Roadmap
+## Roadmap
 
-Track the future of the projects platform enginerring priorities on the [GitHub Projects kanban board](https://github.com/users/jarettmartin/projects/9).
+Track the future of the project's priorities on the [GitHub Projects kanban board](https://github.com/users/jarettmartin/projects/9).
 
 ## Branching & Versioning
 
@@ -33,7 +33,7 @@ Current release: **API `v0.1.0`** · **Web `v0.1.0`** (tags `api-v0.1.0`, `web-v
 - **Frontend**: Ionic React SPA (static files on S3)
 - **Auth**: AWS Cognito (server-side only)
 - **PDF**: Handlebars templates + Playwright Chromium
-- **Infrastructure**: AWS (ECS Fargate, RDS, S3, ALB)
+- **Infrastructure**: AWS Lightsail (API + DB) + S3 + CloudFront (frontend)
 
 ## Project Structure
 
@@ -135,7 +135,8 @@ already installed, you can re-run `npm run prepare` to (re)install them.
 
 ## Deployment
 
-The app is deployed on AWS, accessible via custom domain through CloudFront + Cloudflare:
+The app runs on AWS with two pieces: the API + database on a single Lightsail
+instance (Docker Compose), and the static frontend on S3 behind CloudFront.
 
 ### Live URLs
 
@@ -147,30 +148,67 @@ The app is deployed on AWS, accessible via custom domain through CloudFront + Cl
 
 ### Infrastructure
 
-- **API**: ECS Fargate behind an ALB, fronted by CloudFront
-- **Frontend**: Static files on S3, fronted by CloudFront
-- **CDN/DNS**: CloudFront + Cloudflare (proxied)
-- **Database**: RDS PostgreSQL 15
-- **Auth**: AWS Cognito User Pool
-- **SSL**: AWS Certificate Manager (us-east-1)
+| Service    | Details                                             |
+| ---------- | --------------------------------------------------- |
+| **Server** | Lightsail instance (`small_3_0`, 2 vCPU/2GB, $12/mo)|
+| **DB**     | PostgreSQL 15 (Docker container + volume)           |
+| **API**    | NestJS (Docker container)                           |
+| **Proxy**  | Caddy (automatic HTTPS for the API)                 |
+| **Web**    | S3 bucket + CloudFront (HTTPS, ACM cert)            |
+
+See [infra/lightsail/README.md](infra/lightsail/README.md) for the Terraform
+setup, [docker-compose.prod.yml](docker-compose.prod.yml) for the API stack,
+and [scripts/](scripts/) for the deploy helpers.
+
+### One-time infrastructure setup
+
+```bash
+cd infra/lightsail
+cp terraform.tfvars.example terraform.tfvars   # paste your SSH key + lock ssh_cidr_blocks
+terraform init
+terraform plan
+terraform apply
+```
+
+This creates the Lightsail instance (Docker + Compose installed on first boot),
+a static IP, the firewall rules, the ACM certificate, and the CloudFront
+distribution. Then point DNS in Cloudflare:
+
+- `api.sprout-crm.com` → the `public_ip` output (A record, DNS-only)
+- `sprout-crm.com` → the `frontend_domain` output (DNS-only)
 
 ### Deploy API
 
 ```bash
-cd api-trade-crm
-docker build -t sprout-crm-api .
-docker tag sprout-crm-api:latest 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
-docker push 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
-aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --force-new-deployment
+cp .env.production.example .env.production   # fill in secrets
+SSH_KEY=~/.ssh/id_ed25519 ./scripts/deploy.sh
 ```
 
-### Deploy Frontend
+`deploy.sh` rsyncs the repo to the instance and runs
+`docker compose -f docker-compose.prod.yml up -d --build`, which builds the API
+image, runs migrations + seed, and starts the stack.
+
+### Deploy frontend
 
 ```bash
-cd web-trade-crm
-VITE_API_BASE=https://api.sprout-crm.com npm run build
-aws s3 sync dist/ s3://sprout-crm-web/ --delete
-aws cloudfront create-invalidation --distribution-id E3BYN5AYDQO0IE --paths "/*"
+./scripts/deploy-frontend.sh
+```
+
+Builds the SPA, syncs `dist/` to the `sprout-crm-web` bucket, and invalidates
+CloudFront.
+
+### Database management (manual)
+
+```bash
+ssh ubuntu@<public_ip>
+cd ~/trade-crm
+docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d trade_crm
+```
+
+For a local GUI client, forward the port (Postgres is bound to localhost only):
+
+```bash
+ssh -L 5432:127.0.0.1:5432 ubuntu@<public_ip>
 ```
 
 ## Environment Variables

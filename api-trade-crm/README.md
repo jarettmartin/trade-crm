@@ -50,7 +50,7 @@ See `.env.example` for all required variables. Key ones:
 | `DB_USERNAME` | PostgreSQL username                          |
 | `DB_PASSWORD` | PostgreSQL password                          |
 | `DB_DATABASE` | Database name                                |
-| `DB_SSL`      | Enable SSL (set to `true` for RDS)           |
+| `DB_SSL`      | Enable SSL (`false` locally; `true` only for an external TLS DB) |
 | `PORT`        | App listen port (default 3000)               |
 | `CORS_ORIGIN` | Comma-separated allowed CORS origins         |
 | `COGNITO_*`   | AWS Cognito configuration                    |
@@ -114,7 +114,7 @@ src/
 
 ## Deployment
 
-The API is deployed on AWS ECS Fargate, accessible at **https://api.sprout-crm.com** (via CloudFront + Cloudflare).
+The API runs in a Docker container on a single AWS Lightsail instance, accessible at **https://api.sprout-crm.com** (Caddy terminates TLS with Let's Encrypt).
 
 ### Live Endpoints
 
@@ -123,22 +123,31 @@ The API is deployed on AWS ECS Fargate, accessible at **https://api.sprout-crm.c
 | **API**          | https://api.sprout-crm.com          |
 | **Swagger Docs** | https://api.sprout-crm.com/api/docs |
 
-### Docker Build
+### Deploy
+
+From the repo root:
 
 ```bash
-docker build -t sprout-crm-api .
-docker tag sprout-crm-api:latest 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
-docker push 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
-aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --force-new-deployment
+cp .env.production.example .env.production   # fill in secrets
+SSH_KEY=~/.ssh/id_ed25519 ./scripts/deploy.sh
 ```
 
-### Run Migrations on RDS
+This rsyncs the repo to the Lightsail instance and runs
+`docker compose -f docker-compose.prod.yml up -d --build`, which builds the API
+image and runs migrations + seed before starting the server. See
+[docker-compose.prod.yml](../docker-compose.prod.yml) and
+[infra/lightsail/README.md](../infra/lightsail/README.md).
+
+### Run migrations manually
+
+Migrations run automatically on container start. To run them by hand, SSH in
+and use:
 
 ```bash
-aws ecs run-task --cluster sprout-crm-cluster --task-definition sprout-crm-api-task:3 \
-  --launch-type FARGATE \
-  --network-configuration "awsvpcConfiguration={subnets=[subnet-0d9cbc7f0b871e0b6,subnet-0a559858ee3635bfa,subnet-05a0a6b7458b7cdb1],securityGroups=[sg-0af0645c8bd61a9b0],assignPublicIp=ENABLED}" \
-  --override '{"containerOverrides":[{"name":"sprout-crm-api","command":["node","node_modules/typeorm/cli.js","migration:run","-d","dist/config/data-source.js"]}]}'
+ssh ubuntu@<public_ip>
+cd ~/trade-crm
+docker compose -f docker-compose.prod.yml exec api \
+  node node_modules/typeorm/cli.js migration:run -d dist/config/data-source.js
 ```
 
 ## Architecture Notes
