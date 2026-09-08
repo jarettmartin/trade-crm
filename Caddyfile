@@ -1,0 +1,10 @@
+{
+	# Required for Let's Encrypt certificate notifications (set ACME_EMAIL in .env.production).
+	email {$ACME_EMAIL}
+}
+
+# Backend API — the only thing served by this instance.
+# The frontend SPA is hosted on S3 behind CloudFront, not here.
+{$API_DOMAIN} {
+	reverse_proxy api:3000
+}

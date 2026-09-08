@@ -1,0 +1,40 @@
+# ---- Dev Stage ----
+# Lightweight dev image for local development with hot reload.
+# Relies on docker-compose volume mounts for live source changes.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system deps for Playwright (PDF generation)
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto \
+    wqy-zenhei
+
+# Use system Chromium and skip the browser download
+ENV PLAYWRIGHT_BROWSERS_PATH=/usr/bin/chromium
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV CHROMIUM_PATH=/usr/bin/chromium-browser
+
+# Copy package files and install ALL deps (dev + prod) for the dev server.
+# --ignore-scripts skips the postinstall `playwright install chromium`, which
+# would try to create /usr/bin/chromium (already present from the system
+# package) and fail with EEXIST. We use the system Chromium instead.
+COPY package*.json ./
+RUN npm install --ignore-scripts
+
+# Copy source (overridden by the docker-compose volume mount for hot reload)
+COPY . .
+
+EXPOSE 3000
+
+# Entrypoint builds first (copies .hbs assets into dist/ synchronously, avoiding
+# the nest start --watch asset-copy race that crashes PdfService on first boot),
+# then runs migrations + seed, then starts the dev server with hot reload.
+CMD ["sh", "-c", "npm run build && npm run migration:run && npm run db:seed && npm run start:dev"]

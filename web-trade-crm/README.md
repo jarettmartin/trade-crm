@@ -106,23 +106,24 @@ src/
 
 ## Deployment
 
-The frontend is live at **https://sprout-crm.com** (via CloudFront + Cloudflare).
+The frontend is live at **https://sprout-crm.com**, served from the
+`sprout-crm-web` S3 bucket via CloudFront (HTTPS with an ACM certificate).
 
 ### Build for Production
 
-```bash
-VITE_API_BASE=https://api.sprout-crm.com npm run build
-```
-
-### Deploy to S3
+`VITE_API_BASE` is read from `.env.production` at build time.
 
 ```bash
-aws s3 sync dist/ s3://sprout-crm-web/ --delete
-aws cloudfront create-invalidation --distribution-id E3BYN5AYDQO0IE --paths "/*"
+npm run build
 ```
 
-### Docker Build (for containerized deployment)
+### Deploy
+
+From the repo root:
 
 ```bash
-docker build -t sprout-crm-web .
+./scripts/deploy-frontend.sh
 ```
+
+This builds the SPA, syncs `dist/` to `s3://sprout-crm-web/`, and invalidates
+the CloudFront distribution.

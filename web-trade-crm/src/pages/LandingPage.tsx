@@ -14,7 +14,6 @@ import {
   IonCardTitle,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
-import { logoGithub } from "ionicons/icons";
 
 const LandingPage: React.FC = () => {
   useEffect(() => {
@@ -80,41 +79,18 @@ const LandingPage: React.FC = () => {
             </IonCardContent>
           </IonCard>
 
-          {/* GitHub Section */}
-          <IonCard style={{ marginBottom: 24 }}>
-            <IonCardHeader>
-              <IonCardTitle>GitHub</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonText color="medium">
-                <p>
-                  View the source code, or report issues on{" "}
-                  <a
-                    href="https://github.com/jarettmartin/trade-crm"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "var(--ion-color-primary)" }}
-                  >
-                    GitHub
-                  </a>
-                  .
-                </p>
-              </IonText>
-            </IonCardContent>
-          </IonCard>
-
           {/* About Section */}
           <IonCard style={{ marginBottom: 32 }}>
             <IonCardHeader>
-              <IonCardTitle>About this project</IonCardTitle>
+              <IonCardTitle>About Sprout</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               <IonText color="medium">
                 <p>
-                  Sprout CRM is a SaaS application built as both a real product
-                  and a platform engineering portfolio. It's goal is to
-                  demonstrate modern cloud architecture, containerization,
-                  CI/CD, infrastructure automation, and scalable backend design.
+                  Sprout is a CRM built for trades and service businesses.
+                  Track customers, manage jobs, and send polished invoices —
+                  all in one place, so you spend less time on paperwork and
+                  more time on the work.
                 </p>
               </IonText>
             </IonCardContent>

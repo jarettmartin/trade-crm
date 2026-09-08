@@ -1,0 +1,30 @@
+{
+  "name": "trade-crm",
+  "private": true,
+  "description": "Sprout CRM monorepo (API + web)",
+  "scripts": {
+    "prepare": "husky",
+    "dev": "docker compose up",
+    "dev:detached": "docker compose up -d",
+    "down": "docker compose down",
+    "build": "docker compose build",
+    "logs": "docker compose logs -f",
+    "ps": "docker compose ps",
+    "reset": "docker compose exec api npm run db:reset"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
+  },
+  "lint-staged": {
+    "api-trade-crm/src/**/*.ts": [
+      "cd api-trade-crm && npx eslint --fix",
+      "cd api-trade-crm && npx prettier --write"
+    ],
+    "api-trade-crm/test/**/*.ts": [
+      "cd api-trade-crm && npx eslint --fix",
+      "cd api-trade-crm && npx prettier --write"
+    ],
+    "web-trade-crm/src/**/*.{ts,tsx}": "cd web-trade-crm && npx eslint --fix"
+  }
+}
