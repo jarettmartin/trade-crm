@@ -1,0 +1,19 @@
+# Copy this file to terraform.tfvars and fill in real values.
+#
+# terraform.tfvars is gitignored — never commit your public key or IP ranges.
+
+aws_region        = "us-east-2"
+availability_zone = "us-east-2a"
+instance_name     = "sprout-crm-prod"
+blueprint_id      = "ubuntu_22_04"
+
+# $12/mo, 2GB RAM + 2 vCPU with IPv4 (recommended). "micro_3_0" ($7/mo, 1GB) risks
+# OOM during Chromium/Playwright PDF generation. Avoid the *_ipv6_3_0 bundles —
+# they're IPv6-only and have no public IPv4.
+bundle_id = "small_3_0"
+
+ssh_key_name  = "sprout-crm-prod-key"
+ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... replace-with-your-public-key"
+
+# Lock SSH down to your own IP, e.g. ["203.0.113.5/32"].
+ssh_cidr_blocks = ["0.0.0.0/0"]

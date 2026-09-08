@@ -48,7 +48,9 @@ All commits follow **Conventional Commits** (`feat`, `fix`, `docs`, `style`, `re
 
 ## AWS Infrastructure (Production)
 
-The application is deployed on AWS using the following services:
+The application is deployed on AWS with two pieces: the API + database on a
+single Lightsail instance (Docker Compose), and the static frontend on S3
+behind CloudFront. (The previous ECS + RDS + ALB + ECR stack has been retired.)
 
 ### Live URLs
 
@@ -61,80 +63,101 @@ The application is deployed on AWS using the following services:
 ### Architecture Diagram
 
 ```
-Browser → Cloudflare (proxied)
-  │
+Browser
   ├── https://sprout-crm.com
-  │     └── CloudFront → S3 Bucket (static frontend files)
+  │     └── CloudFront (ACM cert) → S3 Bucket (static frontend files)
   │
   └── https://api.sprout-crm.com
-        └── CloudFront → ALB (port 80)
-              └── ECS Fargate (1 vCPU, 2GB)
-                    └── NestJS API (port 3000)
-                          └── RDS PostgreSQL 15
+        └── Lightsail instance (small_3_0, 2 vCPU / 2GB)
+              └── Caddy (Let's Encrypt TLS) → NestJS API (port 3000)
+                    └── PostgreSQL 15 (Docker container + volume)
 ```
 
 ### Services
 
-| Service             | Name                     | Details                                           |
-| ------------------- | ------------------------ | ------------------------------------------------- |
-| **RDS**             | `sprout-crm-qa`          | PostgreSQL 15, `db.t3.micro`, publicly accessible |
-| **ECR**             | `sprout-crm-api`         | Private Docker image repository                   |
-| **ECS Cluster**     | `sprout-crm-cluster`     | Fargate (serverless), us-east-2                   |
-| **Task Definition** | `sprout-crm-api-task:2`  | 1 vCPU, 2GB memory, 16 env vars                   |
-| **Service**         | `sprout-crm-api-service` | 1 desired task, auto-recovery                     |
-| **ALB**             | `sprout-crm-alb`         | Internet-facing, port 80 → port 3000              |
-| **S3**              | `sprout-crm-web`         | Static website hosting, public read policy        |
+| Service        | Name                 | Details                                              |
+| -------------- | -------------------- | ---------------------------------------------------- |
+| **Lightsail**  | `sprout-crm-prod`    | `small_3_0` (2 vCPU, 2GB, 60GB SSD), $12/mo          |
+| **Static IP**  | `sprout-crm-prod-ip` | Persistent public IPv4                               |
+| **DB**         | `postgres`           | PostgreSQL 15 container + named volume (internal)    |
+| **API**        | `api`                | NestJS container (port 3000, internal)               |
+| **Proxy**      | `caddy`              | Auto-HTTPS (Let's Encrypt) for `api.sprout-crm.com`  |
+| **S3**         | `sprout-crm-web`     | Static website hosting, public read policy           |
+| **CloudFront** | `EUOKGR08LL6O`       | Serves the SPA over HTTPS with an ACM cert           |
+| **ACM**        | (us-east-1)          | Certificate for `sprout-crm.com`                     |
 
-### Security Groups
+### Firewall (Lightsail public ports)
 
-| Group                               | Rules                                     |
-| ----------------------------------- | ----------------------------------------- |
-| **RDS SG** (`sg-0388a48bfa98ba692`) | Port 5432 from ECS SG + developer IP      |
-| **ECS SG** (`sg-0af0645c8bd61a9b0`) | Port 3000 from ALB, Port 80 from internet |
+| Port | Purpose                      | Source          |
+| ---- | ---------------------------- | --------------- |
+| 22   | SSH                          | Your IP only    |
+| 80   | Caddy ACME HTTP-01 challenge | 0.0.0.0/0       |
+| 443  | HTTPS (API)                  | 0.0.0.0/0       |
+
+Postgres (`5432`) is **not** exposed publicly — it is only reachable over the
+Docker network or via SSH.
 
 ### Deployment Commands
 
-#### API
+#### API (Lightsail)
 
 ```bash
-cd api-trade-crm
-docker build -t sprout-crm-api .
-docker tag sprout-crm-api:latest 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
-docker push 052120999904.dkr.ecr.us-east-2.amazonaws.com/sprout-crm-api:latest
-aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --force-new-deployment
+cp .env.production.example .env.production   # fill in secrets
+SSH_KEY=~/.ssh/id_ed25519 ./scripts/deploy.sh
 ```
 
-#### Frontend
+`deploy.sh` rsyncs the repo to the instance and runs
+`docker compose -f docker-compose.prod.yml up -d --build`, which builds the API
+image, runs migrations + seed, and starts the stack.
+
+#### Frontend (S3 + CloudFront)
 
 ```bash
-cd web-trade-crm
-npm run build                            # Uses VITE_API_BASE from .env.production
-aws s3 sync dist/ s3://sprout-crm-web/ --delete
-aws cloudfront create-invalidation --distribution-id E3BYN5AYDQO0IE --paths "/*"
+./scripts/deploy-frontend.sh
 ```
 
-#### Database Migrations
+Builds the SPA (reads `VITE_API_BASE` from `web-trade-crm/.env.production`),
+syncs `dist/` to the `sprout-crm-web` bucket, and invalidates CloudFront.
+
+#### Database Migrations (manual)
+
+Migrations run automatically on container start. To run manually, SSH in:
 
 ```bash
-aws ecs run-task --cluster sprout-crm-cluster --task-definition sprout-crm-api-task:2 \
-  --launch-type FARGATE \
-  --network-configuration "awsvpcConfiguration={subnets=[subnet-0d9cbc7f0b871e0b6,subnet-0a559858ee3635bfa,subnet-05a0a6b7458b7cdb1],securityGroups=[sg-0af0645c8bd61a9b0],assignPublicIp=ENABLED}" \
-  --override '{"containerOverrides":[{"name":"sprout-crm-api","command":["node","node_modules/typeorm/cli.js","migration:run","-d","dist/config/data-source.js"]}]}'
+ssh ubuntu@<public_ip>
+cd ~/trade-crm
+docker compose -f docker-compose.prod.yml exec api \
+  node node_modules/typeorm/cli.js migration:run -d dist/config/data-source.js
+```
+
+#### Database access (manual)
+
+```bash
+ssh ubuntu@<public_ip>
+cd ~/trade-crm
+docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d trade_crm
+```
+
+For a local GUI client, forward the port (Postgres is bound to localhost only):
+
+```bash
+ssh -L 5432:127.0.0.1:5432 ubuntu@<public_ip>
 ```
 
 ### IAM User
 
 - **Username**: `sprout-crm-api`
-- **Policies**: `AmazonEC2ContainerRegistryFullAccess`, `AmazonECS_FullAccess`, `AmazonS3FullAccess`, `AmazonRDSReadOnlyAccess`, `CloudFrontFullAccess`
-- **Note**: Cannot create IAM roles or modify RDS — those operations require the AWS console
+- **Managed policies**: `AmazonS3FullAccess`, `CloudFrontFullAccess` (ECR/ECS/RDS-read policies are still attached but now unused)
+- **Inline policy**: custom policy granting `lightsail:*`, `rds:Delete*`, `ec2:*` (EIP/SG cleanup), `elasticloadbalancing:*` (cleanup), and `acm:*` actions
+- **Note**: Cannot create IAM roles — those require the AWS console with admin credentials
 
 ### Security Notes
 
-- **Never commit AWS config files to the repository.** Task definition JSON files, ECS service configs, and any other files containing AWS credentials, Cognito secrets, or database passwords must be created in `/tmp/` and deleted after use.
-- **ECS task definition revisions**: When pushing a new Docker image to ECR with the `:latest` tag, you must register a new task definition revision to force ECS to re-resolve the image digest. `--force-new-deployment` alone re-deploys the same revision and uses the cached image. The deployment command is: `aws ecs register-task-definition --family sprout-crm-api-task --cli-input-json "$(aws ecs describe-task-definition --task-definition sprout-crm-api-task --query 'taskDefinition | {containerDefinitions: containerDefinitions, executionRoleArn: executionRoleArn, networkMode: networkMode, volumes: volumes, cpu: cpu, memory: memory, requiresCompatibilities: requiresCompatibilities}' --output json)"` then `aws ecs update-service --cluster sprout-crm-cluster --service sprout-crm-api-service --task-definition sprout-crm-api-task:<N> --force-new-deployment`.
-- The `.env` file is gitignored — never commit it.
-- The `.env.example` file contains placeholder values only — never put real credentials in it.
-- IAM user `sprout-crm-api` has limited permissions and cannot create IAM roles or modify RDS — those operations require the AWS console with admin credentials.
+- **Never commit AWS config files to the repository.** `.env.production`, `terraform.tfvars`, and `terraform.tfstate*` are gitignored and contain real secrets (database password, Cognito client secret, AWS keys, your IP). The committed `*.example` files contain placeholders only.
+- The `.env` (local dev) and `.env.production` files are gitignored — never commit them.
+- `terraform.tfvars` holds `ssh_public_key` and `ssh_cidr_blocks` (your IP) and is gitignored via `*.tfvars`.
+- Terraform state is stored locally (`infra/lightsail/terraform.tfstate`, gitignored). Back it up, or enable the commented S3 backend in `main.tf` for shared state.
+- The ACM certificate for `sprout-crm.com` is validated via a CNAME record in Cloudflare (must be DNS-only, not proxied).
 
 ---
 

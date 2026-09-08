@@ -29,3 +29,12 @@ postgres_data/
 
 # Secrets
 secrets/
+
+# Environment (production secrets — never commit)
+/.env.production
+
+# Terraform
+*.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
