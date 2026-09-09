@@ -150,6 +150,12 @@ docker compose -f docker-compose.prod.yml exec api \
   node node_modules/typeorm/cli.js migration:run -d dist/config/data-source.js
 ```
 
+### Backups
+
+The production database is backed up daily to S3 with 7-day retention. See
+[`../scripts/backup-db.sh`](../scripts/backup-db.sh) and the root
+[README](../README.md#backups).
+
 ## Architecture Notes
 
 - All tenant-scoped entities extend `TenantScopedEntity` which includes `tenantId`

@@ -13,6 +13,11 @@ services:
     image: postgres:15
     container_name: sprout-crm-db
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     # Bound to localhost only. The API reaches it over the Docker network; for
     # manual administration use `docker compose exec` or an SSH tunnel.
     ports:
@@ -35,6 +40,11 @@ services:
       dockerfile: Dockerfile
     container_name: sprout-crm-api
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     # Cognito/AWS secrets + CORS_ORIGIN come from .env.production. DB_* are
     # overridden below to point at the postgres service on the Docker network.
     env_file:
@@ -65,6 +75,11 @@ services:
     image: caddy:2-alpine
     container_name: sprout-crm-proxy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "80:80"
       - "443:443"
