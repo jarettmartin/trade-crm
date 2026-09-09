@@ -93,6 +93,32 @@ ssh -L 5432:127.0.0.1:5432 ubuntu@<public_ip>
 # then connect your client to localhost:5432
 ```
 
+## Backups
+
+The `sprout-crm-backups` S3 bucket (private, SSE-S3 encrypted) stores daily
+`pg_dump` backups with a 7-day retention policy.
+
+- **Terraform**: [`backups.tf`](backups.tf) creates the bucket.
+- **Script**: [`scripts/backup-db.sh`](../../scripts/backup-db.sh) dumps the
+  `trade_crm` database, compresses it, uploads to
+  `s3://sprout-crm-backups/sprout-crm-db-<unix-ms>.sql.gz`, and prunes backups
+  older than 7 days.
+- **Schedule**: daily at 1am Eastern via cron (`CRON_TZ=America/New_York`).
+  [`scripts/install-backup-cron.sh`](../../scripts/install-backup-cron.sh)
+  installs it idempotently; `deploy.sh` runs it on every deploy.
+
+### Restore a backup
+
+SSH in and stream the backup into Postgres:
+
+```bash
+ssh ubuntu@<public_ip>
+cd ~/trade-crm
+aws s3 cp s3://sprout-crm-backups/sprout-crm-db-<ms>.sql.gz - | gunzip | \
+  docker compose -f docker-compose.prod.yml exec -T postgres \
+  psql -U postgres -d trade_crm
+```
+
 ## Notes
 
 - Verify available bundles/blueprints for your region:

@@ -85,6 +85,7 @@ Browser
 | **S3**         | `sprout-crm-web`     | Static website hosting, public read policy           |
 | **CloudFront** | `EUOKGR08LL6O`       | Serves the SPA over HTTPS with an ACM cert           |
 | **ACM**        | (us-east-1)          | Certificate for `sprout-crm.com`                     |
+| **Backups**    | `sprout-crm-backups` | Daily `pg_dump` → S3; private/encrypted, 7-day retention |
 
 ### Firewall (Lightsail public ports)
 
@@ -143,6 +144,13 @@ For a local GUI client, forward the port (Postgres is bound to localhost only):
 ```bash
 ssh -L 5432:127.0.0.1:5432 ubuntu@<public_ip>
 ```
+
+#### Database backups (automatic)
+
+Runs daily at 1am Eastern via cron on the instance
+(`scripts/backup-db.sh` + `scripts/install-backup-cron.sh`). Backups land in
+`s3://sprout-crm-backups/sprout-crm-db-<unix-ms>.sql.gz`; backups older than
+7 days are pruned by the same script.
 
 ### IAM User
 

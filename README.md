@@ -211,6 +211,28 @@ For a local GUI client, forward the port (Postgres is bound to localhost only):
 ssh -L 5432:127.0.0.1:5432 ubuntu@<public_ip>
 ```
 
+### Backups
+
+The production database is backed up daily to a private, encrypted S3 bucket
+with a 7-day retention policy:
+
+- **Schedule**: daily at 1am Eastern via cron on the Lightsail instance
+  (`CRON_TZ=America/New_York`).
+- **Script**: [`scripts/backup-db.sh`](scripts/backup-db.sh) — `pg_dump` →
+  gzip → upload to `s3://sprout-crm-backups/sprout-crm-db-<unix-ms>.sql.gz`,
+  then deletes backups older than 7 days.
+- **Bucket**: created by [`infra/lightsail/backups.tf`](infra/lightsail/backups.tf)
+  (private, SSE-S3 encrypted, `prevent_destroy`).
+- `deploy.sh` installs/keeps the cron up to date on every deploy.
+
+To restore the latest backup:
+
+```bash
+ssh ubuntu@<public_ip> \
+  "cd ~/trade-crm && aws s3 cp s3://sprout-crm-backups/sprout-crm-db-<ms>.sql.gz - | gunzip | \
+   docker compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -d trade_crm"
+```
+
 ## Environment Variables
 
 ### Backend (`api-trade-crm/.env`)
