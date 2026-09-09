@@ -63,11 +63,18 @@ rsync -az --delete \
 
 echo "==> Building and starting the stack on $SSH_TARGET"
 ssh "${SSH_ARGS[@]}" "$SSH_TARGET" \
-  "cd ~/trade-crm && docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build --remove-orphans"
+  "cd ~/trade-crm && docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build --remove-orphans" \
+  < /dev/null
 
 echo "==> Container status"
 ssh "${SSH_ARGS[@]}" "$SSH_TARGET" \
-  "cd ~/trade-crm && docker compose -f docker-compose.prod.yml ps"
+  "cd ~/trade-crm && docker compose -f docker-compose.prod.yml ps" \
+  < /dev/null
+
+echo "==> Ensuring backup cron is installed"
+ssh "${SSH_ARGS[@]}" "$SSH_TARGET" \
+  "bash ~/trade-crm/scripts/install-backup-cron.sh" \
+  < /dev/null
 
 echo ""
 echo "Done. API: https://\${API_DOMAIN}/api/docs (frontend is served from S3 + CloudFront)"

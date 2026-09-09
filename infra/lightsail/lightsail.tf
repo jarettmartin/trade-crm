@@ -62,15 +62,19 @@ resource "aws_lightsail_instance_public_ports" "this" {
 
   # HTTP — Caddy ACME http-01 challenge + HTTPS redirect.
   port_info {
-    protocol  = "tcp"
-    from_port = 80
-    to_port   = 80
+    protocol   = "tcp"
+    from_port  = 80
+    to_port    = 80
+    cidrs      = ["0.0.0.0/0"]
+    ipv6_cidrs = ["::/0"]
   }
 
   # HTTPS.
   port_info {
-    protocol  = "tcp"
-    from_port = 443
-    to_port   = 443
+    protocol   = "tcp"
+    from_port  = 443
+    to_port    = 443
+    cidrs      = ["0.0.0.0/0"]
+    ipv6_cidrs = ["::/0"]
   }
 }
