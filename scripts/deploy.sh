@@ -68,7 +68,7 @@ ssh "${SSH_ARGS[@]}" "$SSH_TARGET" \
 
 echo "==> Container status"
 ssh "${SSH_ARGS[@]}" "$SSH_TARGET" \
-  "cd ~/trade-crm && docker compose -f docker-compose.prod.yml ps" \
+  "cd ~/trade-crm && docker compose -f docker-compose.prod.yml --env-file .env.production ps" \
   < /dev/null
 
 echo "==> Ensuring backup cron is installed"
