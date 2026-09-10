@@ -1,8 +1,9 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { TenantScopedEntity } from '../../common/entities/tenant-scoped.entity';
 import { InvoiceStatus } from '../../common/enums/invoice-status.enum';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { Job } from '../../jobs/entities/job.entity';
+import { InvoiceEmailAttempt } from './invoice-email-attempt.entity';
 
 @Entity('invoices')
 export class Invoice extends TenantScopedEntity {
@@ -46,4 +47,7 @@ export class Invoice extends TenantScopedEntity {
   @ManyToOne(() => Job, (job) => job.invoices)
   @JoinColumn({ name: 'jobId' })
   job!: Job;
+
+  @OneToMany(() => InvoiceEmailAttempt, (attempt) => attempt.invoice)
+  emailAttempts!: InvoiceEmailAttempt[];
 }

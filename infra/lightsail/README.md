@@ -62,6 +62,25 @@ add the CNAME shown by the `acm_validation_records` output to Cloudflare
 Postgres (`5432`) is intentionally **not** opened to the internet. Manage the
 database over SSH (see below).
 
+## Email (SES)
+
+[`ses.tf`](ses.tf) manages the Amazon SES sending domain used for invoice emails:
+
+- `aws_ses_domain_identity` + `aws_ses_domain_dkim` — verify `sprout-crm.com`
+  and emit 3 Easy DKIM tokens through the `ses_dkim_records` output. Add those
+  to Cloudflare as CNAMEs: `Name = <token>._domainkey`, `Target =
+  <token>.dkim.amazonses.com`, **DNS-only** (do not proxy). SES verifies the
+  identity automatically once they resolve (no `_amazonses` TXT record needed).
+- No IAM is managed here: terraform runs as the restricted `sprout-crm-api`
+  user, so the SES permission (`ses:VerifyDomainIdentity`,
+  `ses:VerifyDomainDkim`, `ses:SendEmail`, …) is attached as an inline policy
+  in the AWS console — see the "Console (one-time)" block at the top of
+  `ses.tf`.
+- After the identity is verified, request **production access** (leave
+  sandbox) in the SES console — sandbox accounts can only send to verified
+  recipients. The `SES_REGION`/`SES_FROM_EMAIL` env vars feed the API's
+  `EmailService`.
+
 ## Deploying the application
 
 From the repo root, once the instance is up:

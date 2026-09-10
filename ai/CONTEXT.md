@@ -86,6 +86,7 @@ Browser
 | **CloudFront** | `EUOKGR08LL6O`       | Serves the SPA over HTTPS with an ACM cert           |
 | **ACM**        | (us-east-1)          | Certificate for `sprout-crm.com`                     |
 | **Backups**    | `sprout-crm-backups` | Daily `pg_dump` → S3; private/encrypted, 7-day retention |
+| **SES**        | (us-east-2)          | `sprout-crm.com` domain identity — invoice emailing via SES v2 (`SendEmail` with raw MIME + PDF attachment) |
 
 ### Firewall (Lightsail public ports)
 
@@ -157,6 +158,7 @@ Runs daily at 1am Eastern via cron on the instance
 - **Username**: `sprout-crm-api`
 - **Managed policies**: `AmazonS3FullAccess`, `CloudFrontFullAccess` (ECR/ECS/RDS-read policies are still attached but now unused)
 - **Inline policy**: custom policy granting `lightsail:*`, `rds:Delete*`, `ec2:*` (EIP/SG cleanup), `elasticloadbalancing:*` (cleanup), and `acm:*` actions
+- **SES policy** (AWS console, inline): grants `ses:VerifyDomainIdentity`, `ses:VerifyDomainDkim`, `ses:GetIdentityVerificationAttributes`, `ses:GetIdentityDkimAttributes`, `ses:SendEmail`, `ses:SendRawEmail` so terraform can create the identity and the API can send invoice email. See the "Console (one-time)" block in `infra/lightsail/ses.tf` for the exact JSON.
 - **Note**: Cannot create IAM roles — those require the AWS console with admin credentials
 
 ### Security Notes
@@ -166,6 +168,7 @@ Runs daily at 1am Eastern via cron on the instance
 - `terraform.tfvars` holds `ssh_public_key` and `ssh_cidr_blocks` (your IP) and is gitignored via `*.tfvars`.
 - Terraform state is stored locally (`infra/lightsail/terraform.tfstate`, gitignored). Back it up, or enable the commented S3 backend in `main.tf` for shared state.
 - The ACM certificate for `sprout-crm.com` is validated via a CNAME record in Cloudflare (must be DNS-only, not proxied).
+- **SES setup (complete as of the invoice-emailing feature)**: domain identity `sprout-crm.com` verified via Easy DKIM (3 CNAMEs in Cloudflare, DNS-only), SES production access granted, and an SES inline policy attached to `sprout-crm-api` in the console. Terraform manages only the identity + DKIM outputs (`infra/lightsail/ses.tf`); IAM stays console-managed because terraform runs with the restricted `sprout-crm-api` credentials (see the "Console (one-time)" block in `ses.tf`).
 
 ---
 
@@ -198,6 +201,18 @@ Runs daily at 1am Eastern via cron on the instance
 - Soft deletes not implemented — physical deletes used for nested objects
 - Invoice numbers start at `88880001` and increment globally per tenant
 - Invoice versioning increments per job (each new invoice for a job increments the version)
+- **Customer addresses are reconciled in place on update** (`CustomerService.update`, inside a transaction): existing rows are updated positionally, new ones inserted, and only surplus addresses not referenced by a job are deleted. Never reintroduce delete-all+recreate — `jobs.customerAddressId` is an `ON DELETE NO ACTION` FK, so deleting a referenced address returns a 500.
+
+### Invoice Email (AWS SES)
+
+- `EmailService` (`src/email/`) wraps SES v2 `SendEmail` with a raw MIME message (plain-text body + base64 PDF attachment) built by the dependency-free `mime.ts` builder. Credentials come from `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`; region/from from `SES_REGION`/`SES_FROM_EMAIL` (falls back to the tenant's `businessEmail`).
+- **Email copy lives in Handlebars templates** (`src/email/templates/*.hbs`, compiled once at startup — same pattern as the PDF template). Format per file: a `subject: <hbs>` line, a `---` separator, then the plain-text body. `EmailService.renderEmailTemplate(name, context)` returns `{ subject, textBody }`; future email types just add a new `.hbs` + call `sendEmail()`.
+- `POST /invoices/:invoiceId/email` (TenantGuard) validates the customer has a valid email on file, records a **PENDING** `InvoiceEmailAttempt` (subject rendered from the template and snapshotted), and returns immediately. Delivery is fire-and-forget: `InvoiceEmailService.processAttempt()` generates the PDF (`PdfService`), renders the body via `EmailService`, and sends via SES in the background, then updates the attempt to `SENT` (with SES `messageId` + `sentAt`) or `FAILED` (with `errorMessage`).
+- `GET /invoices/:invoiceId/emails` (TenantGuard) returns the attempt history (newest first) for polling.
+- A 409 is returned if a PENDING attempt already exists for the invoice (prevents duplicate concurrent sends).
+- `JobService.findById` loads `invoices.emailAttempts` so the job-detail payload already includes per-invoice email status.
+- Customer email validation already exists: `@IsEmail() @IsOptional()` on customer DTOs and `isValidEmail()` on the frontend.
+- **Node runtime note**: AWS SDK v3 will require Node >= 22 starting 2027; the API image currently uses `node:20-alpine`. Non-blocking; bump `api-trade-crm/Dockerfile` in a future change.
 
 ### Authentication (AWS Cognito)
 
@@ -224,8 +239,9 @@ Runs daily at 1am Eastern via cron on the instance
 - Navigation patterns:
   - `IonBackButton` with `defaultHref` for detail/edit pages (back navigation)
   - `IonMenuButton` for navigable pages (access to sidemenu)
-  - `routerLink` for Ionic-managed navigation (avoids React Router history bugs)
+  - `routerLink` for Ionic-managed navigation (avoids React Router history bugs). Prefer this over `history.push()` for list→detail navigation (e.g. Home job cards use `routerLink`)
   - `history.push()`/`history.goBack()` for programmatic navigation
+  - **Param routes caveat**: `useParams()` can return an empty object after client-side navigation in this Ionic React Router v5 setup (even with `routerLink`). Param-driven pages (`JobDetailPage`, `InvoicePreviewPage`) therefore read the id via `routeId || window.location.pathname.split("/").pop()`
 - Shared components:
   - `CustomerSearch` — Debounced search with dropdown results + "Create New Customer" button
   - `Menu` — Sidemenu with nav items + logout
@@ -234,6 +250,11 @@ Runs daily at 1am Eastern via cron on the instance
   - `getPdfBlob()` — fetch + cache
   - `downloadPdf()` — trigger browser download
   - Invoice preview via full-page `iframe` at `/invoice-preview/:id`
+- Invoice emailing (JobDetailPage invoice cards):
+  - Full-width "Send Email" button (above the Download | Preview row); disabled when the customer has no valid email on file (`isValidEmail()`)
+  - `api.sendInvoiceEmail()` returns a PENDING attempt which is shown **immediately** on the card; the UI polls `api.fetchInvoiceEmailAttempts()` until `SENT`/`FAILED`, then reloads the job
+  - Attempt entries read **"Email sent to <recipient>"** with an optional status tag appended: `· PENDING` (amber, in flight) or `· ERROR` (red, with the error message). SENT has **no tag** — assumed success
+  - Demo mode mirrors this in `demoService.ts` (simulated ~2s delivery; emails containing `fail@` or ending `.fail` simulate a failure so the ERROR state is testable)
 - Validation:
   - Frontend `validation.ts` helpers: `isValidEmail()`, `isValidPhone()`
   - Forms validate before submit (email format, phone format, required fields)
@@ -267,11 +288,16 @@ src/
 │   ├── dto/
 │   ├── entities/
 │   └── services/
-├── invoices/                        # Invoice creation, PDF generation
-│   ├── controllers/
+├── email/                            # AWS SES integration (email sending via Handlebars templates)
+│   ├── services/email.service.ts     # SESv2 SendEmail (raw MIME + attachment) + template renderer
+│   ├── email-templates.ts            # .hbs loader/compiler (subject + body per file)
+│   ├── templates/                    # Handlebars email templates (invoice-email.hbs, …)
+│   └── mime.ts                       # Dependency-free RFC 5322 MIME builder
+├── invoices/                        # Invoice creation, PDF generation, emailing
+│   ├── controllers/                  # invoice.controller, invoice-email.controller
 │   ├── dto/
-│   ├── entities/
-│   ├── services/
+│   ├── entities/                     # Invoice, InvoiceEmailAttempt
+│   ├── services/                     # invoice.service, pdf.service, invoice-email.service
 │   └── templates/                   # Handlebars invoice template
 ├── jobs/                            # Job CRUD with nested notes + line items
 │   ├── controllers/
@@ -332,6 +358,13 @@ src/
 ### Invoice
 
 - `jobId`, `invoiceNumber` (8-digit, starts at 88880001), `version` (per job), `status` (DRAFT/ISSUED/PAID/VOID/SUPERSEDED), `subtotal`, `taxPercent`, `taxAmount`, `total`, `issuedAt`, `paidAt`, `snapshot` (JSONB — frozen copy of job data at time of invoice)
+- One-to-many `emailAttempts` → `InvoiceEmailAttempt`
+
+### InvoiceEmailAttempt
+
+- One row per invoice-email send attempt (tenant-scoped, FK to `invoices`)
+- `recipientEmail`, `fromEmail`, `status` (PENDING/SENT/FAILED), `subject`, `messageId` (SES), `errorMessage`, `sentAt`, `snapshot` (JSONB — frozen invoice summary at send time)
+- Lifecycle: `PENDING → SENT | FAILED`. Stale `PENDING` rows older than 30 min are flagged `FAILED` on API startup (avoids double-sends after a crash/restart)
 
 ---
 

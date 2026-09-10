@@ -8,6 +8,7 @@ import { TenantModule } from './tenants/tenant.module';
 import { CustomerModule } from './customers/customer.module';
 import { JobModule } from './jobs/job.module';
 import { InvoiceModule } from './invoices/invoice.module';
+import { EmailModule } from './email/email.module';
 import { CommonModule } from './common/common.module';
 import typeOrmConfig from './config/typeorm.config';
 
@@ -21,6 +22,7 @@ import typeOrmConfig from './config/typeorm.config';
     CustomerModule,
     JobModule,
     InvoiceModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

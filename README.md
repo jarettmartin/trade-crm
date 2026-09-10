@@ -1,6 +1,6 @@
 # Sprout CRM
 
-Multi-tenant service-business CRM MVP — a full-stack application for managing customers, jobs, invoicing, and PDF generation.
+Multi-tenant service-business CRM MVP — a full-stack application for managing customers, jobs, invoicing, PDF generation, and emailing invoices to customers via AWS SES.
 
 ## Roadmap
 
@@ -25,7 +25,7 @@ The **API** and **web frontend** are versioned independently (separate deployabl
 | API (NestJS) | `api-trade-crm/` | `package.json` | `api-v`    |
 | Web (Ionic)  | `web-trade-crm/` | `package.json` | `web-v`    |
 
-Current release: **API `v0.1.0`** · **Web `v0.1.0`** (tags `api-v0.1.0`, `web-v0.1.0`).
+Current release: **API `v0.2.0`** · **Web `v0.2.0`** (tags `api-v0.2.0`, `web-v0.2.0`).
 
 ## Architecture
 
@@ -33,6 +33,7 @@ Current release: **API `v0.1.0`** · **Web `v0.1.0`** (tags `api-v0.1.0`, `web-v
 - **Frontend**: Ionic React SPA (static files on S3)
 - **Auth**: AWS Cognito (server-side only)
 - **PDF**: Handlebars templates + Playwright Chromium
+- **Email**: AWS SES (Handlebars email templates + PDF attachments)
 - **Infrastructure**: AWS Lightsail (API + DB) + S3 + CloudFront (frontend)
 
 ## Project Structure
@@ -155,6 +156,7 @@ instance (Docker Compose), and the static frontend on S3 behind CloudFront.
 | **API**    | NestJS (Docker container)                           |
 | **Proxy**  | Caddy (automatic HTTPS for the API)                 |
 | **Web**    | S3 bucket + CloudFront (HTTPS, ACM cert)            |
+| **Email**  | Amazon SES — `sprout-crm.com` domain identity, invoice emailing |
 
 See [infra/lightsail/README.md](infra/lightsail/README.md) for the Terraform
 setup, [docker-compose.prod.yml](docker-compose.prod.yml) for the API stack,
@@ -251,8 +253,10 @@ ssh ubuntu@<public_ip> \
 | `COGNITO_USER_POOL_ID`  | Cognito user pool ID               |
 | `COGNITO_CLIENT_ID`     | Cognito app client ID              |
 | `COGNITO_CLIENT_SECRET` | Cognito app client secret          |
-| `AWS_ACCESS_KEY_ID`     | IAM access key for Cognito admin   |
-| `AWS_SECRET_ACCESS_KEY` | IAM secret key for Cognito admin   |
+| `AWS_ACCESS_KEY_ID`     | IAM access key for Cognito admin + SES sends |
+| `AWS_SECRET_ACCESS_KEY` | IAM secret key for Cognito admin + SES sends |
+| `SES_REGION`            | AWS SES region (invoice emailing)             |
+| `SES_FROM_EMAIL`        | From address for invoice emails (must be part of a verified SES identity) |
 
 ### Frontend (build-time)
 
