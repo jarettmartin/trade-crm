@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { Job } from '../entities/job.entity';
+import { JobStatus } from '../../common/enums/job-status.enum';
 import { JobNote } from '../entities/job-note.entity';
 import { JobLineItem } from '../entities/job-line-item.entity';
 import { CreateJobDto } from '../dto/create-job.dto';
@@ -28,9 +29,9 @@ export class JobService {
   ) {
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: FindOptionsWhere<Job> = { tenantId };
     if (status) {
-      where.status = status;
+      where.status = status as JobStatus;
     }
 
     const [jobs, total] = await this.jobRepository.findAndCount({
@@ -64,7 +65,7 @@ export class JobService {
         customerAddress: true,
         notes: { user: true },
         lineItems: true,
-        invoices: true,
+        invoices: { emailAttempts: true },
       },
       order: {
         notes: { createdAt: 'ASC' },
