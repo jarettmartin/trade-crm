@@ -19,7 +19,10 @@ const InvoicePreviewPage: React.FC = () => {
     document.title = "Sprout CRM - Invoice Preview";
   }, []);
 
-  const { id } = useParams<{ id: string }>();
+  const { id: routeId } = useParams<{ id: string }>();
+  // Workaround for Ionic React Router v5: useParams can come back empty after
+  // client-side navigation (see CONTEXT.md). Fall back to the URL path.
+  const id = routeId || window.location.pathname.split("/").pop() || "";
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const blobUrlRef = useRef<string | null>(null);
@@ -37,8 +40,10 @@ const InvoicePreviewPage: React.FC = () => {
         const url = URL.createObjectURL(blob);
         blobUrlRef.current = url;
         setObjectUrl(url);
-      } catch (err: any) {
-        setError(err?.message || "Failed to load PDF");
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load PDF",
+        );
       }
     })();
   });

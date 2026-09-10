@@ -162,6 +162,18 @@ export interface JobLineItemResult {
   sortOrder: number;
 }
 
+export interface InvoiceEmailAttemptResult {
+  id: string;
+  status: string;
+  recipientEmail: string;
+  fromEmail?: string;
+  subject?: string;
+  messageId?: string;
+  errorMessage?: string;
+  sentAt?: string;
+  createdAt: string;
+}
+
 export interface InvoiceResult {
   id: string;
   invoiceNumber: number;
@@ -172,6 +184,7 @@ export interface InvoiceResult {
   taxAmount: number;
   total: number;
   createdAt: string;
+  emailAttempts?: InvoiceEmailAttemptResult[];
 }
 
 export interface JobDetailResult {
@@ -186,6 +199,7 @@ export interface JobDetailResult {
     lastName: string;
     companyName?: string;
     phone: string;
+    email?: string;
   };
   customerAddress: {
     id: string;
@@ -416,6 +430,25 @@ class ApiService {
       method: "PATCH",
       body: JSON.stringify({ status }),
     });
+  }
+
+  async sendInvoiceEmail(invoiceId: string) {
+    if (this.demoMode) {
+      return demoService.sendInvoiceEmail(invoiceId);
+    }
+    return this.request<InvoiceEmailAttemptResult>(
+      `/invoices/${invoiceId}/email`,
+      { method: "POST" },
+    );
+  }
+
+  async fetchInvoiceEmailAttempts(invoiceId: string) {
+    if (this.demoMode) {
+      return demoService.fetchInvoiceEmailAttempts(invoiceId);
+    }
+    return this.request<InvoiceEmailAttemptResult[]>(
+      `/invoices/${invoiceId}/emails`,
+    );
   }
 
   async downloadInvoicePdf(invoiceId: string): Promise<Blob> {

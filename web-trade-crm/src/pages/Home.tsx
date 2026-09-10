@@ -186,7 +186,7 @@ const Home: React.FC = () => {
             <IonCard
               key={job.id}
               button
-              onClick={() => history.push(`/job/${job.id}`)}
+              routerLink={`/job/${job.id}`}
             >
               <div
                 style={{
