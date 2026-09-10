@@ -19,19 +19,17 @@ import {
   IonButton,
   IonIcon,
   IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
   IonCardContent,
   IonChip,
   IonActionSheet,
 } from "@ionic/react";
-import { trashOutline, downloadOutline, eyeOutline } from "ionicons/icons";
-import { useParams, useHistory } from "react-router-dom";
-import { api, JobDetailResult } from "../services/api";
+import { trashOutline, downloadOutline, eyeOutline, mailOutline } from "ionicons/icons";
+import { useParams } from "react-router-dom";
+import { api, JobDetailResult, InvoiceEmailAttemptResult } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { formatInvoiceNumber } from "../services/format";
 import { downloadPdf, clearPdfCache } from "../services/pdfCache";
+import { isValidEmail } from "../services/validation";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Draft",
@@ -48,14 +46,17 @@ const JobDetailPage: React.FC = () => {
     document.title = "Sprout CRM - Job Details";
   }, []);
 
-  const { id } = useParams<{ id: string }>();
-  const history = useHistory();
+  const { id: routeId } = useParams<{ id: string }>();
+  // Workaround for Ionic React Router v5: useParams can come back empty after
+  // client-side navigation (see CONTEXT.md "routerLink avoids React Router
+  // history bugs"). Fall back to parsing the current path so the page works
+  // for both direct loads and in-app navigation.
+  const id = routeId || window.location.pathname.split("/").pop() || "";
   const { user } = useAuth();
   const [job, setJob] = useState<JobDetailResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [status, setStatus] = useState("");
-  const [statusRef, setStatusRef] = useState("");
 
   // Note input
   const [newNote, setNewNote] = useState("");
@@ -71,6 +72,7 @@ const JobDetailPage: React.FC = () => {
 
   // Invoice
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
   const [statusSheetInvoice, setStatusSheetInvoice] = useState<string | null>(
     null,
   );
@@ -100,7 +102,6 @@ const JobDetailPage: React.FC = () => {
       const data = await api.fetchJob(id);
       setJob(data);
       setStatus(data.status);
-      setStatusRef(data.status);
       // Use latest invoice tax% if available, otherwise default from tenant
       const latestInv =
         data.invoices && data.invoices.length > 0 ? data.invoices[0] : null;
@@ -121,7 +122,6 @@ const JobDetailPage: React.FC = () => {
     setStatus(newStatus);
     try {
       await api.updateJob(id, { status: newStatus });
-      setStatusRef(newStatus);
     } catch (err) {
       setStatus(prev);
       showToastMsg(
@@ -282,6 +282,89 @@ const JobDetailPage: React.FC = () => {
         err instanceof Error ? err.message : "Failed to update invoice status",
       );
     }
+  };
+
+  // The customer must have a valid email on file for invoice emails to work.
+  const customerEmail = job?.customer.email?.trim() ?? "";
+  const customerHasEmail = isValidEmail(customerEmail);
+
+  const handleSendInvoiceEmail = async (invoice: {
+    id: string;
+    invoiceNumber: number;
+  }) => {
+    if (!customerHasEmail || sendingInvoiceId !== null) return;
+    setSendingInvoiceId(invoice.id);
+    try {
+      const attempt = await api.sendInvoiceEmail(invoice.id);
+
+      // Surface the PENDING attempt immediately so the card shows
+      // "Email sent to … · PENDING" instead of waiting for the poll.
+      setJob((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          invoices: prev.invoices.map((inv) =>
+            inv.id === invoice.id
+              ? {
+                  ...inv,
+                  emailAttempts: [
+                    attempt,
+                    ...(inv.emailAttempts ?? []).filter(
+                      (a) => a.id !== attempt.id,
+                    ),
+                  ],
+                }
+              : inv,
+          ),
+        };
+      });
+
+      // Poll the attempt history until the background send resolves
+      // (PENDING → SENT/FAILED), then refresh the job detail.
+      let latest: InvoiceEmailAttemptResult | undefined;
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 1500));
+        const attempts = await api.fetchInvoiceEmailAttempts(invoice.id);
+        latest = attempts?.[0];
+        if (!latest || latest.status !== "PENDING") break;
+      }
+
+      await loadJob();
+
+      if (latest?.status === "FAILED") {
+        showToastMsg(
+          `Email failed: ${latest.errorMessage || "Unknown error"}`,
+        );
+      } else if (latest?.status === "SENT") {
+        showToastMsg("Invoice emailed successfully", false);
+      } else {
+        showToastMsg(
+          "Email is still being sent — refresh to see its status.",
+          false,
+        );
+      }
+    } catch (err) {
+      showToastMsg(
+        err instanceof Error
+          ? err.message
+          : "Failed to send invoice email",
+      );
+    } finally {
+      setSendingInvoiceId(null);
+    }
+  };
+
+  const attemptStatusColor = (status: string) => {
+    if (status === "SENT") return "var(--ion-color-success)";
+    if (status === "FAILED") return "var(--ion-color-danger)";
+    return "var(--ion-color-warning)"; // PENDING
+  };
+
+  // A SENT attempt has no tag (assumed success); PENDING/FAILED get a suffix.
+  const attemptStatusTag = (status: string) => {
+    if (status === "PENDING") return " · PENDING";
+    if (status === "FAILED") return " · ERROR";
+    return "";
   };
 
   const currency = (n: number) =>
@@ -730,6 +813,15 @@ const JobDetailPage: React.FC = () => {
             </IonText>
           )}
 
+          {job.invoices.length > 0 && !customerHasEmail && (
+            <IonText color="medium">
+              <p style={{ fontSize: "12px", marginTop: 0 }}>
+                Add an email address to this customer to enable emailing
+                invoices.
+              </p>
+            </IonText>
+          )}
+
           {job.invoices.map((inv) => (
             <IonCard key={inv.id}>
               <div
@@ -822,6 +914,77 @@ const JobDetailPage: React.FC = () => {
                     <strong>{currency(Number(inv.total))}</strong>
                   </IonText>
                 </div>
+
+                {(inv.emailAttempts?.length ?? 0) > 0 && (
+                  <div
+                    style={{
+                      borderTop: "1px solid var(--ion-color-light-shade)",
+                      marginTop: "8px",
+                      paddingTop: "8px",
+                    }}
+                  >
+                    {[...(inv.emailAttempts ?? [])]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.createdAt).getTime() -
+                          new Date(a.createdAt).getTime(),
+                      )
+                      .slice(0, 3)
+                      .map((a) => (
+                        <div
+                          key={a.id}
+                          style={{ fontSize: "12px", margin: "2px 0" }}
+                        >
+                          <span style={{ color: attemptStatusColor(a.status) }}>
+                            Email sent to {a.recipientEmail}
+                            {attemptStatusTag(a.status)}
+                          </span>
+                          {a.sentAt
+                            ? ` · ${new Date(a.sentAt).toLocaleString()}`
+                            : ""}
+                          {a.status === "FAILED" && a.errorMessage
+                            ? ` — ${a.errorMessage}`
+                            : ""}
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    borderTop: "1px solid var(--ion-color-light-shade)",
+                    marginTop: "8px",
+                    paddingTop: "8px",
+                  }}
+                >
+                  <IonButton
+                    expand="block"
+                    fill="outline"
+                    size="small"
+                    disabled={
+                      !customerHasEmail || sendingInvoiceId !== null
+                    }
+                    onClick={() =>
+                      handleSendInvoiceEmail({
+                        id: inv.id,
+                        invoiceNumber: inv.invoiceNumber,
+                      })
+                    }
+                  >
+                    {sendingInvoiceId === inv.id ? (
+                      <IonSpinner
+                        name="crescent"
+                        style={{ marginRight: 8 }}
+                      />
+                    ) : (
+                      <IonIcon icon={mailOutline} slot="start" />
+                    )}
+                    {sendingInvoiceId === inv.id
+                      ? "Sending Email…"
+                      : "Send Email"}
+                  </IonButton>
+                </div>
+
                 <div
                   style={{
                     display: "flex",
@@ -848,9 +1011,11 @@ const JobDetailPage: React.FC = () => {
                             inv.invoiceNumber,
                             user?.businessName,
                           );
-                        } catch (err: any) {
+                        } catch (err: unknown) {
                           showToastMsg(
-                            err?.message || "Failed to download PDF",
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to download PDF",
                           );
                         }
                       }}

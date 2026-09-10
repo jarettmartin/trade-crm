@@ -4,6 +4,7 @@ import { User } from '../../users/entities/user.entity';
 import { Customer } from '../../customers/entities/customer.entity';
 import { Job } from '../../jobs/entities/job.entity';
 import { Invoice } from '../../invoices/entities/invoice.entity';
+import { InvoiceEmailAttempt } from '../../invoices/entities/invoice-email-attempt.entity';
 
 @Entity('tenants')
 export class Tenant extends BaseEntity {
@@ -33,4 +34,7 @@ export class Tenant extends BaseEntity {
 
   @OneToMany(() => Invoice, (invoice) => invoice.tenant)
   invoices!: Invoice[];
+
+  @OneToMany(() => InvoiceEmailAttempt, (attempt) => attempt.tenant)
+  invoiceEmailAttempts!: InvoiceEmailAttempt[];
 }

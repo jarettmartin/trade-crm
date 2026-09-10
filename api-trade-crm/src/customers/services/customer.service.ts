@@ -69,36 +69,74 @@ export class CustomerService {
       throw new NotFoundException('Customer not found');
     }
 
-    // Update customer fields
-    Object.assign(customer, customerData);
-    await this.customerRepository.save(customer);
+    return this.dataSource.transaction(async (manager) => {
+      // Update customer fields
+      Object.assign(customer, customerData);
+      await manager.save(Customer, customer);
 
-    // Replace addresses if provided
-    if (addresses !== undefined) {
-      // Delete existing addresses
-      await this.addressRepository.delete({ customerId: id, tenantId });
+      // Reconcile addresses if provided. We update existing rows IN PLACE
+      // (never delete+recreate) so foreign keys from jobs.customerAddressId
+      // stay valid — deleting an address a job references violates the FK
+      // (ON DELETE NO ACTION) and returns a 500.
+      if (addresses !== undefined) {
+        const existingAddresses = await manager.find(CustomerAddress, {
+          where: { customerId: id, tenantId },
+          order: { createdAt: 'ASC' },
+        });
 
-      // Create new addresses
-      if (addresses.length > 0) {
-        const addressEntities = addresses.map((addr, index) =>
-          this.addressRepository.create({
-            ...addr,
-            tenantId,
-            customerId: id,
-            isDefault: addr.isDefault ?? index === 0,
-          }),
-        );
-        await this.addressRepository.save(addressEntities);
+        // 1. Update existing addresses in place (positional match — the UI
+        //    always sends the full ordered list without ids).
+        const overlap = Math.min(existingAddresses.length, addresses.length);
+        for (let i = 0; i < overlap; i++) {
+          Object.assign(existingAddresses[i], addresses[i]);
+          existingAddresses[i].isDefault = addresses[i].isDefault ?? i === 0;
+          await manager.save(CustomerAddress, existingAddresses[i]);
+        }
+
+        // 2. Insert any newly-added addresses.
+        const added = addresses.slice(existingAddresses.length);
+        if (added.length > 0) {
+          const created = added.map((addr, index) =>
+            manager.create(CustomerAddress, {
+              ...addr,
+              tenantId,
+              customerId: id,
+              isDefault:
+                addr.isDefault ?? existingAddresses.length + index === 0,
+            }),
+          );
+          await manager.save(CustomerAddress, created);
+        }
+
+        // 3. Remove surplus addresses — but never one still referenced by a
+        //    job. Referenced ones are kept to preserve data integrity.
+        const surplus = existingAddresses.slice(addresses.length);
+        if (surplus.length > 0) {
+          const surplusIds = surplus.map((a) => a.id);
+          const referenced = await manager
+            .getRepository(CustomerAddress)
+            .createQueryBuilder('address')
+            .innerJoin('jobs', 'job', 'job."customerAddressId" = address.id')
+            .where('address.id IN (:...surplusIds)', { surplusIds })
+            .getMany();
+          const referencedIds = new Set(referenced.map((a) => a.id));
+          const deletable = surplusIds.filter((id) => !referencedIds.has(id));
+          if (deletable.length > 0) {
+            await manager.delete(CustomerAddress, deletable);
+          }
+        }
       }
-    }
 
-    // Return customer with addresses
-    const customerWithAddresses = await this.customerRepository.findOne({
-      where: { id, tenantId },
-      relations: { addresses: true },
+      // Return customer with addresses
+      const customerWithAddresses = await manager.findOne(Customer, {
+        where: { id, tenantId },
+        relations: { addresses: true },
+      });
+
+      this.logger.log(`Customer ${id} updated for tenant ${tenantId}`);
+
+      return customerWithAddresses;
     });
-
-    return customerWithAddresses;
   }
 
   async findById(id: string, tenantId: string) {

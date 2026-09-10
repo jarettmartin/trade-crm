@@ -53,3 +53,15 @@ variable "tags" {
     Env     = "prod"
   }
 }
+
+variable "ses_identity_domain" {
+  description = "Domain verified in Amazon SES for sending invoice emails (DNS is in Cloudflare, records are printed by the ses_dkim_records output)."
+  type        = string
+  default     = "sprout-crm.com"
+}
+
+variable "ses_from_email" {
+  description = "From address used for invoice emails (sub-address of ses_identity_domain)."
+  type        = string
+  default     = "no-reply@sprout-crm.com"
+}

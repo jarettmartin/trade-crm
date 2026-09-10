@@ -5,9 +5,9 @@ import type {
   CustomerResult,
   JobResult,
   JobDetailResult,
-  JobNoteResult,
   JobLineItemResult,
   InvoiceResult,
+  InvoiceEmailAttemptResult,
   PaginatedJobsResponse,
   CreateTenantPayload,
   UpdateTenantPayload,
@@ -21,10 +21,10 @@ import type {
 // ---------------------------------------------------------------------------
 
 let tenant: typeof tenantSeed = structuredClone(tenantSeed);
-let customers: CustomerResult[] = structuredClone(
+const customers: CustomerResult[] = structuredClone(
   customersSeed,
 ) as unknown as CustomerResult[];
-let jobs: JobSeed[] = structuredClone(jobsSeed);
+const jobs: JobSeed[] = structuredClone(jobsSeed);
 
 interface JobSeed {
   id: string;
@@ -71,6 +71,7 @@ function buildJobDetail(j: JobSeed): JobDetailResult {
       lastName: cust?.lastName ?? "",
       companyName: cust?.companyName ?? undefined,
       phone: cust?.phone ?? "",
+      email: cust?.email,
     },
     customerAddress: {
       id: j.customerAddressId,
@@ -85,7 +86,10 @@ function buildJobDetail(j: JobSeed): JobDetailResult {
       user: { ...n.user },
     })),
     lineItems: j.lineItems.map((li) => ({ ...li })),
-    invoices: j.invoices.map((inv) => ({ ...inv })),
+    invoices: j.invoices.map((inv) => ({
+      ...inv,
+      emailAttempts: inv.emailAttempts ?? [],
+    })),
   };
 }
 
@@ -326,6 +330,7 @@ export const demoService = {
       taxAmount: payload.taxAmount,
       total: payload.total,
       createdAt: new Date().toISOString(),
+      emailAttempts: [],
     };
     // Match real backend ordering: invoices are returned newest-first (createdAt DESC)
     j.invoices.unshift(invoice);
@@ -338,6 +343,71 @@ export const demoService = {
       if (inv) {
         inv.status = status;
         return;
+      }
+    }
+    throw new Error("Invoice not found");
+  },
+
+  sendInvoiceEmail(invoiceId: string): InvoiceEmailAttemptResult {
+    for (const j of jobs) {
+      const inv = j.invoices.find((i) => i.id === invoiceId);
+      if (!inv) continue;
+      const cust = getCustomer(j.customerId);
+      const recipientEmail = cust?.email;
+      if (!recipientEmail) {
+        throw new Error(
+          "Customer has no email on file. Add one before sending the invoice.",
+        );
+      }
+
+      const attempt: InvoiceEmailAttemptResult = {
+        id: `demo-attempt-${Date.now()}`,
+        status: "PENDING",
+        recipientEmail,
+        fromEmail: tenant.businessEmail,
+        subject: `Invoice ${inv.invoiceNumber} from ${tenant.businessName}`,
+        createdAt: new Date().toISOString(),
+      };
+
+      inv.emailAttempts = [
+        attempt,
+        ...(inv.emailAttempts ?? []),
+      ].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+      // Simulate background delivery completing ~2s later.
+      // Emails containing "fail@" (or ending ".fail") simulate a delivery
+      // error so the ERROR state is exercisable in demo mode.
+      setTimeout(() => {
+        const current = inv?.emailAttempts?.find((a) => a.id === attempt.id);
+        if (current) {
+          if (
+            recipientEmail.includes("fail@") ||
+            recipientEmail.endsWith(".fail")
+          ) {
+            current.status = "FAILED";
+            current.errorMessage =
+              "Email address is not verified with SES (simulated failure)";
+          } else {
+            current.status = "SENT";
+            current.sentAt = new Date().toISOString();
+            current.messageId = "demo-ses-message-id";
+          }
+        }
+      }, 2000);
+
+      return { ...attempt };
+    }
+    throw new Error("Invoice not found");
+  },
+
+  fetchInvoiceEmailAttempts(invoiceId: string): InvoiceEmailAttemptResult[] {
+    for (const j of jobs) {
+      const inv = j.invoices.find((i) => i.id === invoiceId);
+      if (inv) {
+        return [...(inv.emailAttempts ?? [])];
       }
     }
     throw new Error("Invoice not found");
