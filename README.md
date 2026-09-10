@@ -25,7 +25,7 @@ The **API** and **web frontend** are versioned independently (separate deployabl
 | API (NestJS) | `api-trade-crm/` | `package.json` | `api-v`    |
 | Web (Ionic)  | `web-trade-crm/` | `package.json` | `web-v`    |
 
-Current release: **API `v0.1.0`** · **Web `v0.1.0`** (tags `api-v0.1.0`, `web-v0.1.0`).
+Current release: **API `v0.2.0`** · **Web `v0.2.0`** (tags `api-v0.2.0`, `web-v0.2.0`).
 
 ## Architecture
 
