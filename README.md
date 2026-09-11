@@ -97,6 +97,12 @@ containers. Common commands are available as npm scripts (see
 [package.json](package.json)): `npm run dev`, `npm run down`, `npm run logs`,
 `npm run reset`, etc.
 
+> If `docker compose up` fails with `address already in use` (a stale Vite
+> server or leftover container is holding a port), run `npm run kill-ports`
+> first. It stops this project's containers and terminates any remaining host
+> processes on the app ports (5432, 3000, 8100). Database data is preserved —
+> it lives in the named `postgres_data` volume.
+
 ### Option B — Manual setup (no Docker)
 
 Run the API and web directly on your machine.

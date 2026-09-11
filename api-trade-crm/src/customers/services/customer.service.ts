@@ -139,6 +139,30 @@ export class CustomerService {
     });
   }
 
+  async findAll(tenantId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const [customers, total] = await this.customerRepository.findAndCount({
+      where: { tenantId },
+      order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
+      // Include addresses so list selections can prefill address pickers
+      // (e.g. the Create Job page uses customer.addresses directly).
+      relations: { addresses: true },
+    });
+
+    return {
+      data: customers,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async findById(id: string, tenantId: string) {
     const customer = await this.customerRepository.findOne({
       where: { id, tenantId },

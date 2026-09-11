@@ -61,5 +61,194 @@
         "isDefault": true
       }
     ]
+  },
+  {
+    "id": "demo-customer-4",
+    "type": "COMMERCIAL",
+    "firstName": "James",
+    "lastName": "Rodriguez",
+    "companyName": "Rodriguez Brick & Stone",
+    "phone": "(555) 567-8901",
+    "email": "james.r@example.com",
+    "notes": "Ongoing commercial maintenance contract",
+    "addresses": [
+      {
+        "id": "demo-addr-4",
+        "addressLine1": "456 Cedar Drive",
+        "addressLine2": "Unit 4",
+        "city": "Burlington",
+        "stateProvince": "ON",
+        "zipPostalCode": "L7L 1A1",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-5",
+    "type": "RESIDENTIAL",
+    "firstName": "Priya",
+    "lastName": "Patel",
+    "companyName": null,
+    "phone": "(555) 678-9012",
+    "email": "priya.patel@example.com",
+    "notes": "Prefers email contact only",
+    "addresses": [
+      {
+        "id": "demo-addr-5",
+        "addressLine1": "88 Commerce Crescent",
+        "addressLine2": null,
+        "city": "Mississauga",
+        "stateProvince": "ON",
+        "zipPostalCode": "L5T 2K3",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-6",
+    "type": "RESIDENTIAL",
+    "firstName": "David",
+    "lastName": "Kim",
+    "companyName": null,
+    "phone": "(555) 789-0123",
+    "email": "david.kim@example.com",
+    "notes": null,
+    "addresses": [
+      {
+        "id": "demo-addr-6",
+        "addressLine1": "12 Aspen Way",
+        "addressLine2": null,
+        "city": "Oakville",
+        "stateProvince": "ON",
+        "zipPostalCode": "L6H 7K2",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-7",
+    "type": "RESIDENTIAL",
+    "firstName": "Lisa",
+    "lastName": "Nguyen",
+    "companyName": null,
+    "phone": "(555) 890-1234",
+    "email": "lisa.nguyen@example.com",
+    "notes": "Allergic to grass pollen",
+    "addresses": [
+      {
+        "id": "demo-addr-7",
+        "addressLine1": "77 Willowbrook Road",
+        "addressLine2": null,
+        "city": "Hamilton",
+        "stateProvince": "ON",
+        "zipPostalCode": "L8P 4R3",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-8",
+    "type": "COMMERCIAL",
+    "firstName": "Tom",
+    "lastName": "Hargrove",
+    "companyName": "Hargrove & Sons Landscaping",
+    "phone": "(555) 901-2345",
+    "email": "contact@hargrovelandscaping.com",
+    "notes": "Wholesale material partner",
+    "addresses": [
+      {
+        "id": "demo-addr-8",
+        "addressLine1": "240 Industrial Park Road",
+        "addressLine2": null,
+        "city": "Brampton",
+        "stateProvince": "ON",
+        "zipPostalCode": "L6T 5C4",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-9",
+    "type": "RESIDENTIAL",
+    "firstName": "Amanda",
+    "lastName": "Foster",
+    "companyName": null,
+    "phone": "(555) 012-3456",
+    "email": "amanda.foster@example.com",
+    "notes": null,
+    "addresses": [
+      {
+        "id": "demo-addr-9",
+        "addressLine1": "19 Lakeview Terrace",
+        "addressLine2": null,
+        "city": "Burlington",
+        "stateProvince": "ON",
+        "zipPostalCode": "L7R 3K5",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-10",
+    "type": "COMMERCIAL",
+    "firstName": "Nina",
+    "lastName": "Kowalski",
+    "companyName": "Riverview Condos",
+    "phone": "(555) 123-7890",
+    "email": "nina@riverviewcondos.com",
+    "notes": "Multiple buildings under one account",
+    "addresses": [
+      {
+        "id": "demo-addr-10",
+        "addressLine1": "1 Grand Trunk Avenue",
+        "addressLine2": "Unit 115",
+        "city": "Toronto",
+        "stateProvince": "ON",
+        "zipPostalCode": "M5J 2M3",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-11",
+    "type": "RESIDENTIAL",
+    "firstName": "Carlos",
+    "lastName": "Mendez",
+    "companyName": null,
+    "phone": "(555) 234-9012",
+    "email": "carlos.mendez@example.com",
+    "notes": "Paid deposit for spring package",
+    "addresses": [
+      {
+        "id": "demo-addr-11",
+        "addressLine1": "31 Maple Grove Court",
+        "addressLine2": null,
+        "city": "Milton",
+        "stateProvince": "ON",
+        "zipPostalCode": "L9T 0C1",
+        "isDefault": true
+      }
+    ]
+  },
+  {
+    "id": "demo-customer-12",
+    "type": "COMMERCIAL",
+    "firstName": "Hannah",
+    "lastName": "Brooks",
+    "companyName": "Brooks Contracting",
+    "phone": "(555) 987-6543",
+    "email": "hannah@brookscontracting.com",
+    "notes": null,
+    "addresses": [
+      {
+        "id": "demo-addr-12",
+        "addressLine1": "455 Renforth Drive",
+        "addressLine2": "Unit 3",
+        "city": "Etobicoke",
+        "stateProvince": "ON",
+        "zipPostalCode": "M9C 1J1",
+        "isDefault": true
+      }
+    ]
   }
 ]

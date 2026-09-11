@@ -12,18 +12,18 @@ import {
   IonText,
   IonInput,
   IonTextarea,
-  IonSelect,
-  IonSelectOption,
   IonSegment,
   IonSegmentButton,
   IonItem,
   IonLabel,
   IonIcon,
   IonToast,
+  useIonViewWillEnter,
 } from "@ionic/react";
 import { addOutline, removeOutline } from "ionicons/icons";
 import { api, CustomerResult } from "../services/api";
 import CustomerSearch from "../components/CustomerSearch";
+import CustomerTable from "../components/CustomerTable";
 import {
   isValidEmail,
   isValidPhone,
@@ -52,6 +52,8 @@ const emptyAddress = (): AddressForm => ({
   countryCode: "US",
 });
 
+const CUSTOMERS_TABLE_PAGE_SIZE = 10;
+
 const ManageCustomersPage: React.FC = () => {
   useEffect(() => {
     document.title = "Sprout CRM - Manage Customers";
@@ -71,6 +73,11 @@ const ManageCustomersPage: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastIsError, setToastIsError] = useState(false);
   const baselineRef = useRef<string>("");
+  const [customersList, setCustomersList] = useState<CustomerResult[]>([]);
+  const [customersPage, setCustomersPage] = useState(1);
+  const [customersTotal, setCustomersTotal] = useState(0);
+  const [customersTotalPages, setCustomersTotalPages] = useState(1);
+  const [customersLoading, setCustomersLoading] = useState(false);
 
   const showToastMsg = (msg: string, isError = true) => {
     setToastMessage(msg);
@@ -134,6 +141,35 @@ const ManageCustomersPage: React.FC = () => {
     } catch {
       showToastMsg("Failed to load customer details");
     }
+  };
+
+  const loadCustomersTable = async (pageNum: number) => {
+    setCustomersLoading(true);
+    try {
+      const res = await api.fetchCustomers(
+        pageNum,
+        CUSTOMERS_TABLE_PAGE_SIZE,
+      );
+      setCustomersList(res.data);
+      setCustomersTotal(res.meta.total);
+      setCustomersTotalPages(res.meta.totalPages);
+    } catch {
+      setCustomersList([]);
+      setCustomersTotal(0);
+      setCustomersTotalPages(1);
+    } finally {
+      setCustomersLoading(false);
+    }
+  };
+
+  useIonViewWillEnter(() => {
+    setCustomersPage(1);
+    loadCustomersTable(1);
+  });
+
+  const handleCustomersPageChange = (nextPage: number) => {
+    setCustomersPage(nextPage);
+    loadCustomersTable(nextPage);
   };
 
   const handleZipChange = (index: number, value: string) => {
@@ -213,6 +249,7 @@ const ManageCustomersPage: React.FC = () => {
       });
       setBaseline();
       showToastMsg("Customer saved", false);
+      loadCustomersTable(customersPage);
     } catch (err) {
       showToastMsg(
         err instanceof Error ? err.message : "Failed to save customer",
@@ -237,6 +274,27 @@ const ManageCustomersPage: React.FC = () => {
           <CustomerSearch
             onSelect={handleSelectCustomer}
             clearOnSelect={false}
+          />
+
+          {/* All Customers — paginated table (history view) */}
+          <div style={{ margin: "16px 0 8px" }}>
+            <IonText color="medium">
+              <small>
+                <strong>All Customers</strong>
+              </small>
+            </IonText>
+          </div>
+          <CustomerTable
+            data={customersList}
+            loading={customersLoading}
+            page={customersPage}
+            pageSize={CUSTOMERS_TABLE_PAGE_SIZE}
+            total={customersTotal}
+            totalPages={customersTotalPages}
+            onPageChange={handleCustomersPageChange}
+            onSelectCustomer={handleSelectCustomer}
+            selectedCustomerId={customer?.id ?? null}
+            emptyMessage="No customers found."
           />
 
           {customer && (

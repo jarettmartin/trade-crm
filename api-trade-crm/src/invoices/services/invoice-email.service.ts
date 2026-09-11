@@ -116,7 +116,14 @@ export class InvoiceEmailService implements OnModuleInit {
       where: { id: tenantId },
     });
 
-    const fromEmail = this.fromEmail || tenant?.businessEmail || '';
+    const fromEmail = this.fromEmail;
+    if (!fromEmail) {
+      throw new Error(
+        'SES_FROM_EMAIL is not configured. Invoice emails must be sent from a ' +
+          'verified SES identity owned by the platform (e.g. no-reply@sprout-crm.com), ' +
+          'never from the tenant’s own business email.',
+      );
+    }
     const formattedNumber = String(invoice.invoiceNumber)
       .padStart(8, '0')
       .replace(/(\d{4})(\d{4})/, '$1 $2');
