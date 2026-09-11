@@ -25,6 +25,9 @@ import {
 import { useHistory } from "react-router-dom";
 import { calendarOutline } from "ionicons/icons";
 import { api, JobResult } from "../services/api";
+import PaginatedTable, {
+  PaginatedTableColumn,
+} from "../components/PaginatedTable";
 
 const statusLabel: Record<string, string> = {
   ALL: "All Statuses",
@@ -43,6 +46,8 @@ const statusColor: Record<string, string> = {
   CANCELLED: "danger",
 };
 
+const JOBS_TABLE_PAGE_SIZE = 10;
+
 const Home: React.FC = () => {
   useEffect(() => {
     document.title = "Sprout CRM - Manage Jobs";
@@ -57,6 +62,11 @@ const Home: React.FC = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [tableJobs, setTableJobs] = useState<JobResult[]>([]);
+  const [tablePage, setTablePage] = useState(1);
+  const [tableTotal, setTableTotal] = useState(0);
+  const [tableTotalPages, setTableTotalPages] = useState(1);
+  const [tableLoading, setTableLoading] = useState(false);
 
   const loadJobs = async (
     pageNum: number,
@@ -93,15 +103,45 @@ const Home: React.FC = () => {
     }
   };
 
+  const loadJobsTable = async (pageNum: number, status?: string) => {
+    setTableLoading(true);
+    try {
+      const filterStatus = status && status !== "ALL" ? status : undefined;
+      const res = await api.fetchJobs(
+        pageNum,
+        JOBS_TABLE_PAGE_SIZE,
+        filterStatus,
+      );
+      setTableJobs(res.data);
+      setTableTotal(res.meta.total);
+      setTableTotalPages(res.meta.totalPages);
+    } catch {
+      setTableJobs([]);
+      setTableTotal(0);
+      setTableTotalPages(1);
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
   useIonViewWillEnter(() => {
     setPage(1);
     loadJobs(1, false, statusFilter);
+    setTablePage(1);
+    loadJobsTable(1, statusFilter);
   });
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
     setPage(1);
     loadJobs(1, false, value);
+    setTablePage(1);
+    loadJobsTable(1, value);
+  };
+
+  const handleTablePageChange = (nextPage: number) => {
+    setTablePage(nextPage);
+    loadJobsTable(nextPage, statusFilter);
   };
 
   const handleLoadMore = () => {
@@ -118,6 +158,37 @@ const Home: React.FC = () => {
       year: "numeric",
     });
   };
+
+  const jobTableColumns: PaginatedTableColumn<JobResult>[] = [
+    {
+      label: "Job",
+      render: (job) => <span style={{ fontWeight: 600 }}>{job.title}</span>,
+    },
+    {
+      label: "Customer",
+      render: (job) => (
+        <>
+          {job.customer.firstName} {job.customer.lastName}
+          {job.customer.companyName ? ` — ${job.customer.companyName}` : ""}
+        </>
+      ),
+    },
+    {
+      label: "Status",
+      render: (job) => (
+        <IonChip
+          color={statusColor[job.status] || "medium"}
+          style={{ margin: 0 }}
+        >
+          {statusLabel[job.status] || job.status}
+        </IonChip>
+      ),
+    },
+    {
+      label: "Created",
+      render: (job) => formatDate(job.createdAt),
+    },
+  ];
 
   return (
     <IonPage>
@@ -166,6 +237,37 @@ const Home: React.FC = () => {
             >
               New Job
             </IonButton>
+          </div>
+
+          {/* All Jobs — paginated table (history view) */}
+          <div style={{ marginBottom: "8px" }}>
+            <IonText color="medium">
+              <small>
+                <strong>All Jobs</strong>
+              </small>
+            </IonText>
+          </div>
+          <PaginatedTable
+            columns={jobTableColumns}
+            data={tableJobs}
+            loading={tableLoading}
+            page={tablePage}
+            pageSize={JOBS_TABLE_PAGE_SIZE}
+            total={tableTotal}
+            totalPages={tableTotalPages}
+            onPageChange={handleTablePageChange}
+            rowKey={(job) => job.id}
+            onRowClick={(job) => history.push(`/job/${job.id}`)}
+            emptyMessage="No jobs found."
+          />
+
+          {/* Recent Jobs — existing card list */}
+          <div style={{ marginTop: "24px", marginBottom: "8px" }}>
+            <IonText color="medium">
+              <small>
+                <strong>Recent Jobs</strong>
+              </small>
+            </IonText>
           </div>
 
           {loading && (
