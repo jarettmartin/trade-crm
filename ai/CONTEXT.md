@@ -239,7 +239,7 @@ Runs daily at 1am Eastern via cron on the instance
 - Navigation patterns:
   - `IonBackButton` with `defaultHref` for detail/edit pages (back navigation)
   - `IonMenuButton` for navigable pages (access to sidemenu)
-  - `routerLink` for Ionic-managed navigation (avoids React Router history bugs). Prefer this over `history.push()` for list→detail navigation (e.g. Home job cards use `routerLink`)
+  - `routerLink` for Ionic-managed navigation (avoids React Router history bugs). Prefer this over `history.push()` for list→detail navigation. Note the Jobs page now uses the paginated `PaginatedTable`, whose rows navigate via the click handler (`history.push`) — safe only because `JobDetailPage` falls back to parsing the path (see the param-routes caveat below)
   - `history.push()`/`history.goBack()` for programmatic navigation
   - **Param routes caveat**: `useParams()` can return an empty object after client-side navigation in this Ionic React Router v5 setup (even with `routerLink`). Param-driven pages (`JobDetailPage`, `InvoicePreviewPage`) therefore read the id via `routeId || window.location.pathname.split("/").pop()`
 - Shared components:
@@ -247,7 +247,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
   - `Menu` — Sidemenu with nav items + logout
-- Paginated tables on the Jobs page (above the recent-cards list) and the Manage Customers / Create Job pages (below the search bar) share `PaginatedTable`; the real API orders by `createdAt DESC` and demo mode mirrors that
+- Paginated tables on the Jobs page (the primary job list) and the Manage Customers / Create Job pages (below the search bar) share `PaginatedTable`; the real API orders by `createdAt DESC` and demo mode mirrors that
 - PDF handling:
   - In-memory `pdfCache.ts` (Map<string, Blob>) caches downloaded PDFs for the session
   - `getPdfBlob()` — fetch + cache
