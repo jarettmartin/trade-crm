@@ -205,7 +205,7 @@ Runs daily at 1am Eastern via cron on the instance
 
 ### Invoice Email (AWS SES)
 
-- `EmailService` (`src/email/`) wraps SES v2 `SendEmail` with a raw MIME message (plain-text body + base64 PDF attachment) built by the dependency-free `mime.ts` builder. Credentials come from `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`; region/from from `SES_REGION`/`SES_FROM_EMAIL` (falls back to the tenant's `businessEmail`).
+- `EmailService` (`src/email/`) wraps SES v2 `SendEmail` with a raw MIME message (plain-text body + base64 PDF attachment) built by the dependency-free `mime.ts` builder. Credentials come from `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`; region/from from `SES_REGION`/`SES_FROM_EMAIL`. **`SES_FROM_EMAIL` is required** — the From address must always be a verified SES identity owned by the platform (e.g. `no-reply@sprout-crm.com` on the verified `sprout-crm.com` domain). The tenant's `businessEmail` is never used as the From (it's unverified for SES); it's only the reply-to and the contact address printed in the email body. Sending fails fast if `SES_FROM_EMAIL` is missing.
 - **Email copy lives in Handlebars templates** (`src/email/templates/*.hbs`, compiled once at startup — same pattern as the PDF template). Format per file: a `subject: <hbs>` line, a `---` separator, then the plain-text body. `EmailService.renderEmailTemplate(name, context)` returns `{ subject, textBody }`; future email types just add a new `.hbs` + call `sendEmail()`.
 - `POST /invoices/:invoiceId/email` (TenantGuard) validates the customer has a valid email on file, records a **PENDING** `InvoiceEmailAttempt` (subject rendered from the template and snapshotted), and returns immediately. Delivery is fire-and-forget: `InvoiceEmailService.processAttempt()` generates the PDF (`PdfService`), renders the body via `EmailService`, and sends via SES in the background, then updates the attempt to `SENT` (with SES `messageId` + `sentAt`) or `FAILED` (with `errorMessage`).
 - `GET /invoices/:invoiceId/emails` (TenantGuard) returns the attempt history (newest first) for polling.
@@ -244,7 +244,10 @@ Runs daily at 1am Eastern via cron on the instance
   - **Param routes caveat**: `useParams()` can return an empty object after client-side navigation in this Ionic React Router v5 setup (even with `routerLink`). Param-driven pages (`JobDetailPage`, `InvoicePreviewPage`) therefore read the id via `routeId || window.location.pathname.split("/").pop()`
 - Shared components:
   - `CustomerSearch` — Debounced search with dropdown results + "Create New Customer" button
+  - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
+  - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
   - `Menu` — Sidemenu with nav items + logout
+- Paginated tables on the Jobs page (above the recent-cards list) and the Manage Customers / Create Job pages (below the search bar) share `PaginatedTable`; the real API orders by `createdAt DESC` and demo mode mirrors that
 - PDF handling:
   - In-memory `pdfCache.ts` (Map<string, Blob>) caches downloaded PDFs for the session
   - `getPdfBlob()` — fetch + cache
@@ -320,7 +323,7 @@ src/
 src/
 ├── App.tsx                          # Root app with routing + auth gating
 ├── main.tsx                         # Entry point
-├── components/                      # Reusable components (CustomerSearch, Menu)
+├── components/                      # Reusable components (CustomerSearch, CustomerTable, PaginatedTable, Menu)
 ├── contexts/                        # AuthContext (user, login, logout, updateUser)
 ├── pages/                           # Route-level pages (Auth, Home, Create/Manage pages)
 ├── services/                        # API client, PDF cache, formatting, validation
@@ -385,7 +388,7 @@ src/
 ### Frontend
 
 - Singleton `api.ts` class for all HTTP — never use raw `fetch` outside of it
-- Shared components for reusable UI (CustomerSearch, Menu)
+- Shared components for reusable UI (CustomerSearch, CustomerTable, PaginatedTable, Menu)
 - Shared services for cross-cutting concerns (format, validation, pdfCache)
 - `IonActionSheet` for inline status changes (invoice status)
 - `IonSelect` + `interface="popover"` for dropdown menus
