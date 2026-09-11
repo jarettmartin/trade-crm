@@ -1,6 +1,6 @@
 {
   "name": "api-trade-crm",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "",
   "author": "",
   "private": true,
@@ -24,6 +24,7 @@
     "migration:run": "tsx ./node_modules/typeorm/cli.js migration:run -d src/config/data-source.ts",
     "migration:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d src/config/data-source.ts",
     "db:seed": "tsx src/config/seed.ts",
+    "db:seed-demo": "tsx src/config/seed-demo.ts",
     "db:reset": "tsx src/config/reset-database.ts && npm run migration:run && npm run db:seed"
   },
   "dependencies": {

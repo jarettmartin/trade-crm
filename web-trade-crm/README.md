@@ -61,7 +61,9 @@ src/
 ├── main.tsx                   # Entry point
 ├── components/                # Reusable components
 │   ├── CustomerSearch.tsx     # Debounced customer search combobox
-│   └── Menu.tsx               # Sidemenu with nav items + logout
+│   ├── CustomerTable.tsx      # Shared paginated customers table (browse/select)
+│   ├── Menu.tsx               # Sidemenu with nav items + logout
+│   └── PaginatedTable.tsx     # Reusable paginated table (controls at the top)
 ├── contexts/
 │   └── AuthContext.tsx         # Auth state, login, logout, updateUser
 ├── pages/                     # Route-level pages

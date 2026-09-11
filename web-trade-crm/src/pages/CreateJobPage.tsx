@@ -17,10 +17,14 @@ import {
   IonItem,
   IonLabel,
   IonToast,
+  useIonViewWillEnter,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { api, CustomerResult, CreateJobPayload } from "../services/api";
 import CustomerSearch from "../components/CustomerSearch";
+import CustomerTable from "../components/CustomerTable";
+
+const CUSTOMERS_TABLE_PAGE_SIZE = 10;
 
 const CreateJobPage: React.FC = () => {
   useEffect(() => {
@@ -37,6 +41,11 @@ const CreateJobPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [toastIsError, setToastIsError] = useState(false);
+  const [customersList, setCustomersList] = useState<CustomerResult[]>([]);
+  const [customersPage, setCustomersPage] = useState(1);
+  const [customersTotal, setCustomersTotal] = useState(0);
+  const [customersTotalPages, setCustomersTotalPages] = useState(1);
+  const [customersLoading, setCustomersLoading] = useState(false);
 
   const showToastMsg = (msg: string, isError = true) => {
     setToastMessage(msg);
@@ -59,6 +68,35 @@ const CreateJobPage: React.FC = () => {
   const handleClearSelection = () => {
     setSelectedCustomer(null);
     setSelectedAddressId("");
+  };
+
+  const loadCustomersTable = async (pageNum: number) => {
+    setCustomersLoading(true);
+    try {
+      const res = await api.fetchCustomers(
+        pageNum,
+        CUSTOMERS_TABLE_PAGE_SIZE,
+      );
+      setCustomersList(res.data);
+      setCustomersTotal(res.meta.total);
+      setCustomersTotalPages(res.meta.totalPages);
+    } catch {
+      setCustomersList([]);
+      setCustomersTotal(0);
+      setCustomersTotalPages(1);
+    } finally {
+      setCustomersLoading(false);
+    }
+  };
+
+  useIonViewWillEnter(() => {
+    setCustomersPage(1);
+    loadCustomersTable(1);
+  });
+
+  const handleCustomersPageChange = (nextPage: number) => {
+    setCustomersPage(nextPage);
+    loadCustomersTable(nextPage);
   };
 
   const handleSave = async () => {
@@ -108,6 +146,27 @@ const CreateJobPage: React.FC = () => {
       <IonContent className="ion-padding">
         <div className="page-container">
           <CustomerSearch onSelect={handleSelectCustomer} />
+
+          {/* All Customers — paginated table (browse without searching) */}
+          <div style={{ margin: "16px 0 8px" }}>
+            <IonText color="medium">
+              <small>
+                <strong>All Customers</strong>
+              </small>
+            </IonText>
+          </div>
+          <CustomerTable
+            data={customersList}
+            loading={customersLoading}
+            page={customersPage}
+            pageSize={CUSTOMERS_TABLE_PAGE_SIZE}
+            total={customersTotal}
+            totalPages={customersTotalPages}
+            onPageChange={handleCustomersPageChange}
+            onSelectCustomer={handleSelectCustomer}
+            selectedCustomerId={selectedCustomer?.id ?? null}
+            emptyMessage="No customers found."
+          />
 
           {selectedCustomer && (
             <div

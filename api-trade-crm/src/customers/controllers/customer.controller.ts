@@ -12,6 +12,7 @@ import { CustomerService } from '../services/customer.service';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { SearchCustomerDto } from '../dto/search-customer.dto';
+import { QueryCustomersDto } from '../dto/query-customers.dto';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
@@ -27,6 +28,19 @@ export class CustomerController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.customerService.create(dto, user.tenantId!);
+  }
+
+  @Get()
+  @UseGuards(TenantGuard)
+  async findAll(
+    @Query() query: QueryCustomersDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.customerService.findAll(
+      user.tenantId!,
+      query.page ?? 1,
+      query.limit ?? 10,
+    );
   }
 
   @Get('search')

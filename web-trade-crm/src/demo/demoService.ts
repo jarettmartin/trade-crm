@@ -9,6 +9,7 @@ import type {
   InvoiceResult,
   InvoiceEmailAttemptResult,
   PaginatedJobsResponse,
+  PaginatedCustomersResponse,
   CreateTenantPayload,
   UpdateTenantPayload,
   CreateTenantResponse,
@@ -189,6 +190,16 @@ export const demoService = {
     );
   },
 
+  fetchCustomers(page: number, limit: number): PaginatedCustomersResponse {
+    const total = customers.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const start = (page - 1) * limit;
+    const data = customers
+      .slice(start, start + limit)
+      .map((c) => ({ ...c, addresses: c.addresses?.map((a) => ({ ...a })) }));
+    return { data, meta: { page, limit, total, totalPages } };
+  },
+
   fetchCustomer(id: string): CustomerResult {
     const c = customers.find((c) => c.id === id);
     if (!c) throw new Error("Customer not found");
@@ -232,7 +243,11 @@ export const demoService = {
     limit: number,
     status?: string,
   ): PaginatedJobsResponse {
-    let filtered = [...jobs];
+    // Mirror the real API (JobService.findAll orders by createdAt DESC).
+    let filtered = [...jobs].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
     if (status) {
       filtered = filtered.filter((j) => j.status === status);
     }

@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   IonButton,
-  IonCard,
-  IonCardHeader,
-  IonCardSubtitle,
-  IonCardTitle,
-  IonCardContent,
   IonContent,
   IonHeader,
   IonPage,
@@ -13,18 +8,17 @@ import {
   IonToolbar,
   IonButtons,
   IonMenuButton,
-  IonSpinner,
   IonText,
-  IonToast,
   IonChip,
-  IonIcon,
   IonSelect,
   IonSelectOption,
   useIonViewWillEnter,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
-import { calendarOutline } from "ionicons/icons";
 import { api, JobResult } from "../services/api";
+import PaginatedTable, {
+  PaginatedTableColumn,
+} from "../components/PaginatedTable";
 
 const statusLabel: Record<string, string> = {
   ALL: "All Statuses",
@@ -43,71 +37,56 @@ const statusColor: Record<string, string> = {
   CANCELLED: "danger",
 };
 
+const JOBS_TABLE_PAGE_SIZE = 10;
+
 const Home: React.FC = () => {
   useEffect(() => {
     document.title = "Sprout CRM - Manage Jobs";
   }, []);
 
   const history = useHistory();
-  const [jobs, setJobs] = useState<JobResult[]>([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [toastMessage, setToastMessage] = useState("");
-  const [showToast, setShowToast] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [tableJobs, setTableJobs] = useState<JobResult[]>([]);
+  const [tablePage, setTablePage] = useState(1);
+  const [tableTotal, setTableTotal] = useState(0);
+  const [tableTotalPages, setTableTotalPages] = useState(1);
+  const [tableLoading, setTableLoading] = useState(false);
 
-  const loadJobs = async (
-    pageNum: number,
-    append: boolean,
-    status?: string,
-  ) => {
-    if (append) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
-
+  const loadJobsTable = async (pageNum: number, status?: string) => {
+    setTableLoading(true);
     try {
       const filterStatus = status && status !== "ALL" ? status : undefined;
-      const res = await api.fetchJobs(pageNum, 5, filterStatus);
-      if (append) {
-        setJobs((prev) => [...prev, ...res.data]);
-      } else {
-        setJobs(res.data);
-      }
-      setHasMore(pageNum < res.meta.totalPages);
-      if (append && res.data.length === 0) {
-        setToastMessage("No more jobs found");
-        setShowToast(true);
-      }
+      const res = await api.fetchJobs(
+        pageNum,
+        JOBS_TABLE_PAGE_SIZE,
+        filterStatus,
+      );
+      setTableJobs(res.data);
+      setTableTotal(res.meta.total);
+      setTableTotalPages(res.meta.totalPages);
     } catch {
-      if (append) {
-        setToastMessage("No more jobs found");
-        setShowToast(true);
-      }
+      setTableJobs([]);
+      setTableTotal(0);
+      setTableTotalPages(1);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      setTableLoading(false);
     }
   };
 
   useIonViewWillEnter(() => {
-    setPage(1);
-    loadJobs(1, false, statusFilter);
+    setTablePage(1);
+    loadJobsTable(1, statusFilter);
   });
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value);
-    setPage(1);
-    loadJobs(1, false, value);
+    setTablePage(1);
+    loadJobsTable(1, value);
   };
 
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    loadJobs(nextPage, true, statusFilter);
+  const handleTablePageChange = (nextPage: number) => {
+    setTablePage(nextPage);
+    loadJobsTable(nextPage, statusFilter);
   };
 
   const formatDate = (dateStr: string) => {
@@ -118,6 +97,37 @@ const Home: React.FC = () => {
       year: "numeric",
     });
   };
+
+  const jobTableColumns: PaginatedTableColumn<JobResult>[] = [
+    {
+      label: "Job",
+      render: (job) => <span style={{ fontWeight: 600 }}>{job.title}</span>,
+    },
+    {
+      label: "Customer",
+      render: (job) => (
+        <>
+          {job.customer.firstName} {job.customer.lastName}
+          {job.customer.companyName ? ` — ${job.customer.companyName}` : ""}
+        </>
+      ),
+    },
+    {
+      label: "Status",
+      render: (job) => (
+        <IonChip
+          color={statusColor[job.status] || "medium"}
+          style={{ margin: 0 }}
+        >
+          {statusLabel[job.status] || job.status}
+        </IonChip>
+      ),
+    },
+    {
+      label: "Created",
+      render: (job) => formatDate(job.createdAt),
+    },
+  ];
 
   return (
     <IonPage>
@@ -168,88 +178,28 @@ const Home: React.FC = () => {
             </IonButton>
           </div>
 
-          {loading && (
-            <div style={{ textAlign: "center", padding: "32px" }}>
-              <IonSpinner />
-            </div>
-          )}
-
-          {!loading && jobs.length === 0 && (
+          {/* All Jobs — paginated table (history view) */}
+          <div style={{ marginBottom: "8px" }}>
             <IonText color="medium">
-              <p style={{ textAlign: "center", marginTop: "32px" }}>
-                No jobs found.
-              </p>
+              <small>
+                <strong>All Jobs</strong>
+              </small>
             </IonText>
-          )}
-
-          {jobs.map((job) => (
-            <IonCard
-              key={job.id}
-              button
-              routerLink={`/job/${job.id}`}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  padding: "16px 16px 0 16px",
-                  marginBottom: "4px",
-                }}
-              >
-                <IonChip color={statusColor[job.status] || "medium"}>
-                  {statusLabel[job.status] || job.status}
-                </IonChip>
-              </div>
-              <IonCardHeader>
-                <IonCardTitle>{job.title}</IonCardTitle>
-                <IonCardSubtitle>
-                  {job.customer.firstName} {job.customer.lastName}
-                  {job.customer.companyName
-                    ? ` — ${job.customer.companyName}`
-                    : ""}
-                </IonCardSubtitle>
-              </IonCardHeader>
-              <IonCardContent>
-                {job.description && (
-                  <IonText color="medium">
-                    <p style={{ margin: "0 0 8px 0" }}>{job.description}</p>
-                  </IonText>
-                )}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
-                >
-                  <IonIcon icon={calendarOutline} size="small" color="medium" />
-                  <IonText color="medium">
-                    <small>{formatDate(job.createdAt)}</small>
-                  </IonText>
-                </div>
-              </IonCardContent>
-            </IonCard>
-          ))}
-
-          {hasMore && jobs.length > 0 && (
-            <div style={{ textAlign: "center", marginTop: "8px" }}>
-              <IonButton
-                fill="outline"
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? <IonSpinner /> : "Load More"}
-              </IonButton>
-            </div>
-          )}
+          </div>
+          <PaginatedTable
+            columns={jobTableColumns}
+            data={tableJobs}
+            loading={tableLoading}
+            page={tablePage}
+            pageSize={JOBS_TABLE_PAGE_SIZE}
+            total={tableTotal}
+            totalPages={tableTotalPages}
+            onPageChange={handleTablePageChange}
+            rowKey={(job) => job.id}
+            onRowClick={(job) => history.push(`/job/${job.id}`)}
+            emptyMessage="No jobs found."
+          />
         </div>
-
-        <IonToast
-          isOpen={showToast}
-          message={toastMessage}
-          duration={3000}
-          onDidDismiss={() => setShowToast(false)}
-        />
       </IonContent>
     </IonPage>
   );

@@ -25,7 +25,7 @@ The **API** and **web frontend** are versioned independently (separate deployabl
 | API (NestJS) | `api-trade-crm/` | `package.json` | `api-v`    |
 | Web (Ionic)  | `web-trade-crm/` | `package.json` | `web-v`    |
 
-Current release: **API `v0.2.0`** · **Web `v0.2.0`** (tags `api-v0.2.0`, `web-v0.2.0`).
+Current release: **API `v0.3.0`** · **Web `v0.3.0`** (tags `api-v0.3.0`, `web-v0.3.0`).
 
 ## Architecture
 
@@ -96,6 +96,12 @@ Stop the stack with `Ctrl+C`, or use `docker compose down` to remove the
 containers. Common commands are available as npm scripts (see
 [package.json](package.json)): `npm run dev`, `npm run down`, `npm run logs`,
 `npm run reset`, etc.
+
+> If `docker compose up` fails with `address already in use` (a stale Vite
+> server or leftover container is holding a port), run `npm run kill-ports`
+> first. It stops this project's containers and terminates any remaining host
+> processes on the app ports (5432, 3000, 8100). Database data is preserved —
+> it lives in the named `postgres_data` volume.
 
 ### Option B — Manual setup (no Docker)
 

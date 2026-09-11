@@ -7,6 +7,7 @@
     "dev": "docker compose up",
     "dev:detached": "docker compose up -d",
     "down": "docker compose down",
+    "kill-ports": "node scripts/kill-ports.mjs",
     "build": "docker compose build",
     "logs": "docker compose logs -f",
     "ps": "docker compose ps",

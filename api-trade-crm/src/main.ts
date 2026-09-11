@@ -29,7 +29,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Trade CRM API')
     .setDescription('Multi-tenant trade business CRM')
-    .setVersion('0.1.0')
+    .setVersion('0.3.0')
     .addBearerAuth()
     .build();
 

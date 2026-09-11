@@ -12,7 +12,7 @@ export interface RenderedEmailTemplate {
   textBody: string;
 }
 
-const SEPARATOR_LINE = '---';
+const SEPARATOR_REGEX = /\n---[ \t]*(?:\n|$)/;
 
 /**
  * Handlebars email templates — one `.hbs` file per email type.
@@ -24,9 +24,9 @@ const SEPARATOR_LINE = '---';
  *   Hi {{customerName}},
  *   ...
  *
- * The `subject:` line + a `---` separator precede the plain-text body
- * template. A template without the separator is treated as body-only
- * (subject renders as an empty string).
+ * The `subject:` line + a `---` separator (on its own line) precede the
+ * plain-text body template. A template without the separator is treated as
+ * body-only (subject renders as an empty string).
  *
  * Files live in `src/email/templates/` and are compiled once at startup by
  * `EmailService` (the same pattern `PdfService` uses for the PDF template).
@@ -34,15 +34,19 @@ const SEPARATOR_LINE = '---';
  */
 export function compileEmailTemplate(source: string): CompiledEmailTemplate {
   const normalized = source.replace(/\r\n/g, '\n').trim();
-  const separatorIdx = normalized.indexOf(`\n${SEPARATOR_LINE}\n`);
+  const separatorMatch = normalized.match(SEPARATOR_REGEX);
+  const separatorIdx = separatorMatch ? (separatorMatch.index ?? -1) : -1;
   const head = separatorIdx === -1 ? '' : normalized.slice(0, separatorIdx);
   const bodySource =
     separatorIdx === -1
       ? normalized
-      : normalized.slice(separatorIdx + SEPARATOR_LINE.length + 2);
+      : normalized.slice(
+          separatorIdx + (separatorMatch ? separatorMatch[0].length : 0),
+        );
 
   // Optional subject line in the head block: "subject: <handlebars>".
-  const subjectMatch = head.match(/^subject:\s*(.+)$/m);
+  // The subject may span multiple lines; it ends at the separator.
+  const subjectMatch = head.match(/^subject:\s*([\s\S]+)$/m);
   const subjectSource = subjectMatch ? subjectMatch[1].trim() : '';
 
   return {

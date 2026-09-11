@@ -141,6 +141,16 @@ export interface PaginatedJobsResponse {
   };
 }
 
+export interface PaginatedCustomersResponse {
+  data: CustomerResult[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface JobNoteResult {
   id: string;
   note: string;
@@ -336,6 +346,15 @@ class ApiService {
     }
     return this.request<CustomerResult[]>(
       `/customers/search?q=${encodeURIComponent(q)}`,
+    );
+  }
+
+  async fetchCustomers(page: number = 1, limit: number = 10) {
+    if (this.demoMode) {
+      return demoService.fetchCustomers(page, limit);
+    }
+    return this.request<PaginatedCustomersResponse>(
+      `/customers?page=${page}&limit=${limit}`,
     );
   }
 
