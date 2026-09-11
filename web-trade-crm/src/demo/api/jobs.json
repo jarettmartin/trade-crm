@@ -236,5 +236,122 @@
       }
     ],
     "invoices": []
+  },
+  {
+    "id": "demo-job-5",
+    "title": "Spring Cleanup - Cedar Drive",
+    "description": "Full spring cleanup including leaf removal and garden bed preparation.",
+    "status": "ASSIGNED",
+    "createdAt": "2026-06-10T09:00:00.000Z",
+    "customerId": "demo-customer-4",
+    "customerAddressId": "demo-addr-4",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-6",
+    "title": "Landscape Refresh - Commerce Crescent",
+    "description": "Seasonal refresh including sod, edging, and mulch.",
+    "status": "IN_PROGRESS",
+    "createdAt": "2026-06-20T13:30:00.000Z",
+    "customerId": "demo-customer-5",
+    "customerAddressId": "demo-addr-5",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-7",
+    "title": "Hedge Trimming - Aspen Way",
+    "status": "COMPLETED",
+    "createdAt": "2026-05-18T10:00:00.000Z",
+    "customerId": "demo-customer-6",
+    "customerAddressId": "demo-addr-6",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-8",
+    "title": "Turf Remediation - Willowbrook",
+    "description": "Address bare patches and reseed shaded areas.",
+    "status": "DRAFT",
+    "createdAt": "2026-07-02T08:15:00.000Z",
+    "customerId": "demo-customer-7",
+    "customerAddressId": "demo-addr-7",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-9",
+    "title": "Commercial Lot Cleanup - Industrial Park",
+    "description": "Month-end lot cleanup and bin pickup coordination.",
+    "status": "CANCELLED",
+    "createdAt": "2026-01-25T14:00:00.000Z",
+    "customerId": "demo-customer-8",
+    "customerAddressId": "demo-addr-8",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-10",
+    "title": "Perennial Bed Refresh - Lakeview",
+    "status": "COMPLETED",
+    "createdAt": "2026-05-02T09:30:00.000Z",
+    "customerId": "demo-customer-9",
+    "customerAddressId": "demo-addr-9",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-11",
+    "title": "Rooftop Garden Irrigation - Riverview",
+    "description": "Install drip irrigation for rooftop planters.",
+    "status": "ASSIGNED",
+    "createdAt": "2026-06-30T11:00:00.000Z",
+    "customerId": "demo-customer-10",
+    "customerAddressId": "demo-addr-10",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-12",
+    "title": "Paver Patio Installation - Maple Grove",
+    "status": "IN_PROGRESS",
+    "createdAt": "2026-07-08T08:00:00.000Z",
+    "customerId": "demo-customer-11",
+    "customerAddressId": "demo-addr-11",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-13",
+    "title": "Annual Boulevard Cleanup - Renforth",
+    "description": "End-of-season cleanup for common areas.",
+    "status": "COMPLETED",
+    "createdAt": "2025-11-05T15:00:00.000Z",
+    "customerId": "demo-customer-12",
+    "customerAddressId": "demo-addr-12",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
+  },
+  {
+    "id": "demo-job-14",
+    "title": "Seasonal Property Inspection - Maple Street",
+    "description": "Fall walkthrough to scope winterization work.",
+    "status": "DRAFT",
+    "createdAt": "2026-07-15T10:30:00.000Z",
+    "customerId": "demo-customer-1",
+    "customerAddressId": "demo-addr-1",
+    "notes": [],
+    "lineItems": [],
+    "invoices": []
   }
 ]
