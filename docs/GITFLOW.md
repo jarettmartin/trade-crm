@@ -107,6 +107,21 @@ git merge --no-ff release/v0.1.0
 git branch -d release/v0.1.0
 ```
 
+The mechanical parts are wrapped in repeatable npm scripts at the repo root:
+
+```bash
+npm run release:start                # sync develop, create release/vX.Y.Z, bump api+web
+                                     # versions in code, commit chore(release): bump ...
+# ... push the release branch, open a PR to main, merge it ...
+npm run release:tag                  # tag api-vX.Y.Z / web-vX.Y.Z at the version-bump commit
+git push origin --tags               # push the tags
+# ... open a second PR release/vX.Y.Z → develop so the bump stays on develop ...
+```
+
+`release:start` bumps both packages together by default (`--api-only` /
+`--web-only` for a single-deployable release), and the version-bump commit it
+creates is exactly the commit the release tags point at.
+
 ### 4. Ship a hotfix
 
 ```bash
@@ -139,3 +154,6 @@ Push tags to remote:
 ```bash
 git push origin --tags
 ```
+
+Release tags are normally created by `npm run release:tag` after the release PR
+merges to `main` — see "Prepare a release" above.
