@@ -170,6 +170,7 @@ export interface JobLineItemResult {
   unitPrice: number;
   lineTotal: number;
   sortOrder: number;
+  catalogItemId?: string;
 }
 
 export interface InvoiceEmailAttemptResult {
@@ -182,6 +183,31 @@ export interface InvoiceEmailAttemptResult {
   errorMessage?: string;
   sentAt?: string;
   createdAt: string;
+}
+
+export interface CatalogItemResult {
+  id: string;
+  type: string;
+  description: string;
+  unitPrice: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PaginatedCatalogItemsResponse {
+  data: CatalogItemResult[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateCatalogItemPayload {
+  type: string;
+  description: string;
+  unitPrice: number;
 }
 
 export interface InvoiceResult {
@@ -392,6 +418,80 @@ class ApiService {
     return this.request("/jobs", {
       method: "POST",
       body: JSON.stringify(payload),
+    });
+  }
+
+  // ---- Catalog items ----
+  async fetchCatalogItems(
+    page: number = 1,
+    limit: number = 10,
+    types?: string[],
+  ) {
+    if (this.demoMode) {
+      return demoService.fetchCatalogItems(page, limit, types);
+    }
+    let path = `/catalog-items?page=${page}&limit=${limit}`;
+    if (types && types.length > 0) {
+      path += `&type=${encodeURIComponent(types.join(","))}`;
+    }
+    return this.request<PaginatedCatalogItemsResponse>(path);
+  }
+
+  /**
+   * Fetch every catalog item for the tenant (pages through the paginated
+   * endpoint with a large limit). The catalog is small enough that we load it
+   * up front and search locally, which keeps search instant and avoids a
+   * round-trip per keystroke. Callers re-fetch on view enter so catalog edits
+   * from the manage page are picked up.
+   */
+  async fetchAllCatalogItems(): Promise<CatalogItemResult[]> {
+    const pageSize = 100;
+    const all: CatalogItemResult[] = [];
+    let page = 1;
+    for (;;) {
+      const res = await this.fetchCatalogItems(page, pageSize);
+      all.push(...res.data);
+      if (page >= res.meta.totalPages) {
+        break;
+      }
+      page += 1;
+    }
+    return all;
+  }
+
+  async fetchCatalogItem(id: string) {
+    if (this.demoMode) {
+      return demoService.fetchCatalogItem(id);
+    }
+    return this.request<CatalogItemResult>(`/catalog-items/${id}`);
+  }
+
+  async createCatalogItem(payload: CreateCatalogItemPayload) {
+    if (this.demoMode) {
+      return demoService.createCatalogItem(payload);
+    }
+    return this.request<CatalogItemResult>("/catalog-items", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateCatalogItem(id: string, payload: Record<string, unknown>) {
+    if (this.demoMode) {
+      return demoService.updateCatalogItem(id, payload);
+    }
+    return this.request<CatalogItemResult>(`/catalog-items/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteCatalogItem(id: string) {
+    if (this.demoMode) {
+      return demoService.deleteCatalogItem(id);
+    }
+    return this.request<{ success: boolean }>(`/catalog-items/${id}`, {
+      method: "DELETE",
     });
   }
 

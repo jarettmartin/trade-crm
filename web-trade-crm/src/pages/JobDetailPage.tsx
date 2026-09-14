@@ -22,10 +22,12 @@ import {
   IonCardContent,
   IonChip,
   IonActionSheet,
+  useIonViewWillEnter,
 } from "@ionic/react";
 import { trashOutline, downloadOutline, eyeOutline, mailOutline } from "ionicons/icons";
 import { useParams } from "react-router-dom";
-import { api, JobDetailResult, InvoiceEmailAttemptResult } from "../services/api";
+import { api, JobDetailResult, InvoiceEmailAttemptResult, CatalogItemResult } from "../services/api";
+import CatalogItemSearch from "../components/CatalogItemSearch";
 import { useAuth } from "../contexts/AuthContext";
 import { formatInvoiceNumber } from "../services/format";
 import { downloadPdf, clearPdfCache } from "../services/pdfCache";
@@ -67,6 +69,15 @@ const JobDetailPage: React.FC = () => {
   const [liQty, setLiQty] = useState("");
   const [liPrice, setLiPrice] = useState("");
 
+  // Catalog-backed line item entry: start with catalog search, then prefill
+  // the normal manual form so the user can adjust before adding.
+  const [catalogItems, setCatalogItems] = useState<CatalogItemResult[]>([]);
+  const [catalogItemsLoading, setCatalogItemsLoading] = useState(false);
+  const [liEntryMode, setLiEntryMode] = useState<"catalog" | "manual">(
+    "catalog",
+  );
+  const [liCatalogItemId, setLiCatalogItemId] = useState<string | null>(null);
+
   // Tax
   const [taxPercent, setTaxPercent] = useState(0);
 
@@ -92,6 +103,26 @@ const JobDetailPage: React.FC = () => {
     loadJob(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Refresh the catalog every time this view appears (including when coming
+  // back from the Manage Catalog / item form pages), so a line-item picker
+  // never serves stale items after edits, creates, or deletes.
+  useIonViewWillEnter(() => {
+    loadCatalogItems();
+  });
+
+  const loadCatalogItems = async () => {
+    setCatalogItemsLoading(true);
+    try {
+      const items = await api.fetchAllCatalogItems();
+      setCatalogItems(items);
+    } catch {
+      // Non-fatal: the custom line item form still works without a catalog.
+      setCatalogItems([]);
+    } finally {
+      setCatalogItemsLoading(false);
+    }
+  };
 
   const loadJob = async (isInitial = false) => {
     // Only show the full-screen spinner on the very first load
@@ -158,6 +189,9 @@ const JobDetailPage: React.FC = () => {
       unitPrice: Number(li.unitPrice),
       lineTotal: Number(li.lineTotal),
       sortOrder: Number(li.sortOrder),
+      // Keep the snapshot + catalog reference on surviving items. The API
+      // replaces all line items on save, so the reference must be re-sent.
+      catalogItemId: li.catalogItemId ?? undefined,
     }));
     try {
       await api.updateJob(id, { lineItems: lineItemsPayload });
@@ -167,6 +201,26 @@ const JobDetailPage: React.FC = () => {
         err instanceof Error ? err.message : "Failed to delete line item",
       );
     }
+  };
+
+  const handleSelectCatalogItem = (item: CatalogItemResult) => {
+    // Prefill the manual entry form from the catalog item, then let the user
+    // adjust anything (type/description/quantity/price) before applying.
+    setLiType(item.type as LineItemType);
+    setLiDesc(item.description);
+    setLiQty("1");
+    setLiPrice(String(item.unitPrice));
+    setLiCatalogItemId(item.id);
+    setLiEntryMode("manual");
+  };
+
+  const handleStartCustomLineItem = () => {
+    setLiType("SERVICE");
+    setLiDesc("");
+    setLiQty("");
+    setLiPrice("");
+    setLiCatalogItemId(null);
+    setLiEntryMode("manual");
   };
 
   const addLineItem = async () => {
@@ -182,6 +236,10 @@ const JobDetailPage: React.FC = () => {
       unitPrice: price,
       lineTotal,
       sortOrder: job.lineItems.length,
+      // Optional FK back to the catalog item the user picked. All details are
+      // snapshotted onto this line item, so later catalog edits or deletes
+      // never change what's been added here.
+      catalogItemId: liCatalogItemId ?? undefined,
     };
     try {
       const existing = job.lineItems.map((li) => ({
@@ -191,11 +249,14 @@ const JobDetailPage: React.FC = () => {
         unitPrice: Number(li.unitPrice),
         lineTotal: Number(li.lineTotal),
         sortOrder: Number(li.sortOrder),
+        catalogItemId: li.catalogItemId ?? undefined,
       }));
       await api.updateJob(id, { lineItems: [...existing, newItem] });
       setLiDesc("");
       setLiQty("");
       setLiPrice("");
+      setLiCatalogItemId(null);
+      setLiEntryMode("catalog");
       await loadJob();
     } catch (err) {
       showToastMsg(
@@ -617,7 +678,7 @@ const JobDetailPage: React.FC = () => {
             );
           })}
 
-          {/* === ADD LINE ITEM FORM === */}
+          {/* === ADD LINE ITEM === */}
           <div
             style={{
               border: "1px solid var(--ion-color-light-shade)",
@@ -630,54 +691,98 @@ const JobDetailPage: React.FC = () => {
               <strong>Add Line Item</strong>
             </IonText>
 
-            <IonItem style={{ "--padding-start": "16px", marginTop: "8px" }}>
-              <IonLabel>Type</IonLabel>
-              <IonSelect
-                value={liType}
-                onIonChange={(e) => setLiType(e.detail.value)}
-                interface="popover"
-              >
-                <IonSelectOption value="SERVICE">Service</IonSelectOption>
-                <IonSelectOption value="MATERIAL">Material</IonSelectOption>
-                <IonSelectOption value="FEE">Fee</IonSelectOption>
-              </IonSelect>
-            </IonItem>
+            {liEntryMode === "catalog" ? (
+              <>
+                <div style={{ marginTop: "8px" }}>
+                  <CatalogItemSearch
+                    catalogItems={catalogItems}
+                    loading={catalogItemsLoading}
+                    onSelect={handleSelectCatalogItem}
+                    onAddCustom={handleStartCustomLineItem}
+                  />
+                </div>
+                <div style={{ marginTop: "4px" }}>
+                  <IonButton
+                    size="small"
+                    fill="clear"
+                    routerLink="/manage-catalog"
+                  >
+                    Manage Catalog
+                  </IonButton>
+                </div>
+              </>
+            ) : (
+              <>
+                {liCatalogItemId && (
+                  <IonChip color="primary">
+                    Sourced from catalog — adjust then add
+                  </IonChip>
+                )}
 
-            <IonItem style={{ "--padding-start": "16px" }}>
-              <IonLabel position="stacked">Description</IonLabel>
-              <IonInput
-                value={liDesc}
-                onIonInput={(e) => setLiDesc(e.detail.value || "")}
-              />
-            </IonItem>
+                <IonItem
+                  style={{ "--padding-start": "16px", marginTop: "8px" }}
+                >
+                  <IonLabel>Type</IonLabel>
+                  <IonSelect
+                    value={liType}
+                    onIonChange={(e) => setLiType(e.detail.value)}
+                    interface="popover"
+                  >
+                    <IonSelectOption value="SERVICE">Service</IonSelectOption>
+                    <IonSelectOption value="MATERIAL">Material</IonSelectOption>
+                    <IonSelectOption value="FEE">Fee</IonSelectOption>
+                  </IonSelect>
+                </IonItem>
 
-            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-              <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
-                <IonLabel position="stacked">Quantity</IonLabel>
-                <IonInput
-                  type="number"
-                  value={liQty}
-                  onIonInput={(e) => setLiQty(e.detail.value || "")}
-                />
-              </IonItem>
-              <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
-                <IonLabel position="stacked">Unit Price</IonLabel>
-                <IonInput
-                  type="number"
-                  value={liPrice}
-                  onIonInput={(e) => setLiPrice(e.detail.value || "")}
-                />
-              </IonItem>
-            </div>
+                <IonItem style={{ "--padding-start": "16px" }}>
+                  <IonLabel position="stacked">Description</IonLabel>
+                  <IonInput
+                    value={liDesc}
+                    onIonInput={(e) => setLiDesc(e.detail.value || "")}
+                  />
+                </IonItem>
 
-            <IonButton
-              expand="block"
-              onClick={addLineItem}
-              disabled={!liDesc.trim() || !liQty || !liPrice}
-              style={{ marginTop: "8px" }}
-            >
-              Add Line Item
-            </IonButton>
+                <div
+                  style={{ display: "flex", gap: "8px", marginTop: "8px" }}
+                >
+                  <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
+                    <IonLabel position="stacked">Quantity</IonLabel>
+                    <IonInput
+                      type="number"
+                      value={liQty}
+                      onIonInput={(e) => setLiQty(e.detail.value || "")}
+                    />
+                  </IonItem>
+                  <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
+                    <IonLabel position="stacked">Unit Price</IonLabel>
+                    <IonInput
+                      type="number"
+                      value={liPrice}
+                      onIonInput={(e) => setLiPrice(e.detail.value || "")}
+                    />
+                  </IonItem>
+                </div>
+
+                <IonButton
+                  expand="block"
+                  onClick={addLineItem}
+                  disabled={!liDesc.trim() || !liQty || !liPrice}
+                  style={{ marginTop: "8px" }}
+                >
+                  Add Line Item
+                </IonButton>
+
+                <IonButton
+                  expand="block"
+                  fill="clear"
+                  size="small"
+                  onClick={handleStartCustomLineItem}
+                  style={{ marginTop: "4px" }}
+                >
+                  Back to Catalog
+                </IonButton>
+              </>
+            )}
           </div>
 
           {/* === COSTING SUMMARY === */}
