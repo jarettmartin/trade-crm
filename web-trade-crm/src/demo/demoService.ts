@@ -247,15 +247,32 @@ export const demoService = {
     page: number,
     limit: number,
     types?: string[],
+    q?: string,
   ): PaginatedCatalogItemsResponse {
-    let filtered = [...catalogItems].sort(
+    const trimmedQ = q?.trim().toLowerCase();
+    const filtered = catalogItems.filter((item) => {
+      if (types && types.length > 0 && !types.includes(item.type)) {
+        return false;
+      }
+      if (trimmedQ) {
+        const haystack = [
+          item.description,
+          item.type,
+          String(item.unitPrice),
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(trimmedQ)) {
+          return false;
+        }
+      }
+      return true;
+    });
+    filtered.sort(
       (a, b) =>
         new Date(b.createdAt ?? 0).getTime() -
         new Date(a.createdAt ?? 0).getTime(),
     );
-    if (types && types.length > 0) {
-      filtered = filtered.filter((item) => types.includes(item.type));
-    }
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const start = (page - 1) * limit;

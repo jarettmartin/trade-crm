@@ -75,6 +75,45 @@ describe("demoService catalog items", () => {
     expect(fees.data.every((item) => item.type === "FEE")).toBe(true);
   });
 
+  it("searches across description, type, and price and combines with type", () => {
+    // description match
+    const leaf = demoService.fetchCatalogItems(1, 100, undefined, "leaf");
+    expect(leaf.meta.total).toBeGreaterThan(0);
+    expect(
+      leaf.data.every((item) =>
+        item.description.toLowerCase().includes("leaf"),
+      ),
+    ).toBe(true);
+
+    // type match (matches the FEE enum label)
+    const fee = demoService.fetchCatalogItems(1, 100, undefined, "fee");
+    expect(fee.data.length).toBeGreaterThan(0);
+    expect(fee.data.every((item) => item.type === "FEE")).toBe(true);
+
+    // unit price match
+    const priced = demoService.fetchCatalogItems(1, 100, undefined, "200");
+    expect(priced.data.length).toBeGreaterThan(0);
+    expect(
+      priced.data.every((item) => String(item.unitPrice).includes("200")),
+    ).toBe(true);
+
+    // combined with the type checkboxes
+    const combined = demoService.fetchCatalogItems(
+      1,
+      100,
+      ["SERVICE"],
+      "leaf",
+    );
+    expect(combined.data.length).toBeGreaterThan(0);
+    expect(
+      combined.data.every(
+        (item) =>
+          item.type === "SERVICE" &&
+          item.description.toLowerCase().includes("leaf"),
+      ),
+    ).toBe(true);
+  });
+
   it("keeps seeded job line items linked to catalog items", () => {
     const job = demoService.fetchJob("demo-job-1");
     const linked = job.lineItems.filter((li) => li.catalogItemId);

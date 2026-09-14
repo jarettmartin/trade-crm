@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   IonContent,
   IonHeader,
@@ -11,6 +11,7 @@ import {
   IonLabel,
   IonCheckbox,
   IonText,
+  IonSearchbar,
   useIonViewWillEnter,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
@@ -44,15 +45,23 @@ const ManageCatalogPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
+  const [searchText, setSearchText] = useState("");
+  const searchInitRef = useRef(false);
 
-  const loadItems = async (pageNum: number, types: Set<string>) => {
+  const loadItems = async (
+    pageNum: number,
+    types: Set<string>,
+    search?: string,
+  ) => {
     setLoading(true);
     try {
       const typeList = Array.from(types);
+      const trimmedSearch = search?.trim();
       const res = await api.fetchCatalogItems(
         pageNum,
         PAGE_SIZE,
         typeList.length > 0 ? typeList : undefined,
+        trimmedSearch ? trimmedSearch : undefined,
       );
       setItems(res.data);
       setTotal(res.meta.total);
@@ -67,10 +76,24 @@ const ManageCatalogPage: React.FC = () => {
     }
   };
 
+  // Debounce the search bar. Free-text search is applied server-side along
+  // with any type checkboxes and always restarts from page 1.
+  useEffect(() => {
+    if (!searchInitRef.current) {
+      searchInitRef.current = true;
+      return;
+    }
+    const id = setTimeout(() => {
+      loadItems(1, selectedTypes, searchText);
+    }, 350);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchText]);
+
   // Refresh on every view enter so catalog edits/deletes on the form page are
-  // picked up when navigating back here.
+  // picked up when navigating back here (retaining the current filters).
   useIonViewWillEnter(() => {
-    loadItems(1, selectedTypes);
+    loadItems(1, selectedTypes, searchText);
   });
 
   const toggleType = (type: string) => {
@@ -81,11 +104,11 @@ const ManageCatalogPage: React.FC = () => {
       next.add(type);
     }
     setSelectedTypes(next);
-    loadItems(1, next);
+    loadItems(1, next, searchText);
   };
 
   const handlePageChange = (nextPage: number) => {
-    loadItems(nextPage, selectedTypes);
+    loadItems(nextPage, selectedTypes, searchText);
   };
 
   return (
@@ -116,8 +139,15 @@ const ManageCatalogPage: React.FC = () => {
             </IonButton>
           </div>
 
+          <IonSearchbar
+            value={searchText}
+            onIonInput={(e) => setSearchText(e.detail.value || "")}
+            placeholder="Search by description, type, or price..."
+            debounce={0}
+          />
+
           <IonText color="medium">
-            <p style={{ margin: "0 0 8px", fontSize: "0.875rem" }}>
+            <p style={{ margin: "8px 0 8px", fontSize: "0.875rem" }}>
               Filter by type:
             </p>
           </IonText>
@@ -145,7 +175,7 @@ const ManageCatalogPage: React.FC = () => {
                 fill="clear"
                 onClick={() => {
                   setSelectedTypes(new Set());
-                  loadItems(1, new Set());
+                  loadItems(1, new Set(), searchText);
                 }}
               >
                 Clear

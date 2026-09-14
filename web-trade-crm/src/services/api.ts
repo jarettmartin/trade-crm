@@ -426,13 +426,17 @@ class ApiService {
     page: number = 1,
     limit: number = 10,
     types?: string[],
+    q?: string,
   ) {
     if (this.demoMode) {
-      return demoService.fetchCatalogItems(page, limit, types);
+      return demoService.fetchCatalogItems(page, limit, types, q);
     }
     let path = `/catalog-items?page=${page}&limit=${limit}`;
     if (types && types.length > 0) {
       path += `&type=${encodeURIComponent(types.join(","))}`;
+    }
+    if (q && q.trim().length > 0) {
+      path += `&q=${encodeURIComponent(q.trim())}`;
     }
     return this.request<PaginatedCatalogItemsResponse>(path);
   }
