@@ -6,6 +6,97 @@ Multi-tenant trade business CRM with a NestJS (TypeORM + PostgreSQL) backend and
 
 ---
 
+## SDLC Workflow (Agent Process)
+
+When invoked to work as an agent, drive every request through the SDLC steps
+below. The mechanical git steps are wrapped in **repeatable npm scripts at the
+repo root** — prefer them over hand-typing git commands so every run is
+identical. Full agent instructions live in `ai/agents/TASK.agent.md`.
+
+### Runbook scripts (repo root)
+
+| npm script | What it does |
+| --- | --- |
+| `npm run branch:start -- feature/<name>` | Fetch origin, switch to `develop`, reset it to `origin/develop`, create the feature branch. `--base=main` for hotfixes; refuses a dirty tree without `--force` |
+| `npm run release:start` | Sync `develop`, create `release/vX.Y.Z`, bump api/web versions **in code**, and commit `chore(release): bump versions to X.Y.Z` — the commit the release tags will reference |
+| `npm run release:tag` | After the release PR merges to `main`, create `api-vX.Y.Z` / `web-vX.Y.Z` at that version-bump commit |
+| `npm run demo:seed` | `cd api-trade-crm && npm run db:seed-demo` — seeds the local DB with the web demo fixtures (idempotent), so a **real-account** login has data to test with |
+| `npm run demo:pdfs` | Regenerates the pre-built demo invoice PDFs from the demo seed |
+
+### 1. Branch setup
+
+1. Gather the task type, task name, and details first (`ai/agents/TASK.agent.md`).
+2. Base branch: `develop` for features/bugfixes/docs/chore/refactor; `main` for hotfixes.
+3. Working tree must be clean (commit or stash first — `--force` discards).
+4. Create the branch: `npm run branch:start -- feature/<short-description>` (or
+   `-- --base=main hotfix/<...>`). The script fetches, resets the base to
+   `origin/<base>`, and branches from there — never start from a stale local `develop`.
+
+### 2. Demo mode parity — every change
+
+The web app has a browser-only **demo mode** (`?demo=true` on any app URL)
+backed by `web-trade-crm/src/demo/demoService.ts` + the fixtures in
+`web-trade-crm/src/demo/api/*.json`. It mirrors the real API end-to-end.
+**Any change to API behavior (endpoints, DTOs, entities, enums, ordering,
+pagination) or shared UI behavior must be mirrored in demo mode**, otherwise
+demo mode silently drifts from reality.
+
+1. Update `demoService.ts` to return the same shapes / behavior.
+2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`).
+3. Invoice fixtures changed? Regenerate the pre-built PDFs: `npm run demo:pdfs`.
+4. Want real-account logins to see the data too? `npm run demo:seed`.
+
+### 3. Implement + update docs
+
+- Follow this file's architecture and coding standards; keep changes scoped.
+- Run the relevant tests/builds (backend or frontend).
+- Update docs **only if the change makes them inaccurate** (README, `docs/`,
+  this file). Don't churn docs for docs' sake.
+
+### 4. Local sign-off gate (before pushing)
+
+When work is done, hand the user repeatable live-testing instructions and
+**wait for their sign-off** before anything is pushed or merged:
+
+1. `npm run dev` → Web http://localhost:8100 · API http://localhost:3000 · Swagger http://localhost:3000/api/docs
+2. **Demo account (no login)**: open http://localhost:8100/manage-jobs?demo=true and
+   click through the changed flows.
+3. **Real account (Cognito)** (if applicable): `npm run demo:seed` first, then
+   open http://localhost:8100 and sign in.
+4. List the specific flows to verify for this change.
+
+Only proceed to step 5 once the user confirms. If live testing isn't possible in
+the environment, say so and ask the user to verify.
+
+> **No-QA setup**: there is no QA environment. Testing happens live on the local
+> stack (this step) and on production after deploy — never push or merge unreviewed.
+
+### 5. Commits & push
+
+- Conventional Commits (see `docs/CONTRIBUTING.md`), scoped `api`/`web` where it
+  helps, short imperative messages.
+- Stage and commit locally. **Never push to the remote yourself.** Leave the
+  branch committed and tell the user it's ready:
+  `git push -u origin <branch-name>` → PR to `develop` (or `main` for hotfixes).
+
+### 6. Release — after the PR merges
+
+Once the user has merged a **feature/fix** PR into `develop` (i.e. functionality
+changed — not just docs/chore), offer/perform the release:
+
+1. `npm run release:start` — syncs `develop`, creates `release/vX.Y.Z`, bumps the
+   api + web versions in code (`--api-only` / `--web-only` for a single
+   deployable), and commits the bump. **The bump commit is exactly what the
+   release tags will point at.**
+2. Guide the user: push the release branch → PR `release/vX.Y.Z → main` (and a
+   second PR `release/vX.Y.Z → develop` so the version bump is kept).
+3. After the merge to `main`: `npm run release:tag`, then the user pushes the
+   tags: `git push origin --tags`.
+4. If they want this version deployed: `./scripts/deploy.sh` (API) and
+   `./scripts/deploy-frontend.sh` (web). If they skip the release, don't create tags.
+
+---
+
 ## Development Workflow
 
 This repository follows the **GitFlow** branching model. Full reference: `docs/GITFLOW.md`. Contribution guide: `docs/CONTRIBUTING.md`.
@@ -34,15 +125,16 @@ All commits follow **Conventional Commits** (`feat`, `fix`, `docs`, `style`, `re
 
 - API (`api-trade-crm/`) and web (`web-trade-crm/`) are **versioned independently** (SemVer in each `package.json`).
 - Release tags are prefixed per package: `api-v0.1.0`, `web-v0.1.0`.
-- Version bumps happen on `release/*` branches — never on feature branches.
-- Current release: API `v0.1.0` · Web `v0.1.0`.
+- Version bumps happen on `release/*` branches — never on feature branches. Use `npm run release:start` (see [SDLC Workflow](#sdlc-workflow-agent-process)).
+- Current release: API `v0.3.0` · Web `v0.3.0`.
 
 ### Typical Feature Flow
 
-1. Branch from `develop`: `git checkout -b feature/<name> develop`
-2. Implement + commit with Conventional Commits.
-3. Push and open a PR against `develop`.
-4. Address review, keep tests green, merge.
+1. Branch from `develop`: `npm run branch:start -- feature/<name>` (fetches, resets `develop` to `origin/develop`, branches).
+2. Implement, keeping demo mode in sync (SDLC step 2), and commit with Conventional Commits.
+3. Ask the user to test locally (demo + real account) and get their sign-off (SDLC step 4).
+4. Push and open a PR against `develop`. Address review, keep tests green, merge.
+5. After the merge, offer the release flow (SDLC step 6).
 
 ---
 
