@@ -223,6 +223,15 @@ const JobDetailPage: React.FC = () => {
     setLiEntryMode("manual");
   };
 
+  const handleBackToSearch = () => {
+    setLiType("SERVICE");
+    setLiDesc("");
+    setLiQty("");
+    setLiPrice("");
+    setLiCatalogItemId(null);
+    setLiEntryMode("catalog");
+  };
+
   const addLineItem = async () => {
     if (!liDesc.trim() || !liQty || !liPrice || !job) return;
     const qty = parseFloat(liQty);
@@ -776,10 +785,10 @@ const JobDetailPage: React.FC = () => {
                   expand="block"
                   fill="clear"
                   size="small"
-                  onClick={handleStartCustomLineItem}
+                  onClick={handleBackToSearch}
                   style={{ marginTop: "4px" }}
                 >
-                  Back to Catalog
+                  Back to Search
                 </IonButton>
               </>
             )}
