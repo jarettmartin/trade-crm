@@ -9,4 +9,12 @@ export class QueryCatalogItemsDto extends PaginationDto {
   @IsOptional()
   @IsString()
   type?: string;
+
+  /**
+   * Optional free-text search applied across the table columns
+   * (description, type, unit price), e.g. ?q=leaf.
+   */
+  @IsOptional()
+  @IsString()
+  q?: string;
 }

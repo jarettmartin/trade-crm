@@ -41,6 +41,7 @@ export class CatalogController {
       query.page ?? 1,
       query.limit ?? 10,
       query.type,
+      query.q,
     );
   }
 

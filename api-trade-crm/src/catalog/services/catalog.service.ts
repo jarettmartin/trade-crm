@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { CatalogItem } from '../entities/catalog-item.entity';
 import { CreateCatalogItemDto } from '../dto/create-catalog-item.dto';
 import { UpdateCatalogItemDto } from '../dto/update-catalog-item.dto';
@@ -24,26 +24,49 @@ export class CatalogService {
     return saved;
   }
 
-  async findAll(tenantId: string, page: number, limit: number, type?: string) {
+  async findAll(
+    tenantId: string,
+    page: number,
+    limit: number,
+    type?: string,
+    q?: string,
+  ) {
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = { tenantId };
+    const query = this.catalogItemRepository.createQueryBuilder('item');
+    query.where('item.tenantId = :tenantId', { tenantId });
+
     if (type) {
       const types = type
         .split(',')
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
       if (types.length > 0) {
-        where.type = In(types);
+        query.andWhere('item.type IN (:...types)', { types });
       }
     }
 
-    const [data, total] = await this.catalogItemRepository.findAndCount({
-      where,
-      order: { createdAt: 'DESC' },
-      skip,
-      take: limit,
-    });
+    const trimmed = q?.trim();
+    if (trimmed) {
+      const like = `%${trimmed}%`;
+      query.andWhere(
+        new Brackets((qb) => {
+          qb.where('LOWER(item.description) LIKE LOWER(:search)', {
+            search: like,
+          })
+            .orWhere('LOWER(item.type::text) LIKE LOWER(:search)', {
+              search: like,
+            })
+            .orWhere('LOWER(item.unitPrice::text) LIKE LOWER(:search)', {
+              search: like,
+            });
+        }),
+      );
+    }
+
+    query.orderBy('item.createdAt', 'DESC').skip(skip).take(limit);
+
+    const [data, total] = await query.getManyAndCount();
 
     return {
       data,
