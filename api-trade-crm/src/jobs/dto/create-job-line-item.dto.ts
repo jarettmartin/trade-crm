@@ -1,4 +1,11 @@
-import { IsString, IsEnum, IsNumber, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsNumber,
+  IsUUID,
+  IsOptional,
+  MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { JobLineItemType } from '../../common/enums/job-line-item-type.enum';
 
@@ -25,4 +32,8 @@ export class CreateJobLineItemDto {
   @Type(() => Number)
   @IsNumber()
   sortOrder!: number;
+
+  @IsUUID()
+  @IsOptional()
+  catalogItemId?: string;
 }

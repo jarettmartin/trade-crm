@@ -5,6 +5,7 @@ import { Customer } from '../../customers/entities/customer.entity';
 import { Job } from '../../jobs/entities/job.entity';
 import { Invoice } from '../../invoices/entities/invoice.entity';
 import { InvoiceEmailAttempt } from '../../invoices/entities/invoice-email-attempt.entity';
+import { CatalogItem } from '../../catalog/entities/catalog-item.entity';
 
 @Entity('tenants')
 export class Tenant extends BaseEntity {
@@ -37,4 +38,7 @@ export class Tenant extends BaseEntity {
 
   @OneToMany(() => InvoiceEmailAttempt, (attempt) => attempt.tenant)
   invoiceEmailAttempts!: InvoiceEmailAttempt[];
+
+  @OneToMany(() => CatalogItem, (catalogItem) => catalogItem.tenant)
+  catalogItems!: CatalogItem[];
 }
