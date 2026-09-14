@@ -8,7 +8,6 @@ import {
   IonMenu,
   IonMenuToggle,
   IonNote,
-  IonButton,
 } from "@ionic/react";
 
 import { useLocation } from "react-router-dom";
@@ -19,6 +18,8 @@ import {
   businessSharp,
   peopleOutline,
   peopleSharp,
+  pricetagsOutline,
+  pricetagsSharp,
   logOutOutline,
 } from "ionicons/icons";
 import { useAuth } from "../contexts/AuthContext";
@@ -43,6 +44,12 @@ const appPages: AppPage[] = [
     url: "/manage-customers",
     iosIcon: peopleOutline,
     mdIcon: peopleSharp,
+  },
+  {
+    title: "Catalog",
+    url: "/manage-catalog",
+    iosIcon: pricetagsOutline,
+    mdIcon: pricetagsSharp,
   },
   {
     title: "Business Settings",

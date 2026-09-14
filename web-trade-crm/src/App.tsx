@@ -20,6 +20,8 @@ import JobDetailPage from "./pages/JobDetailPage";
 import InvoicePreviewPage from "./pages/InvoicePreviewPage";
 import ManageBusinessPage from "./pages/ManageBusinessPage";
 import ManageCustomersPage from "./pages/ManageCustomersPage";
+import ManageCatalogPage from "./pages/ManageCatalogPage";
+import CatalogItemFormPage from "./pages/CatalogItemFormPage";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -94,6 +96,15 @@ const AppContent: React.FC = () => {
               </Route>
               <Route path="/manage-customers" exact={true}>
                 <ManageCustomersPage />
+              </Route>
+              <Route path="/manage-catalog" exact={true}>
+                <ManageCatalogPage />
+              </Route>
+              <Route path="/create-catalog-item" exact={true}>
+                <CatalogItemFormPage />
+              </Route>
+              <Route path="/edit-catalog-item/:id" exact={true}>
+                <CatalogItemFormPage />
               </Route>
               <Route path="/invoice-preview/:id" exact={true}>
                 <InvoicePreviewPage />

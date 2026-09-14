@@ -42,7 +42,7 @@ pagination) or shared UI behavior must be mirrored in demo mode**, otherwise
 demo mode silently drifts from reality.
 
 1. Update `demoService.ts` to return the same shapes / behavior.
-2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`).
+2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`, `catalogItems.json`).
 3. Invoice fixtures changed? Regenerate the pre-built PDFs: `npm run demo:pdfs`.
 4. Want real-account logins to see the data too? `npm run demo:seed`.
 
@@ -276,7 +276,7 @@ Runs daily at 1am Eastern via cron on the instance
 
 ### Backend (NestJS)
 
-- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `jobs`, `invoices`, `users`
+- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `jobs`, `invoices`, `users`
 - Common module (`common/`) for shared guards, decorators, DTOs, entities, and enums
 - Repository pattern used exclusively — no raw queries
 - Constructor injection for all dependencies
@@ -333,12 +333,13 @@ Runs daily at 1am Eastern via cron on the instance
   - `IonMenuButton` for navigable pages (access to sidemenu)
   - `routerLink` for Ionic-managed navigation (avoids React Router history bugs). Prefer this over `history.push()` for list→detail navigation. Note the Jobs page now uses the paginated `PaginatedTable`, whose rows navigate via the click handler (`history.push`) — safe only because `JobDetailPage` falls back to parsing the path (see the param-routes caveat below)
   - `history.push()`/`history.goBack()` for programmatic navigation
-  - **Param routes caveat**: `useParams()` can return an empty object after client-side navigation in this Ionic React Router v5 setup (even with `routerLink`). Param-driven pages (`JobDetailPage`, `InvoicePreviewPage`) therefore read the id via `routeId || window.location.pathname.split("/").pop()`
+  - **Param routes caveat**: `useParams()` can return an empty object after client-side navigation in this Ionic React Router v5 setup (even with `routerLink`). Param-driven pages (`JobDetailPage`, `InvoicePreviewPage`, `CatalogItemFormPage`) therefore read the id via `routeId || window.location.pathname.split("/").pop()`
 - Shared components:
   - `CustomerSearch` — Debounced search with dropdown results + "Create New Customer" button
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
+  - `CatalogItemSearch` — Catalog picker for the job detail page: tenant catalog is fetched up-front (`api.fetchAllCatalogItems()`, pages the endpoint at limit 100), then filtered **locally** on every keystroke across description/type/unit price. Refetched on `useIonViewWillEnter` so catalog edits/deletes land when a job page is revisited. Includes the "Add Custom Line Item" button that switches to the manual form.
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
-  - `Menu` — Sidemenu with nav items + logout
+  - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings) + logout
 - Paginated tables on the Jobs page (the primary job list) and the Manage Customers / Create Job pages (below the search bar) share `PaginatedTable`; the real API orders by `createdAt DESC` and demo mode mirrors that
 - PDF handling:
   - In-memory `pdfCache.ts` (Map<string, Blob>) caches downloaded PDFs for the session
@@ -383,6 +384,11 @@ src/
 │   ├── dto/
 │   ├── entities/
 │   └── services/
+├── catalog/                         # Catalog item CRUD (reusable preset line items)
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   └── services/
 ├── email/                            # AWS SES integration (email sending via Handlebars templates)
 │   ├── services/email.service.ts     # SESv2 SendEmail (raw MIME + attachment) + template renderer
 │   ├── email-templates.ts            # .hbs loader/compiler (subject + body per file)
@@ -415,9 +421,9 @@ src/
 src/
 ├── App.tsx                          # Root app with routing + auth gating
 ├── main.tsx                         # Entry point
-├── components/                      # Reusable components (CustomerSearch, CustomerTable, PaginatedTable, Menu)
+├── components/                      # Reusable components (CustomerSearch, CustomerTable, CatalogItemSearch, PaginatedTable, Menu)
 ├── contexts/                        # AuthContext (user, login, logout, updateUser)
-├── pages/                           # Route-level pages (Auth, Home, Create/Manage pages)
+├── pages/                           # Route-level pages (Auth, Home, Create/Manage pages, Catalog pages)
 ├── services/                        # API client, PDF cache, formatting, validation
 └── theme/                           # Ionic theme overrides
 ```
@@ -448,7 +454,14 @@ src/
 
 - Job: `title`, `description`, `status` (DRAFT/ASSIGNED/IN_PROGRESS/COMPLETED/CANCELLED), `customerId`, `customerAddressId`, `assignedUserId`, `scheduledStart/End`, `completedAt`
 - Note: `userId`, `note` (cumulative, non-editable)
-- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `sortOrder`
+- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `sortOrder`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`)
+
+### CatalogItem
+
+- Tenant preset line items so adding bills/line items is faster. `type` (SERVICE/MATERIAL/FEE), `description`, `unitPrice`
+- `JobLineItem.catalogItemId` is an **optional reference only** — every display value is always snapshotted onto the `job_line_items` row at add time, so editing or deleting a catalog item never changes existing line items (deleting a catalog item just clears the reference via `ON DELETE SET NULL`)
+- Catalog search on the Create/Job detail page loads the tenant's items up-front and filters **locally** (description/type/unit price); pick an item to prefill the normal manual line item form (editable before applying), or use the "Add Custom Line Item" button for a blank entry
+- Management UI: `/manage-catalog` (paginated table + free-text search across description/type/price + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation)
 
 ### Invoice
 
