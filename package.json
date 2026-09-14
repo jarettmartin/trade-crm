@@ -11,7 +11,12 @@
     "build": "docker compose build",
     "logs": "docker compose logs -f",
     "ps": "docker compose ps",
-    "reset": "docker compose exec api npm run db:reset"
+    "reset": "docker compose exec api npm run db:reset",
+    "branch:start": "node scripts/sdlc/branch-start.mjs",
+    "release:start": "node scripts/sdlc/release-start.mjs",
+    "release:tag": "node scripts/sdlc/release-tag.mjs",
+    "demo:seed": "cd api-trade-crm && npm run db:seed-demo",
+    "demo:pdfs": "cd web-trade-crm && node scripts/generate-demo-pdfs.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",
