@@ -23,7 +23,8 @@
         "quantity": 4,
         "unitPrice": 75,
         "lineTotal": 300,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "catalogItemId": "demo-catalog-1"
       },
       {
         "id": "demo-li-2",
@@ -32,7 +33,8 @@
         "quantity": 2,
         "unitPrice": 85,
         "lineTotal": 170,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "catalogItemId": "demo-catalog-2"
       },
       {
         "id": "demo-li-3",
@@ -41,7 +43,8 @@
         "quantity": 5,
         "unitPrice": 12,
         "lineTotal": 60,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "catalogItemId": "demo-catalog-3"
       },
       {
         "id": "demo-li-4",
@@ -50,7 +53,8 @@
         "quantity": 3,
         "unitPrice": 65,
         "lineTotal": 195,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "catalogItemId": "demo-catalog-4"
       }
     ],
     "invoices": [
@@ -97,7 +101,8 @@
         "quantity": 3,
         "unitPrice": 200,
         "lineTotal": 600,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "catalogItemId": "demo-catalog-5"
       },
       {
         "id": "demo-li-6",
@@ -106,7 +111,8 @@
         "quantity": 2,
         "unitPrice": 80,
         "lineTotal": 160,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "catalogItemId": "demo-catalog-6"
       },
       {
         "id": "demo-li-7",
@@ -115,7 +121,8 @@
         "quantity": 10,
         "unitPrice": 8,
         "lineTotal": 80,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "catalogItemId": "demo-catalog-7"
       }
     ],
     "invoices": [
@@ -156,7 +163,8 @@
         "quantity": 8,
         "unitPrice": 55,
         "lineTotal": 440,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "catalogItemId": "demo-catalog-8"
       },
       {
         "id": "demo-li-9",
@@ -174,7 +182,8 @@
         "quantity": 1,
         "unitPrice": 180,
         "lineTotal": 180,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "catalogItemId": "demo-catalog-9"
       },
       {
         "id": "demo-li-11",
@@ -214,7 +223,8 @@
         "quantity": 2,
         "unitPrice": 45,
         "lineTotal": 90,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "catalogItemId": "demo-catalog-10"
       },
       {
         "id": "demo-li-14",

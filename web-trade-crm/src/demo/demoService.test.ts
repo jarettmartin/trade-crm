@@ -52,3 +52,67 @@ describe("demoService.fetchJobs", () => {
     expect(times).toEqual(sorted);
   });
 });
+
+describe("demoService catalog items", () => {
+  it("returns a paginated list newest-first", () => {
+    const res = demoService.fetchCatalogItems(1, 10);
+    expect(res.data.length).toBeGreaterThan(0);
+    expect(res.meta.total).toBeGreaterThanOrEqual(12);
+    const times = res.data.map(
+      (item) => new Date(item.createdAt ?? 0).getTime(),
+    );
+    const sorted = [...times].sort((a, b) => b - a);
+    expect(times).toEqual(sorted);
+  });
+
+  it("filters by type", () => {
+    const services = demoService.fetchCatalogItems(1, 100, ["SERVICE"]);
+    expect(services.meta.total).toBeGreaterThan(0);
+    expect(services.data.every((item) => item.type === "SERVICE")).toBe(true);
+
+    const fees = demoService.fetchCatalogItems(1, 100, ["FEE"]);
+    expect(fees.data.length).toBeGreaterThan(0);
+    expect(fees.data.every((item) => item.type === "FEE")).toBe(true);
+  });
+
+  it("keeps seeded job line items linked to catalog items", () => {
+    const job = demoService.fetchJob("demo-job-1");
+    const linked = job.lineItems.filter((li) => li.catalogItemId);
+    expect(linked.length).toBeGreaterThan(0);
+  });
+
+  it("deleting a catalog item only clears the reference on line items", () => {
+    const before = demoService.fetchCatalogItem("demo-catalog-1").description;
+    demoService.deleteCatalogItem("demo-catalog-1");
+
+    // The item is gone...
+    expect(() => demoService.fetchCatalogItem("demo-catalog-1")).toThrow();
+
+    // ...but the seeded line item keeps its snapshotted details.
+    const job = demoService.fetchJob("demo-job-1");
+    const li = job.lineItems.find((l) => l.id === "demo-li-1");
+    expect(li?.description).toBe("Leaf removal and disposal");
+    expect(li?.unitPrice).toBe(75);
+    expect(li?.catalogItemId).toBeUndefined();
+    expect(before).toBe("Leaf removal and disposal");
+  });
+
+  it("create/update round-trips a catalog item", () => {
+    const created = demoService.createCatalogItem({
+      type: "MATERIAL",
+      description: "Test mulch",
+      unitPrice: 9.5,
+    });
+    expect(created.id).toBeTruthy();
+    expect(created.type).toBe("MATERIAL");
+
+    const updated = demoService.updateCatalogItem(created.id, {
+      unitPrice: 11,
+    });
+    expect(updated.unitPrice).toBe(11);
+
+    const fetched = demoService.fetchCatalogItem(created.id);
+    expect(fetched.description).toBe("Test mulch");
+    expect(fetched.unitPrice).toBe(11);
+  });
+});

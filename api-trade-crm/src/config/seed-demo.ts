@@ -10,9 +10,11 @@ import { Job } from '../jobs/entities/job.entity';
 import { JobNote } from '../jobs/entities/job-note.entity';
 import { JobLineItem } from '../jobs/entities/job-line-item.entity';
 import { Invoice } from '../invoices/entities/invoice.entity';
+import { CatalogItem } from '../catalog/entities/catalog-item.entity';
 import { CustomerType } from '../common/enums/customer-type.enum';
 import { JobStatus } from '../common/enums/job-status.enum';
 import { JobLineItemType } from '../common/enums/job-line-item-type.enum';
+import { CatalogItemType } from '../common/enums/catalog-item-type.enum';
 import { InvoiceStatus } from '../common/enums/invoice-status.enum';
 
 /**
@@ -63,6 +65,7 @@ interface DemoLineItem {
   unitPrice: number;
   lineTotal: number;
   sortOrder?: number;
+  catalogItemId?: string;
 }
 
 interface DemoNote {
@@ -97,6 +100,13 @@ interface DemoJob {
   invoices: DemoInvoice[];
 }
 
+interface DemoCatalogItem {
+  id: string;
+  type: string;
+  description: string;
+  unitPrice: number;
+}
+
 interface DemoTenant {
   businessName: string;
   businessEmail: string;
@@ -108,10 +118,7 @@ interface DemoTenant {
 // ---- Helpers ---------------------------------------------------------------
 
 /** Resolve demo fixture path; provide a helpful error outside the repo. */
-const DEMO_DIR = path.resolve(
-  __dirname,
-  '../../../web-trade-crm/src/demo/api',
-);
+const DEMO_DIR = path.resolve(__dirname, '../../../web-trade-crm/src/demo/api');
 
 function loadJson<T>(file: string): T {
   const full = path.join(DEMO_DIR, file);
@@ -136,13 +143,14 @@ function mapCustomerType(type: string): CustomerType {
 // "SENT" for an emailed invoice, which maps to ISSUED here.
 function mapInvoiceStatus(status: string): InvoiceStatus {
   if (status === 'SENT') return InvoiceStatus.ISSUED;
-  switch (status) {
+  const invoiceStatus = status as InvoiceStatus;
+  switch (invoiceStatus) {
     case InvoiceStatus.DRAFT:
     case InvoiceStatus.ISSUED:
     case InvoiceStatus.PAID:
     case InvoiceStatus.VOID:
     case InvoiceStatus.SUPERSEDED:
-      return status as InvoiceStatus;
+      return invoiceStatus;
     default:
       return InvoiceStatus.DRAFT;
   }
@@ -156,8 +164,11 @@ async function seed() {
     const em = dataSource.manager;
 
     const tenantDemo: DemoTenant = loadJson<DemoTenant>('tenant.json');
-    const customersDemo: DemoCustomer[] = loadJson<DemoCustomer[]>('customers.json');
+    const customersDemo: DemoCustomer[] =
+      loadJson<DemoCustomer[]>('customers.json');
     const jobsDemo: DemoJob[] = loadJson<DemoJob[]>('jobs.json');
+    const catalogItemsDemo: DemoCatalogItem[] =
+      loadJson<DemoCatalogItem[]>('catalogItems.json');
 
     // ---- Resolve tenant + reference user -------------------------------
     const firstUsers = await em.find(User, {
@@ -176,7 +187,9 @@ async function seed() {
       : null;
 
     if (!tenant) {
-      console.log('No tenant found for the user — creating one from the demo tenant.');
+      console.log(
+        'No tenant found for the user — creating one from the demo tenant.',
+      );
       tenant = em.create(Tenant, {
         businessName: tenantDemo.businessName,
         businessEmail: tenantDemo.businessEmail,
@@ -280,7 +293,34 @@ async function seed() {
         addressesCreated++;
       }
     }
-// ---- Jobs + notes + line items + invoices ---------------------------
+
+    // ---- Catalog items ----------------------------------------------------
+    const catalogItemIdMap = new Map<string, string>(); // demoId -> realId
+    let catalogItemsCreated = 0;
+    for (const ci of catalogItemsDemo) {
+      const existing = await em.findOne(CatalogItem, {
+        where: {
+          tenantId: tenant.id,
+          description: ci.description,
+          type: ci.type as CatalogItemType,
+        },
+      });
+      if (existing) {
+        catalogItemIdMap.set(ci.id, existing.id);
+        continue;
+      }
+      const catalogItem = em.create(CatalogItem, {
+        tenantId: tenant.id,
+        type: ci.type as CatalogItemType,
+        description: ci.description,
+        unitPrice: ci.unitPrice,
+      });
+      await em.save(catalogItem);
+      catalogItemIdMap.set(ci.id, catalogItem.id);
+      catalogItemsCreated++;
+    }
+
+    // ---- Jobs + notes + line items + invoices ---------------------------
     const customersById = new Map(customersDemo.map((c) => [c.id, c]));
     let jobsCreated = 0;
     let notesCreated = 0;
@@ -291,7 +331,9 @@ async function seed() {
       where: { tenantId: tenant.id },
       order: { invoiceNumber: 'DESC' },
     });
-    let nextInvoiceNumber = latestInvoice ? latestInvoice.invoiceNumber + 1 : 88880001;
+    let nextInvoiceNumber = latestInvoice
+      ? latestInvoice.invoiceNumber + 1
+      : 88880001;
 
     for (const j of jobsDemo) {
       const existing = await em.findOne(Job, {
@@ -302,12 +344,16 @@ async function seed() {
       const customerId = customerIdMap.get(j.customerId);
       const addressId = addressIdMap.get(j.customerAddressId);
       if (!customerId || !addressId) {
-        console.warn(`  Skipping job "${j.title}" — demo customer/address mapping missing.`);
+        console.warn(
+          `  Skipping job "${j.title}" — demo customer/address mapping missing.`,
+        );
         continue;
       }
 
       const demoCustomer = customersById.get(j.customerId);
-      const demoAddress = demoCustomer?.addresses?.find((a) => a.id === j.customerAddressId);
+      const demoAddress = demoCustomer?.addresses?.find(
+        (a) => a.id === j.customerAddressId,
+      );
 
       const job = em.create(Job, {
         tenantId: tenant.id,
@@ -343,6 +389,9 @@ async function seed() {
           unitPrice: li.unitPrice,
           lineTotal: li.lineTotal,
           sortOrder: li.sortOrder ?? 0,
+          catalogItemId: li.catalogItemId
+            ? catalogItemIdMap.get(li.catalogItemId)
+            : undefined,
         });
         await em.save(item);
         lineItemsCreated++;
@@ -422,14 +471,16 @@ async function seed() {
     console.log(
       `Jobs created      : ${jobsCreated} (notes: ${notesCreated}, line items: ${lineItemsCreated})`,
     );
+    console.log(`Catalog items    : ${catalogItemsCreated}`);
     console.log(`Invoices created  : ${invoicesCreated}`);
     console.log('Demo seed complete.');
-  } catch (error: any) {
-    console.error('Seed failed:', error?.message ?? error);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Seed failed:', message);
     process.exitCode = 1;
   } finally {
     await dataSource.destroy();
   }
 }
 
-seed();
+void seed();

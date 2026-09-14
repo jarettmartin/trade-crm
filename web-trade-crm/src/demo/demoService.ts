@@ -1,6 +1,7 @@
 import tenantSeed from "./api/tenant.json";
 import customersSeed from "./api/customers.json";
 import jobsSeed from "./api/jobs.json";
+import catalogItemsSeed from "./api/catalogItems.json";
 import type {
   CustomerResult,
   JobResult,
@@ -10,11 +11,14 @@ import type {
   InvoiceEmailAttemptResult,
   PaginatedJobsResponse,
   PaginatedCustomersResponse,
+  PaginatedCatalogItemsResponse,
   CreateTenantPayload,
   UpdateTenantPayload,
   CreateTenantResponse,
   CreateCustomerPayload,
   CreateJobPayload,
+  CreateCatalogItemPayload,
+  CatalogItemResult,
 } from "../services/api";
 
 // ---------------------------------------------------------------------------
@@ -26,6 +30,7 @@ const customers: CustomerResult[] = structuredClone(
   customersSeed,
 ) as unknown as CustomerResult[];
 const jobs: JobSeed[] = structuredClone(jobsSeed);
+const catalogItems: CatalogItemResult[] = structuredClone(catalogItemsSeed);
 
 interface JobSeed {
   id: string;
@@ -235,6 +240,74 @@ export const demoService = {
     if (idx === -1) throw new Error("Customer not found");
     customers[idx] = { ...customers[idx], ...payload } as CustomerResult;
     return { ...customers[idx] };
+  },
+
+  // ---- Catalog items ----
+  fetchCatalogItems(
+    page: number,
+    limit: number,
+    types?: string[],
+  ): PaginatedCatalogItemsResponse {
+    let filtered = [...catalogItems].sort(
+      (a, b) =>
+        new Date(b.createdAt ?? 0).getTime() -
+        new Date(a.createdAt ?? 0).getTime(),
+    );
+    if (types && types.length > 0) {
+      filtered = filtered.filter((item) => types.includes(item.type));
+    }
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const start = (page - 1) * limit;
+    const data = filtered.slice(start, start + limit).map((item) => ({ ...item }));
+    return { data, meta: { page, limit, total, totalPages } };
+  },
+
+  fetchCatalogItem(id: string): CatalogItemResult {
+    const item = catalogItems.find((i) => i.id === id);
+    if (!item) throw new Error("Catalog item not found");
+    return { ...item };
+  },
+
+  createCatalogItem(payload: CreateCatalogItemPayload): CatalogItemResult {
+    const newItem: CatalogItemResult = {
+      id: `demo-catalog-${Date.now()}`,
+      type: payload.type,
+      description: payload.description,
+      unitPrice: payload.unitPrice,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    catalogItems.unshift(newItem);
+    return { ...newItem };
+  },
+
+  updateCatalogItem(
+    id: string,
+    payload: Record<string, unknown>,
+  ): CatalogItemResult {
+    const idx = catalogItems.findIndex((i) => i.id === id);
+    if (idx === -1) throw new Error("Catalog item not found");
+    catalogItems[idx] = {
+      ...catalogItems[idx],
+      ...payload,
+    } as CatalogItemResult;
+    return { ...catalogItems[idx] };
+  },
+
+  deleteCatalogItem(id: string): void {
+    const idx = catalogItems.findIndex((i) => i.id === id);
+    if (idx === -1) throw new Error("Catalog item not found");
+    catalogItems.splice(idx, 1);
+    // Reference cleanup mirrors the real API's ON DELETE SET NULL:
+    // line items keep their snapshotted values, only the reference clears.
+    for (const j of jobs) {
+      for (const li of j.lineItems) {
+        if (li.catalogItemId === id) {
+          delete li.catalogItemId;
+        }
+      }
+    }
   },
 
   // ---- Jobs ----

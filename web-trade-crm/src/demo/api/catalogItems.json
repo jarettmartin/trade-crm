@@ -1,0 +1,98 @@
+[
+  {
+    "id": "demo-catalog-1",
+    "type": "SERVICE",
+    "description": "Leaf removal and disposal",
+    "unitPrice": 75,
+    "createdAt": "2026-03-02T09:00:00.000Z",
+    "updatedAt": "2026-03-02T09:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-2",
+    "type": "SERVICE",
+    "description": "Tree pruning",
+    "unitPrice": 85,
+    "createdAt": "2026-03-15T10:30:00.000Z",
+    "updatedAt": "2026-03-15T10:30:00.000Z"
+  },
+  {
+    "id": "demo-catalog-3",
+    "type": "MATERIAL",
+    "description": "Garden soil and mulch",
+    "unitPrice": 12,
+    "createdAt": "2026-04-01T08:00:00.000Z",
+    "updatedAt": "2026-04-01T08:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-4",
+    "type": "SERVICE",
+    "description": "Garden bed preparation",
+    "unitPrice": 65,
+    "createdAt": "2026-04-05T11:00:00.000Z",
+    "updatedAt": "2026-04-05T11:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-5",
+    "type": "SERVICE",
+    "description": "Snow plowing — parking lot",
+    "unitPrice": 200,
+    "createdAt": "2026-04-20T07:30:00.000Z",
+    "updatedAt": "2026-04-20T07:30:00.000Z"
+  },
+  {
+    "id": "demo-catalog-6",
+    "type": "SERVICE",
+    "description": "Walkway clearing and salting",
+    "unitPrice": 80,
+    "createdAt": "2026-04-20T08:00:00.000Z",
+    "updatedAt": "2026-04-20T08:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-7",
+    "type": "MATERIAL",
+    "description": "Rock salt (bags)",
+    "unitPrice": 8,
+    "createdAt": "2026-04-22T09:15:00.000Z",
+    "updatedAt": "2026-04-22T09:15:00.000Z"
+  },
+  {
+    "id": "demo-catalog-8",
+    "type": "SERVICE",
+    "description": "Interior painting (two coats)",
+    "unitPrice": 55,
+    "createdAt": "2026-05-30T13:00:00.000Z",
+    "updatedAt": "2026-05-30T13:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-9",
+    "type": "MATERIAL",
+    "description": "Paint and supplies",
+    "unitPrice": 180,
+    "createdAt": "2026-06-01T09:00:00.000Z",
+    "updatedAt": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-10",
+    "type": "MATERIAL",
+    "description": "Weatherproof stain (gallon)",
+    "unitPrice": 45,
+    "createdAt": "2026-06-10T14:00:00.000Z",
+    "updatedAt": "2026-06-10T14:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-11",
+    "type": "FEE",
+    "description": "Trip charge",
+    "unitPrice": 25,
+    "createdAt": "2026-06-15T09:30:00.000Z",
+    "updatedAt": "2026-06-15T09:30:00.000Z"
+  },
+  {
+    "id": "demo-catalog-12",
+    "type": "FEE",
+    "description": "After-hours surcharge",
+    "unitPrice": 50,
+    "createdAt": "2026-06-18T16:00:00.000Z",
+    "updatedAt": "2026-06-18T16:00:00.000Z"
+  }
+]
