@@ -288,6 +288,23 @@ npm run test.unit     # Unit tests (vitest)
 npm run test.e2e      # E2E tests (Cypress)
 ```
 
+## SDLC Scripts
+
+Repeatable GitFlow operations are npm scripts at the repo root — the AI agent
+(`ai/agents/TASK.agent.md`) and humans use the same commands:
+
+| npm script | What it does |
+| --- | --- |
+| `npm run branch:start -- feature/<name>` | Fetch, reset `develop` to `origin/develop`, create the feature branch |
+| `npm run release:start` | Create `release/vX.Y.Z` from `origin/develop`, bump api/web versions in code, commit the bump |
+| `npm run release:tag` | After the release PR merges to `main`, point `api-vX.Y.Z` / `web-vX.Y.Z` at the version-bump commit |
+| `npm run demo:seed` | Seed the local DB with the web demo fixtures (for real-account testing) |
+| `npm run demo:pdfs` | Regenerate the pre-built demo invoice PDFs |
+
+The full process (branch setup → demo-mode parity → local sign-off testing →
+commits → release → deploy) lives in [`ai/CONTEXT.md`](ai/CONTEXT.md) under
+**SDLC Workflow (Agent Process)**.
+
 ## Contributing
 
 - **Branching**: GitFlow model — see [docs/GITFLOW.md](docs/GITFLOW.md)
@@ -300,7 +317,12 @@ npm run test.e2e      # E2E tests (Cypress)
 This repository includes an AI engineering agent that guides task completion
 end-to-end (task intake, GitFlow branch setup, Conventional Commits, and
 verification). Its instructions live in [ai/agents/TASK.agent.md](ai/agents/TASK.agent.md),
-with the project context it references in [ai/CONTEXT.md](ai/CONTEXT.md).
+with the project context it references in [ai/CONTEXT.md](ai/CONTEXT.md). The
+agent drives the SDLC end-to-end — `npm run branch:start` for branches, demo-mode
+parity updates, local sign-off testing (demo + real accounts, see
+[docs/GITFLOW.md](docs/GITFLOW.md) and `README.md`), Conventional Commits left
+for you to push, and `npm run release:start` / `npm run release:tag` for
+releasing after your PR merges.
 
 ### Example prompt
 
