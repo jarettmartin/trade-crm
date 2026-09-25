@@ -42,7 +42,7 @@ pagination) or shared UI behavior must be mirrored in demo mode**, otherwise
 demo mode silently drifts from reality.
 
 1. Update `demoService.ts` to return the same shapes / behavior.
-2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`, `catalogItems.json`).
+2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`, `catalogItems.json`, `feedback.json`).
 3. Invoice fixtures changed? Regenerate the pre-built PDFs: `npm run demo:pdfs`.
 4. Want real-account logins to see the data too? `npm run demo:seed`.
 
@@ -276,7 +276,7 @@ Runs daily at 1am Eastern via cron on the instance
 
 ### Backend (NestJS)
 
-- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `jobs`, `invoices`, `users`
+- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `feedback`, `jobs`, `invoices`, `users`
 - Common module (`common/`) for shared guards, decorators, DTOs, entities, and enums
 - Repository pattern used exclusively — no raw queries
 - Constructor injection for all dependencies
@@ -339,7 +339,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
   - `CatalogItemSearch` — Catalog picker for the job detail page: tenant catalog is fetched up-front (`api.fetchAllCatalogItems()`, pages the endpoint at limit 100), then filtered **locally** on every keystroke across description/type/unit price. Refetched on `useIonViewWillEnter` so catalog edits/deletes land when a job page is revisited. Includes the "Add Custom Line Item" button that switches to the manual form.
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
-  - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings) + logout
+  - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings, Feedback) + logout
 - Paginated tables on the Jobs page (the primary job list) and the Manage Customers / Create Job pages (below the search bar) share `PaginatedTable`; the real API orders by `createdAt DESC` and demo mode mirrors that
 - PDF handling:
   - In-memory `pdfCache.ts` (Map<string, Blob>) caches downloaded PDFs for the session
@@ -385,6 +385,11 @@ src/
 │   ├── entities/
 │   └── services/
 ├── catalog/                         # Catalog item CRUD (reusable preset line items)
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   └── services/
+├── feedback/                        # In-app feedback/bug/feature-request/contact submissions
 │   ├── controllers/
 │   ├── dto/
 │   ├── entities/
@@ -462,6 +467,14 @@ src/
 - `JobLineItem.catalogItemId` is an **optional reference only** — every display value is always snapshotted onto the `job_line_items` row at add time, so editing or deleting a catalog item never changes existing line items (deleting a catalog item just clears the reference via `ON DELETE SET NULL`)
 - Catalog search on the Create/Job detail page loads the tenant's items up-front and filters **locally** (description/type/unit price); pick an item to prefill the normal manual line item form (editable before applying), or use the "Add Custom Line Item" button for a blank entry
 - Management UI: `/manage-catalog` (paginated table + free-text search across description/type/price + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation)
+
+### Feedback
+
+- Support submissions from in-app users: `type` (FEEDBACK/BUG/FEATURE_REQUEST/CONTACT), `subject` (nullable, ≤255), `message` (≤1000), plus a `userEmail` snapshot of the submitter
+- `POST /feedback` (TenantGuard) records a submission — `tenantId`, `userId`, and `userEmail` always come from the verified token, never the body
+- `GET /feedback` (TenantGuard) lists the tenant's submissions newest-first (`createdAt DESC`, paginated)
+- **Deliberately has no relations/foreign keys** to `tenants` or `users` (plain scalar `tenantId`/`userId` columns) so feedback history survives a user or tenant being changed/deleted; `tenantId` still scopes every query
+- UI: `/feedback` (sidemenu link) — submit form + the tenant's own submission history
 
 ### Invoice
 
