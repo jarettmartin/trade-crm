@@ -4,22 +4,41 @@ import { FeedbackService } from './feedback.service';
 import { Feedback } from '../entities/feedback.entity';
 import { FeedbackType } from '../../common/enums/feedback-type.enum';
 
+/**
+ * The subset of `Repository<Feedback>` the service uses, with every method
+ * typed as a jest mock so `mockImplementation` / `mockResolvedValue` calls are
+ * type-checked (no `any`-typed mocks).
+ */
+interface FeedbackRepositoryMock {
+  create: jest.Mock<Partial<Feedback>, [Partial<Feedback>]>;
+  save: jest.Mock<Partial<Feedback>, [Partial<Feedback>]>;
+  findAndCount: jest.Mock<
+    Promise<[Partial<Feedback>[], number]>,
+    [Record<string, unknown>]
+  >;
+}
+
 describe('FeedbackService', () => {
   let service: FeedbackService;
-  const save = jest.fn();
-  const findAndCount = jest.fn();
-  const create = jest.fn();
+  let repository: FeedbackRepositoryMock;
 
   beforeEach(async () => {
-    jest.resetAllMocks();
-    create.mockImplementation((input: Partial<Feedback>) => input);
+    // Fresh mocks per test — created inputs pass through unchanged.
+    repository = {
+      create: jest.fn<Partial<Feedback>, [Partial<Feedback>]>((input) => input),
+      save: jest.fn<Partial<Feedback>, [Partial<Feedback>]>((input) => input),
+      findAndCount: jest.fn<
+        Promise<[Partial<Feedback>[], number]>,
+        [Record<string, unknown>]
+      >(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FeedbackService,
         {
           provide: getRepositoryToken(Feedback),
-          useValue: { create, save, findAndCount },
+          useValue: repository,
         },
       ],
     }).compile();
@@ -29,7 +48,7 @@ describe('FeedbackService', () => {
 
   describe('create', () => {
     it('stamps tenant/author from the caller and trims input', async () => {
-      save.mockImplementation((input: Partial<Feedback>) => ({
+      repository.save.mockImplementation((input) => ({
         ...input,
         id: 'feedback-1',
       }));
@@ -45,7 +64,7 @@ describe('FeedbackService', () => {
         'user@example.com',
       );
 
-      expect(create).toHaveBeenCalledWith({
+      expect(repository.create).toHaveBeenCalledWith({
         type: FeedbackType.BUG,
         subject: 'Broken button',
         message: 'The save button does nothing',
@@ -57,8 +76,6 @@ describe('FeedbackService', () => {
     });
 
     it('drops a blank subject instead of storing whitespace', async () => {
-      save.mockImplementation((input: Partial<Feedback>) => input);
-
       await service.create(
         {
           type: FeedbackType.CONTACT,
@@ -70,7 +87,7 @@ describe('FeedbackService', () => {
         'user@example.com',
       );
 
-      expect(create).toHaveBeenCalledWith(
+      expect(repository.create).toHaveBeenCalledWith(
         expect.objectContaining({ subject: undefined }),
       );
     });
@@ -78,11 +95,11 @@ describe('FeedbackService', () => {
 
   describe('findAll', () => {
     it('scopes to the tenant, orders newest-first, and paginates', async () => {
-      findAndCount.mockResolvedValue([[{ id: 'feedback-1' }], 12]);
+      repository.findAndCount.mockResolvedValue([[{ id: 'feedback-1' }], 12]);
 
       const result = await service.findAll('tenant-1', 2, 5);
 
-      expect(findAndCount).toHaveBeenCalledWith({
+      expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { tenantId: 'tenant-1' },
         order: { createdAt: 'DESC' },
         skip: 5,
