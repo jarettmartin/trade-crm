@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { compileEmailTemplate, loadEmailTemplates } from './email-templates';
 
 describe('email templates', () => {
