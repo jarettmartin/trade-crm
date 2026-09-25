@@ -210,6 +210,32 @@ export interface CreateCatalogItemPayload {
   unitPrice: number;
 }
 
+export interface FeedbackResult {
+  id: string;
+  type: string;
+  subject?: string;
+  message: string;
+  userId?: string;
+  userEmail?: string;
+  createdAt: string;
+}
+
+export interface PaginatedFeedbackResponse {
+  data: FeedbackResult[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateFeedbackPayload {
+  type: string;
+  subject?: string;
+  message: string;
+}
+
 export interface InvoiceResult {
   id: string;
   invoiceNumber: number;
@@ -497,6 +523,26 @@ class ApiService {
     return this.request<{ success: boolean }>(`/catalog-items/${id}`, {
       method: "DELETE",
     });
+  }
+
+  // ---- Feedback ----
+  async submitFeedback(payload: CreateFeedbackPayload) {
+    if (this.demoMode) {
+      return demoService.submitFeedback(payload);
+    }
+    return this.request<FeedbackResult>("/feedback", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async fetchFeedback(page: number = 1, limit: number = 10) {
+    if (this.demoMode) {
+      return demoService.fetchFeedback(page, limit);
+    }
+    return this.request<PaginatedFeedbackResponse>(
+      `/feedback?page=${page}&limit=${limit}`,
+    );
   }
 
   async fetchJobs(page: number = 1, limit: number = 10, status?: string) {
