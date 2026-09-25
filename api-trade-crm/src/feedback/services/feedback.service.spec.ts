@@ -1,37 +1,38 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import type { FindManyOptions } from 'typeorm';
 import { FeedbackService } from './feedback.service';
 import { Feedback } from '../entities/feedback.entity';
 import { FeedbackType } from '../../common/enums/feedback-type.enum';
 
 /**
- * The subset of `Repository<Feedback>` the service uses, with every method
- * typed as a jest mock so `mockImplementation` / `mockResolvedValue` calls are
- * type-checked (no `any`-typed mocks).
+ * Builds the repository slice the service depends on. Every method is a jest
+ * mock whose types are inferred from its implementation, so
+ * `mockImplementation` / `mockResolvedValue` calls are fully type-checked (no
+ * `any`-typed mocks).
  */
-interface FeedbackRepositoryMock {
-  create: jest.Mock<Partial<Feedback>, [Partial<Feedback>]>;
-  save: jest.Mock<Partial<Feedback>, [Partial<Feedback>]>;
-  findAndCount: jest.Mock<
-    Promise<[Partial<Feedback>[], number]>,
-    [Record<string, unknown>]
-  >;
+function makeRepositoryMock() {
+  return {
+    create: jest.fn((input: Partial<Feedback>) => input),
+    save: jest.fn((input: Partial<Feedback>) => input),
+    findAndCount:
+      jest.fn<
+        (
+          options: FindManyOptions<Feedback>,
+        ) => Promise<[Partial<Feedback>[], number]>
+      >(),
+  };
 }
+
+type FeedbackRepositoryMock = ReturnType<typeof makeRepositoryMock>;
 
 describe('FeedbackService', () => {
   let service: FeedbackService;
   let repository: FeedbackRepositoryMock;
 
   beforeEach(async () => {
-    // Fresh mocks per test — created inputs pass through unchanged.
-    repository = {
-      create: jest.fn<Partial<Feedback>, [Partial<Feedback>]>((input) => input),
-      save: jest.fn<Partial<Feedback>, [Partial<Feedback>]>((input) => input),
-      findAndCount: jest.fn<
-        Promise<[Partial<Feedback>[], number]>,
-        [Record<string, unknown>]
-      >(),
-    };
+    repository = makeRepositoryMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -87,9 +88,10 @@ describe('FeedbackService', () => {
         'user@example.com',
       );
 
-      expect(repository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ subject: undefined }),
-      );
+      const created = repository.create.mock.calls[0][0];
+
+      expect(created.subject).toBeUndefined();
+      expect(created.message).toBe('Please call me');
     });
   });
 
