@@ -304,6 +304,7 @@ Runs daily at 1am Eastern via cron on the instance
 - A 409 is returned if a PENDING attempt already exists for the invoice (prevents duplicate concurrent sends).
 - `JobService.findById` loads `invoices.emailAttempts` so the job-detail payload already includes per-invoice email status.
 - Customer email validation already exists: `@IsEmail() @IsOptional()` on customer DTOs and `isValidEmail()` on the frontend.
+- **Other email types reuse this plumbing**: feedback submissions email an internal notification through the same `EmailService` (`feedback-email.hbs`, no attachment) — see `### Feedback`. That is the reference pattern for a new template-based email.
 - **Node runtime note**: AWS SDK v3 will require Node >= 22 starting 2027; the API image currently uses `node:20-alpine`. Non-blocking; bump `api-trade-crm/Dockerfile` in a future change.
 
 ### Authentication (AWS Cognito)
@@ -393,11 +394,11 @@ src/
 │   ├── controllers/
 │   ├── dto/
 │   ├── entities/
-│   └── services/
+│   └── services/                    # feedback.service + feedback-email.service (internal notification)
 ├── email/                            # AWS SES integration (email sending via Handlebars templates)
 │   ├── services/email.service.ts     # SESv2 SendEmail (raw MIME + attachment) + template renderer
 │   ├── email-templates.ts            # .hbs loader/compiler (subject + body per file)
-│   ├── templates/                    # Handlebars email templates (invoice-email.hbs, …)
+│   ├── templates/                    # Handlebars email templates (invoice-email.hbs, feedback-email.hbs)
 │   └── mime.ts                       # Dependency-free RFC 5322 MIME builder
 ├── invoices/                        # Invoice creation, PDF generation, emailing
 │   ├── controllers/                  # invoice.controller, invoice-email.controller
@@ -474,6 +475,8 @@ src/
 - `POST /feedback` (TenantGuard) records a submission — `tenantId`, `userId`, and `userEmail` always come from the verified token, never the body
 - `GET /feedback` (TenantGuard) lists the tenant's submissions newest-first (`createdAt DESC`, paginated)
 - **Deliberately has no relations/foreign keys** to `tenants` or `users` (plain scalar `tenantId`/`userId` columns) so feedback history survives a user or tenant being changed/deleted; `tenantId` still scopes every query
+- **Every submission also emails an internal notification** to the support inbox in `FEEDBACK_NOTIFY_EMAIL` (env-only: unset or empty → notifications disabled, and submissions are recorded as `SKIPPED`; no address is hardcoded in the repo, so the value lives in the gitignored `api-trade-crm/.env` locally and `.env.production` when deployed). Strictly outside the user's world: the submission is saved first, the send is fire-and-forget via `FeedbackEmailService` (template `src/email/templates/feedback-email.hbs`, From `SES_FROM_EMAIL`, Reply-To the submitter), and a failure can never slow down or fail the user's request.
+- The notification outcome is tracked on the row itself (`emailStatus` PENDING/SENT/FAILED/SKIPPED + `emailRecipient`, `emailMessageId`, `emailErrorMessage`, `emailSentAt`) but **never reaches a client**: the five columns are `@Exclude()`d on the entity and `FeedbackController` registers `ClassSerializerInterceptor`, so serialization strips them for every response shape (bare entity, array, and the paginated `{ data, meta }` wrapper). That is the canonical Nest pattern for hiding entity fields — the alternative (a response DTO + mapper) has to be remembered at every call site, which is exactly the leak this replaces. Caveat: `@Exclude()` only applies to class instances, which TypeORM returns; a plain object would pass through untouched. Recovery note: those columns are nullable and nothing is written to them by the demo seed, so pre-existing/demo-seeded rows read NULL ("not tracked") rather than a fabricated PENDING; stale PENDING rows older than 30 min are flagged FAILED on startup like `InvoiceEmailService`.
 - UI: `/feedback` (sidemenu link) — submit form + the tenant's own submission history
 
 ### Invoice

@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  UseGuards,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { FeedbackService } from '../services/feedback.service';
 import { CreateFeedbackDto } from '../dto/create-feedback.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -6,7 +15,14 @@ import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
 
+/**
+ * Applies `@Exclude()` on the entity to every response from this controller:
+ * the internal notification-email columns of `Feedback` are intentionally
+ * invisible to clients. Registered per-controller (not globally) so the rest of
+ * the API keeps serializing entities exactly as before.
+ */
 @Controller('feedback')
+@UseInterceptors(ClassSerializerInterceptor)
 export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
 
