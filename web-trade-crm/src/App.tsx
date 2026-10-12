@@ -13,6 +13,7 @@ import Menu from "./components/Menu";
 import PublicMenu from "./components/PublicMenu";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
+import BetaProgramPage from "./pages/BetaProgramPage";
 import Home from "./pages/Home";
 import CreateTenantPage from "./pages/CreateTenantPage";
 import CreateJobPage from "./pages/CreateJobPage";
@@ -136,9 +137,14 @@ const AppContent: React.FC = () => {
         ) : (
           <IonSplitPane contentId="public-main" when={false}>
             <PublicMenu />
-            <IonRouterOutlet id="public-main">
+            {/* animated={false}: the public space is a simple header menu, so the
+                iOS page-slide transition just looks out of place on desktop. */}
+            <IonRouterOutlet id="public-main" animated={false}>
               <Route path="/" exact={true}>
                 <LandingPage />
+              </Route>
+              <Route path="/beta-program" exact={true}>
+                <BetaProgramPage />
               </Route>
               <Route path="/sign-in" exact={true}>
                 <AuthPage />

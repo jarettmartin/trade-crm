@@ -22,7 +22,7 @@ export interface PublicNavItem {
 /** Nav items, in order. Items without a `url` render inert until they exist. */
 export const publicNavItems: PublicNavItem[] = [
   { title: "Sprout CRM", url: "/", icon: homeOutline },
-  { title: "beta", icon: flaskOutline },
+  { title: "Early Access", url: "/beta-program", icon: flaskOutline },
   { title: "contact", icon: chatbubbleOutline },
   { title: "TOS & Privacy", icon: documentTextOutline },
 ];
