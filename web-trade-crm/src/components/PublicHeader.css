@@ -60,6 +60,11 @@ button.public-header__item:hover {
   cursor: default;
 }
 
+/* Current page — highlighted in the brand green. */
+.public-header__item--active {
+  color: var(--ion-color-primary);
+}
+
 .public-header__actions {
   display: flex;
   align-items: center;

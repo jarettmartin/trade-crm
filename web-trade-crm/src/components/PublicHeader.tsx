@@ -4,7 +4,7 @@ import {
   IonMenuButton,
   IonToolbar,
 } from "@ionic/react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import { goToDemo, publicNavItems } from "./publicNav";
 import "./PublicHeader.css";
 
@@ -21,6 +21,7 @@ import "./PublicHeader.css";
  */
 const PublicHeader: React.FC = () => {
   const history = useHistory();
+  const { pathname } = useLocation();
 
   return (
     <IonHeader>
@@ -45,7 +46,9 @@ const PublicHeader: React.FC = () => {
                 <button
                   key={item.title}
                   type="button"
-                  className="public-header__item"
+                  className={`public-header__item${
+                    item.url === pathname ? " public-header__item--active" : ""
+                  }`}
                   onClick={() => history.push(item.url!)}
                 >
                   {item.title}

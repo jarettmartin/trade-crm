@@ -7,7 +7,7 @@ import {
   IonMenu,
   IonMenuToggle,
 } from "@ionic/react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import { publicNavItems } from "./publicNav";
 
 /**
@@ -22,6 +22,7 @@ import { publicNavItems } from "./publicNav";
  */
 const PublicMenu: React.FC = () => {
   const history = useHistory();
+  const { pathname } = useLocation();
 
   return (
     <IonMenu menuId="public-menu" contentId="public-main" type="overlay">
@@ -36,8 +37,9 @@ const PublicMenu: React.FC = () => {
             />
           </div>
 
-          {publicNavItems.map((item) =>
-            item.url ? (
+          {publicNavItems.map((item) => {
+            const isActive = item.url === pathname;
+            return item.url ? (
               <IonMenuToggle key={item.title}>
                 <IonItem
                   routerLink={item.url}
@@ -45,8 +47,15 @@ const PublicMenu: React.FC = () => {
                   lines="none"
                   detail={false}
                 >
-                  <IonIcon aria-hidden="true" slot="start" icon={item.icon} />
-                  <IonLabel>{item.title}</IonLabel>
+                  <IonIcon
+                    aria-hidden="true"
+                    slot="start"
+                    icon={item.icon}
+                    color={isActive ? "primary" : undefined}
+                  />
+                  <IonLabel color={isActive ? "primary" : undefined}>
+                    {item.title}
+                  </IonLabel>
                 </IonItem>
               </IonMenuToggle>
             ) : (
@@ -59,8 +68,8 @@ const PublicMenu: React.FC = () => {
                 />
                 <IonLabel color="medium">{item.title}</IonLabel>
               </IonItem>
-            ),
-          )}
+            );
+          })}
         </IonList>
       </IonContent>
     </IonMenu>
