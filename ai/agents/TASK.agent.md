@@ -58,6 +58,8 @@ git checkout -b <branch-name>
 
 - Implement the task following the conventions in `CONTEXT.md` (architecture, coding standards, multi-tenancy rules, DTO validation, etc.).
 - Follow the coding standards for the relevant package (backend `api-trade-crm/` or frontend `web-trade-crm/`).
+- **Match the established patterns** (CONTEXT.md → Coding Standards) — the existing code is the source of truth. Before writing something new, find the closest existing equivalent (a comparable page, component, service, controller, DTO, or test) and follow it for structure, naming, styling, error handling, and test style. Reuse shared components, utilities, and CSS classes rather than adding a parallel way of doing the same thing.
+- If the task needs a genuinely new pattern, or a deviation from an established one, call it out explicitly in your summary.
 - Keep changes scoped to the task. Do not introduce unrelated changes.
 
 ## Demo Mode Parity (Every Change)
@@ -107,6 +109,7 @@ before continuing.
   - Backend (`api-trade-crm/`): `npm test`, `npm run test:e2e`, `npm run build`
   - Frontend (`web-trade-crm/`): `npm run test.unit`, `npm run test.e2e`, `npm run build`
 - If you cannot verify locally (e.g. missing environment, credentials, or services), **ask the user** to verify or confirm.
+- Compare the change against the nearest comparable existing code and confirm it matches the established pattern (naming, structure, styling, tests) — an intentional deviation is fine, an accidental one isn't.
 - Confirm the working tree and branch state are correct before finishing.
 - Confirm demo-mode parity is in place (see [Demo Mode Parity](#demo-mode-parity-every-change)).
 

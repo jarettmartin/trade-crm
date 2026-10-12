@@ -48,7 +48,8 @@ demo mode silently drifts from reality.
 
 ### 3. Implement + update docs
 
-- Follow this file's architecture and coding standards; keep changes scoped.
+- Follow this file's architecture and coding standards — and the patterns
+  already used by comparable code — keeping changes scoped.
 - Run the relevant tests/builds (backend or frontend).
 - Update docs **only if the change makes them inaccurate** (README, `docs/`,
   this file). Don't churn docs for docs' sake.
@@ -495,6 +496,23 @@ src/
 
 ## Coding Standards
 
+The rules below cover the parts of the codebase that must stay consistent. They
+are not a full description of the project's style, so **the existing code is the
+source of truth**:
+
+- Before writing something new, find the closest existing example of the same
+  kind of thing (page, component, service, controller, DTO, test) and follow it
+  — structure, naming, file layout, styling, error handling, test style.
+  Consistent beats clever.
+- Reuse what's already there — shared components, services/utilities, CSS
+  classes — before adding a new one. If you're about to introduce a second way
+  of doing something the codebase already does, extend the existing one
+  instead, or explain why it has to differ.
+- When a convention doesn't cover the case, pick whichever option looks most
+  like its neighbours rather than designing a new approach.
+- If a task genuinely needs a new pattern or a deliberate deviation from an
+  established one, say so in your summary and document it where it lives.
+
 ### Backend
 
 - Constructor injection for all dependencies
@@ -511,6 +529,7 @@ src/
 
 - Singleton `api.ts` class for all HTTP — never use raw `fetch` outside of it
 - Shared components for reusable UI (CustomerSearch, CustomerTable, PaginatedTable, Menu)
+- Shared layout and styling classes live in `src/theme/variables.css` (page containers, form cards, form controls) — reuse them instead of page-local styles, and read the comment above a class to see where it's meant to be used
 - Shared services for cross-cutting concerns (format, validation, pdfCache)
 - `IonActionSheet` for inline status changes (invoice status)
 - `IonSelect` + `interface="popover"` for dropdown menus
