@@ -18,8 +18,13 @@ Related docs: `docs/GITFLOW.md` (branch model + tagging), `docs/CONTRIBUTING.md`
   - Web (`web-trade-crm/`): `npm run test.unit`, `npm run build`
 - Clean working tree. The scripts below fetch and reset the base branch
   themselves — don't hand-roll those git steps.
-- **Agents never push or merge.** Prepare everything, verify it, then hand the
-  user the exact commands to push, open PRs, and merge.
+- **The release only contains what is on `origin/develop`.** `release:start`
+  resets `develop` to `origin/develop`, so unpushed commits there — and work
+  sitting on unmerged local branches — are silently left out of the release.
+  Push and merge first.
+- **Agents never push or merge** — unless the user explicitly asks for a specific
+  push as part of this flow (pushing the release tags, say). By default: prepare
+  everything, verify it, then hand the user the exact commands.
 
 ## 1. Decide the version
 
@@ -56,9 +61,18 @@ code (`package.json` + `package-lock.json`), and commits
 `chore(release): bump versions to X.Y.Z`.
 
 **The bump commit is exactly what the release tags will point at** — don't
-amend, rebase, or squash it away. If the release needs stabilising (final docs,
-release-blocking fixes), add those commits to the release branch before opening
-the PRs.
+amend, rebase, or squash it away.
+
+- **Stabilising the release?** Add those commits (final docs, release-blocking
+  fixes) before opening the PRs — but be aware they land *after* the bump, so the
+  tagged commit is no longer the tip of `main`. That's accepted here (the tag
+  anchors the version, and `release:tag` only ever tags the bump commit); if a
+  post-bump fix genuinely must be covered by the tag, create it by hand instead
+  (step 4).
+- **Wrong version?** The script refuses to reuse an existing `release/vX.Y.Z`
+  branch. Delete it — `git checkout develop && git branch -D release/vX.Y.Z`
+  (plus the remote branch, if you already pushed it) — and run `release:start`
+  again.
 
 ## 3. Get it merged (two PRs)
 

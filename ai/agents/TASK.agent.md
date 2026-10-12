@@ -117,8 +117,10 @@ before continuing.
 
 ## Pushing
 
-- **Never push to the remote yourself.** Stage and commit locally, then let the
-  user do the final push and open the PR (feature → `develop`, hotfix → `main`).
+- **Never push to the remote yourself** — unless the user explicitly asks you to
+  run a specific push as part of a documented step (e.g. pushing the release
+  tags). By default: stage and commit locally, then let the user do the final
+  push and open the PR (feature → `develop`, hotfix → `main`).
 - Tell them exactly what to run, e.g.
   `git push -u origin feature/<short-description>`, and point them at the PR
   template (`.github/PULL_REQUEST_TEMPLATE.md`).
