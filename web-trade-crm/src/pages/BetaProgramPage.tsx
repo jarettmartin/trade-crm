@@ -1,5 +1,7 @@
 import { useEffect } from "react";
+import { useHistory } from "react-router-dom";
 import {
+  IonButton,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -23,6 +25,8 @@ interface ProgramCard {
   subtitle?: string;
   body?: string;
   bullets?: ProgramBullet[];
+  /** Optional call to action rendered as a full-width button at the card foot. */
+  cta?: { label: string; url: string };
 }
 
 const programCards: ProgramCard[] = [
@@ -68,6 +72,11 @@ const programCards: ProgramCard[] = [
   {
     title: "How to Join",
     body: `Simply use our contact form with the "Early Access" subject type. Send us a quick 1-paragraph description of yourself and your business! Nothing too specific, just let us know you're real. You'll receive an invite code to sign up with via email.`,
+    cta: {
+      label: "Request Early Access",
+      // Opens the public contact form with the Early Access type pre-selected.
+      url: "/contact?type=EARLY_ACCESS",
+    },
   },
 ];
 
@@ -80,6 +89,8 @@ const BetaProgramPage: React.FC = () => {
   useEffect(() => {
     document.title = "Sprout CRM - Founding Customer Program";
   }, []);
+
+  const history = useHistory();
 
   return (
     <IonPage>
@@ -133,6 +144,15 @@ const BetaProgramPage: React.FC = () => {
                       </li>
                     ))}
                   </ul>
+                )}
+                {card.cta && (
+                  <IonButton
+                    expand="block"
+                    style={{ marginTop: 16 }}
+                    onClick={() => history.push(card.cta!.url)}
+                  >
+                    {card.cta.label}
+                  </IonButton>
                 )}
               </IonCardContent>
             </IonCard>

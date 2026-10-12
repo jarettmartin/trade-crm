@@ -23,7 +23,7 @@ export interface PublicNavItem {
 export const publicNavItems: PublicNavItem[] = [
   { title: "Sprout CRM", url: "/", icon: homeOutline },
   { title: "Early Access", url: "/beta-program", icon: flaskOutline },
-  { title: "contact", icon: chatbubbleOutline },
+  { title: "Contact", url: "/contact", icon: chatbubbleOutline },
   { title: "TOS & Privacy", icon: documentTextOutline },
 ];
 
