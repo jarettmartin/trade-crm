@@ -138,69 +138,75 @@ const FeedbackPage: React.FC = () => {
 
       <IonContent className="ion-padding">
         <div className="page-container" style={{ marginTop: "20px" }}>
-          <IonText color="medium">
-            <p style={{ margin: "0 0 12px", fontSize: "0.875rem" }}>
-              Send us feedback, report a bug, request a feature, or ask us to
-              get in touch.
-            </p>
-          </IonText>
+          <div className="capped-container">
+            <IonText color="medium">
+              <p style={{ margin: "0 0 12px", fontSize: "0.875rem" }}>
+                Send us feedback, report a bug, request a feature, or ask us to
+                get in touch.
+              </p>
+            </IonText>
 
-          <IonItem>
-            <IonLabel position="stacked">
-              Type <IonText color="danger">*</IonText>
-            </IonLabel>
-            <IonSelect
-              value={type}
-              onIonChange={(e) => setType(e.detail.value)}
-              interface="popover"
+            <div className="form-card">
+              <IonItem>
+                <IonLabel position="stacked">
+                  Type <IonText color="danger">*</IonText>
+                </IonLabel>
+                <IonSelect
+                  value={type}
+                  onIonChange={(e) => setType(e.detail.value)}
+                  interface="popover"
+                >
+                  {FEEDBACK_TYPES.map((t) => (
+                    <IonSelectOption key={t} value={t}>
+                      {typeLabel[t]}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+
+              <IonItem>
+                <IonLabel position="stacked">Subject</IonLabel>
+                <IonInput
+                  value={subject}
+                  maxlength={SUBJECT_MAX_LENGTH}
+                  onIonInput={(e) => setSubject(e.detail.value || "")}
+                  placeholder="Optional short summary"
+                />
+              </IonItem>
+
+              <IonItem>
+                <IonLabel position="stacked">
+                  Message <IonText color="danger">*</IonText>
+                </IonLabel>
+                <IonTextarea
+                  rows={5}
+                  value={message}
+                  maxlength={MESSAGE_MAX_LENGTH}
+                  onIonInput={(e) => setMessage(e.detail.value || "")}
+                  placeholder="Tell us what's on your mind..."
+                />
+              </IonItem>
+
+              <IonNote
+                color={
+                  message.length > MESSAGE_MAX_LENGTH ? "danger" : "medium"
+                }
+                style={{ display: "block", margin: "4px 16px 0", fontSize: 12 }}
+              >
+                {message.length}/{MESSAGE_MAX_LENGTH} characters
+              </IonNote>
+            </div>
+
+            <IonButton
+              expand="block"
+              onClick={handleSubmit}
+              disabled={submitting || !isValid}
+              style={{ marginTop: 20 }}
+              data-testid="submit-feedback"
             >
-              {FEEDBACK_TYPES.map((t) => (
-                <IonSelectOption key={t} value={t}>
-                  {typeLabel[t]}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-          </IonItem>
-
-          <IonItem>
-            <IonLabel position="stacked">Subject</IonLabel>
-            <IonInput
-              value={subject}
-              maxlength={SUBJECT_MAX_LENGTH}
-              onIonInput={(e) => setSubject(e.detail.value || "")}
-              placeholder="Optional short summary"
-            />
-          </IonItem>
-
-          <IonItem>
-            <IonLabel position="stacked">
-              Message <IonText color="danger">*</IonText>
-            </IonLabel>
-            <IonTextarea
-              rows={5}
-              value={message}
-              maxlength={MESSAGE_MAX_LENGTH}
-              onIonInput={(e) => setMessage(e.detail.value || "")}
-              placeholder="Tell us what's on your mind..."
-            />
-          </IonItem>
-
-          <IonNote
-            color={message.length > MESSAGE_MAX_LENGTH ? "danger" : "medium"}
-            style={{ display: "block", margin: "4px 16px 0", fontSize: 12 }}
-          >
-            {message.length}/{MESSAGE_MAX_LENGTH} characters
-          </IonNote>
-
-          <IonButton
-            expand="block"
-            onClick={handleSubmit}
-            disabled={submitting || !isValid}
-            style={{ marginTop: 20 }}
-            data-testid="submit-feedback"
-          >
-            {submitting ? <IonSpinner /> : "Send Feedback"}
-          </IonButton>
+              {submitting ? <IonSpinner /> : "Send Feedback"}
+            </IonButton>
+          </div>
         </div>
 
         <div style={{ marginTop: "32px" }}>

@@ -157,16 +157,16 @@ ion-textarea.control-bordered {
  * stay consistent across the app. Let IonContent's `ion-padding` provide the
  * surrounding gutter.
  *
- * Rule of thumb: pages that render a table take the full width; every other
- * page is capped. Pick the matching container below. */
+ * Rule of thumb: pages that render a table take the full width; pages of forms
+ * or reading content are capped. Mixed pages (job detail, feedback) use a
+ * `.page-container` for the full-width parts and `.capped-container` for their
+ * form sections. */
 .page-container {
   width: 100%;
 }
 
-/* `.capped-container` — every page that does NOT render a table. The 600px
-   cap keeps forms, detail views, and reading content comfortable on wide
-   screens. It is centered in the available width; below 600px it behaves just
-   like `.page-container`. */
+/* `.capped-container` — a centered 600px cap for forms, detail views, and
+   reading content. Below 600px it behaves just like `.page-container`. */
 .capped-container {
   width: 100%;
   max-width: 600px;
@@ -174,9 +174,10 @@ ion-textarea.control-bordered {
   margin-right: auto;
 }
 
-/* `.capped-container--left` — the same cap, but flush left instead of centered.
-   Used inside an otherwise full-width page (the job detail page) so the capped
-   sections still line up with the full-width content around them. */
+/* `.capped-container--left` — the same cap, flush left instead of centered.
+   Used when the capped blocks sit below full-width content (the note, line
+   item, costing and invoice sections on the job detail page) so they stay
+   aligned with the full-width lists above them. */
 .capped-container--left {
   margin-left: 0;
   margin-right: auto;
