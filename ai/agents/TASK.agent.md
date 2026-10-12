@@ -6,7 +6,8 @@ You are the engineering agent for the Sprout CRM codebase. Your role is to guide
 
 Always reference these files for conventions throughout every task:
 
-- `CONTEXT.md` — project architecture, data model, coding standards, deployment, and the **SDLC Workflow (Agent Process)** section that defines this runbook (branch setup, demo-mode parity, local sign-off, releases)
+- `CONTEXT.md` — project architecture, data model, coding standards, and the **SDLC Workflow (Agent Process)** section that defines this runbook (branch setup, demo-mode parity, local sign-off, releases)
+- `ai/skills/` — self-contained procedures for recurring tasks (indexed in CONTEXT.md → **Skills**). Load the skill that matches the task — e.g. `RELEASE.skill.md` when releasing — and follow it instead of working from memory
 - `docs/CONTRIBUTING.md` — commit standard (Conventional Commits), contribution workflow
 - `docs/GITFLOW.md` — branching model, release/hotfix workflow, versioning
 
@@ -57,6 +58,7 @@ git checkout -b <branch-name>
 ## Doing the Work
 
 - Implement the task following the conventions in `CONTEXT.md` (architecture, coding standards, multi-tenancy rules, DTO validation, etc.).
+- If the task is one of the recurring procedures in `ai/skills/` (a release, for example), load that skill and follow it — don't improvise the steps from memory.
 - Follow the coding standards for the relevant package (backend `api-trade-crm/` or frontend `web-trade-crm/`).
 - **Match the established patterns** (CONTEXT.md → Coding Standards) — the existing code is the source of truth. Before writing something new, find the closest existing equivalent (a comparable page, component, service, controller, DTO, or test) and follow it for structure, naming, styling, error handling, and test style. Reuse shared components, utilities, and CSS classes rather than adding a parallel way of doing the same thing.
 - If the task needs a genuinely new pattern, or a deviation from an established one, call it out explicitly in your summary.
@@ -124,19 +126,13 @@ before continuing.
 ## After the PR Merges (Releases)
 
 Once the user reports a **feature/fix** PR merged into `develop` (`main` for
-hotfixes) — i.e. functionality changed, not just docs/chore — offer the release
-flow (CONTEXT.md, SDLC step 6):
+hotfixes) — i.e. functionality changed, not just docs/chore — offer the release.
 
-1. `npm run release:start` — syncs `develop`, creates `release/vX.Y.Z`, bumps
-   api/web versions in code (`--api-only` / `--web-only` for a single
-   deployable), commits `chore(release): bump versions to X.Y.Z`. **That bump
-   commit is the one the release tags will reference.**
-2. Guide the user: push the release branch → PR `release/vX.Y.Z → main` (and a
-   second PR `release/vX.Y.Z → develop` to keep the bump on develop).
-3. After the merge to `main`: `npm run release:tag`, then the tags are pushed
-   with `git push origin --tags`.
-4. If they want this version deployed: `./scripts/deploy.sh` (API) and
-   `./scripts/deploy-frontend.sh` (web). If they skip the release, don't tag.
+**Load [`../skills/RELEASE.skill.md`](../skills/RELEASE.skill.md) and follow it.**
+It covers the version choice, `npm run release:start`, the two PRs (`→ main` and
+`→ develop`), tagging with `npm run release:tag`, the optional deploy, release
+migrations, the hotfix path, and rollback. The skill is the source of truth here
+(CONTEXT.md, SDLC step 6, points at it) — don't reconstruct the steps from memory.
 
 ## Completion
 

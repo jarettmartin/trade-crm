@@ -23,6 +23,19 @@ identical. Full agent instructions live in `ai/agents/TASK.agent.md`.
 | `npm run demo:seed` | `cd api-trade-crm && npm run db:seed-demo` — seeds the local DB with the web demo fixtures (idempotent), so a **real-account** login has data to test with |
 | `npm run demo:pdfs` | Regenerates the pre-built demo invoice PDFs from the demo seed |
 
+### Skills (load on demand)
+
+CONTEXT.md covers architecture and standards; recurring **procedures** live in
+skills under `ai/skills/`, loaded only when a task calls for them:
+
+| Skill | Use it for |
+| --- | --- |
+| [`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md) | Cutting, tagging, deploying, or rolling back a release (SDLC step 6) |
+
+Each skill is a self-contained module for one recurring task — keep them
+command-first, and free of facts that drift (read versions, paths, and state from
+the code rather than restating them).
+
 ### 1. Branch setup
 
 1. Gather the task type, task name, and details first (`ai/agents/TASK.agent.md`).
@@ -83,18 +96,14 @@ the environment, say so and ask the user to verify.
 ### 6. Release — after the PR merges
 
 Once the user has merged a **feature/fix** PR into `develop` (i.e. functionality
-changed — not just docs/chore), offer/perform the release:
+changed — not just docs/chore), offer the release. The full procedure — version
+choice, release branch, the two PRs, tagging, deploy, migrations, rollback —
+lives in [`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md): load that skill
+and follow it.
 
-1. `npm run release:start` — syncs `develop`, creates `release/vX.Y.Z`, bumps the
-   api + web versions in code (`--api-only` / `--web-only` for a single
-   deployable), and commits the bump. **The bump commit is exactly what the
-   release tags will point at.**
-2. Guide the user: push the release branch → PR `release/vX.Y.Z → main` (and a
-   second PR `release/vX.Y.Z → develop` so the version bump is kept).
-3. After the merge to `main`: `npm run release:tag`, then the user pushes the
-   tags: `git push origin --tags`.
-4. If they want this version deployed: `./scripts/deploy.sh` (API) and
-   `./scripts/deploy-frontend.sh` (web). If they skip the release, don't create tags.
+In short: `npm run release:start` → push + two PRs (`→ main`, `→ develop`) →
+`npm run release:tag` → deploy (`./scripts/deploy.sh`, `./scripts/deploy-frontend.sh`).
+Not releasing this one? Then don't create tags.
 
 ---
 
@@ -126,8 +135,7 @@ All commits follow **Conventional Commits** (`feat`, `fix`, `docs`, `style`, `re
 
 - API (`api-trade-crm/`) and web (`web-trade-crm/`) are **versioned independently** (SemVer in each `package.json`).
 - Release tags are prefixed per package: `api-v0.1.0`, `web-v0.1.0`.
-- Version bumps happen on `release/*` branches — never on feature branches. Use `npm run release:start` (see [SDLC Workflow](#sdlc-workflow-agent-process)).
-- Current release: API `v0.3.0` · Web `v0.3.0`.
+- Version bumps happen on `release/*` branches — never on feature branches. Use `npm run release:start` and follow [`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md); read the current versions from each `package.json` (or the git tags) rather than from a doc.
 
 ### Typical Feature Flow
 
@@ -194,50 +202,18 @@ Docker network or via SSH.
 
 ### Deployment Commands
 
-#### API (Lightsail)
+The full deploy, tag, and manual-migration sequence lives in
+[`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md) (*Deploy*, *Production
+operations*). In short:
 
 ```bash
-cp .env.production.example .env.production   # fill in secrets
-SSH_KEY=~/.ssh/id_ed25519 ./scripts/deploy.sh
+SSH_KEY=~/.ssh/id_ed25519 ./scripts/deploy.sh   # API: rsync + compose up --build
+./scripts/deploy-frontend.sh                     # Web: build + S3 sync + CF invalidate
 ```
 
-`deploy.sh` rsyncs the repo to the instance and runs
-`docker compose -f docker-compose.prod.yml up -d --build`, which builds the API
-image, runs migrations + seed, and starts the stack.
-
-#### Frontend (S3 + CloudFront)
-
-```bash
-./scripts/deploy-frontend.sh
-```
-
-Builds the SPA (reads `VITE_API_BASE` from `web-trade-crm/.env.production`),
-syncs `dist/` to the `sprout-crm-web` bucket, and invalidates CloudFront.
-
-#### Database Migrations (manual)
-
-Migrations run automatically on container start. To run manually, SSH in:
-
-```bash
-ssh ubuntu@<public_ip>
-cd ~/trade-crm
-docker compose -f docker-compose.prod.yml exec api \
-  node node_modules/typeorm/cli.js migration:run -d dist/config/data-source.js
-```
-
-#### Database access (manual)
-
-```bash
-ssh ubuntu@<public_ip>
-cd ~/trade-crm
-docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d trade_crm
-```
-
-For a local GUI client, forward the port (Postgres is bound to localhost only):
-
-```bash
-ssh -L 5432:127.0.0.1:5432 ubuntu@<public_ip>
-```
+Migrations run automatically on container start; manual migration runs and
+database access are in [`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md)
+(*Production operations*).
 
 #### Database backups (automatic)
 
