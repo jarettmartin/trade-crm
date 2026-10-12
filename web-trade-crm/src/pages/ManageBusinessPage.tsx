@@ -120,80 +120,84 @@ const ManageBusinessPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <div className="page-container" style={{ marginTop: "20px" }}>
-          <IonItem>
-            <IonLabel position="stacked">Business Name</IonLabel>
-            <IonInput
-              value={businessName}
-              onIonInput={(e) => setBusinessName(e.detail.value!)}
-              placeholder="Your Company Inc."
-            />
-          </IonItem>
+        <div className="capped-container" style={{ marginTop: "20px" }}>
+          <div className="form-card">
+            <IonItem>
+              <IonLabel position="stacked">Business Name</IonLabel>
+              <IonInput
+                value={businessName}
+                onIonInput={(e) => setBusinessName(e.detail.value!)}
+                placeholder="Your Company Inc."
+              />
+            </IonItem>
 
-          <IonItem>
-            <IonLabel position="stacked">Business Email</IonLabel>
-            <IonInput
-              type="email"
-              value={businessEmail}
-              onIonInput={(e) => setBusinessEmail(e.detail.value!)}
-              placeholder="billing@company.com"
-            />
-          </IonItem>
+            <IonItem>
+              <IonLabel position="stacked">Business Email</IonLabel>
+              <IonInput
+                type="email"
+                value={businessEmail}
+                onIonInput={(e) => setBusinessEmail(e.detail.value!)}
+                placeholder="billing@company.com"
+              />
+            </IonItem>
 
-          <IonItem>
-            <IonLabel position="stacked">Phone</IonLabel>
-            <IonInput
-              type="tel"
-              inputMode="numeric"
-              value={formatPhone(phone)}
-              onIonInput={(e) => {
-                const digits = stripPhone(e.detail.value || "").slice(0, 10);
-                setPhone(digits);
-                if (e.target) {
-                  (e.target as HTMLIonInputElement).value = formatPhone(digits);
+            <IonItem>
+              <IonLabel position="stacked">Phone</IonLabel>
+              <IonInput
+                type="tel"
+                inputMode="numeric"
+                value={formatPhone(phone)}
+                onIonInput={(e) => {
+                  const digits = stripPhone(e.detail.value || "").slice(0, 10);
+                  setPhone(digits);
+                  if (e.target) {
+                    (e.target as HTMLIonInputElement).value =
+                      formatPhone(digits);
+                  }
+                }}
+                placeholder="(555) 555-0100"
+              />
+            </IonItem>
+
+            <IonItem>
+              <IonLabel position="stacked">Default Tax %</IonLabel>
+              <IonInput
+                type="number"
+                value={defaultTaxPercent}
+                onIonInput={(e) =>
+                  setDefaultTaxPercent(Number(e.detail.value) || 0)
                 }
-              }}
-              placeholder="(555) 555-0100"
-            />
-          </IonItem>
+                placeholder="13"
+              />
+            </IonItem>
 
-          <IonItem>
-            <IonLabel position="stacked">Default Tax %</IonLabel>
-            <IonInput
-              type="number"
-              value={defaultTaxPercent}
-              onIonInput={(e) =>
-                setDefaultTaxPercent(Number(e.detail.value) || 0)
-              }
-              placeholder="13"
-            />
-          </IonItem>
+            <IonNote
+              color="medium"
+              style={{ display: "block", margin: "4px 16px 0", fontSize: 12 }}
+            >
+              Default tax rate used when creating invoices. Can be changed per
+              invoice.
+            </IonNote>
 
-          <IonNote
-            color="medium"
-            style={{ display: "block", margin: "4px 16px 0", fontSize: 12 }}
-          >
-            Default tax rate used when creating invoices. Can be changed per
-            invoice.
-          </IonNote>
-
-          <IonItem style={{ marginTop: 16 }}>
-            <IonLabel position="stacked">
-              Payment Instructions (shown on invoices)
-            </IonLabel>
-            <IonTextarea
-              rows={4}
-              value={invoicePaymentMethodNote}
-              onIonInput={(e) => setInvoicePaymentMethodNote(e.detail.value!)}
-              placeholder='e.g. "Please send e-transfers to billing@company.com"'
-            />
-          </IonItem>
+            <IonItem style={{ marginTop: 16 }}>
+              <IonLabel position="stacked">
+                Payment Instructions (shown on invoices)
+              </IonLabel>
+              <IonTextarea
+                rows={4}
+                value={invoicePaymentMethodNote}
+                onIonInput={(e) =>
+                  setInvoicePaymentMethodNote(e.detail.value!)
+                }
+                placeholder='e.g. "Please send e-transfers to billing@company.com"'
+              />
+            </IonItem>
+          </div>
 
           <IonButton
             expand="block"
             onClick={handleSave}
             disabled={saving || !hasChanges}
-            style={{ marginTop: 20 }}
           >
             {saving ? <IonSpinner /> : "Save Changes"}
           </IonButton>

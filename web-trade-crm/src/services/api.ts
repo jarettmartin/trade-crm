@@ -169,7 +169,15 @@ export interface JobLineItemResult {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-  sortOrder: number;
+  catalogItemId?: string;
+}
+
+export interface CreateJobLineItemPayload {
+  type: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
   catalogItemId?: string;
 }
 
@@ -208,6 +216,32 @@ export interface CreateCatalogItemPayload {
   type: string;
   description: string;
   unitPrice: number;
+}
+
+export interface FeedbackResult {
+  id: string;
+  type: string;
+  subject?: string;
+  message: string;
+  userId?: string;
+  userEmail?: string;
+  createdAt: string;
+}
+
+export interface PaginatedFeedbackResponse {
+  data: FeedbackResult[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateFeedbackPayload {
+  type: string;
+  subject?: string;
+  message: string;
 }
 
 export interface InvoiceResult {
@@ -401,7 +435,7 @@ class ApiService {
     return this.request<CustomerResult>(`/customers/${id}`);
   }
 
-  async updateCustomer(id: string, payload: Record<string, unknown>) {
+  async updateCustomer(id: string, payload: CreateCustomerPayload) {
     if (this.demoMode) {
       return demoService.updateCustomer(id, payload);
     }
@@ -499,6 +533,26 @@ class ApiService {
     });
   }
 
+  // ---- Feedback ----
+  async submitFeedback(payload: CreateFeedbackPayload) {
+    if (this.demoMode) {
+      return demoService.submitFeedback(payload);
+    }
+    return this.request<FeedbackResult>("/feedback", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async fetchFeedback(page: number = 1, limit: number = 10) {
+    if (this.demoMode) {
+      return demoService.fetchFeedback(page, limit);
+    }
+    return this.request<PaginatedFeedbackResponse>(
+      `/feedback?page=${page}&limit=${limit}`,
+    );
+  }
+
   async fetchJobs(page: number = 1, limit: number = 10, status?: string) {
     if (this.demoMode) {
       return demoService.fetchJobs(page, limit, status);
@@ -524,6 +578,42 @@ class ApiService {
     return this.request(`/jobs/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
+    });
+  }
+
+  async createJobNote(
+    jobId: string,
+    payload: { note: string; userId: string },
+  ): Promise<JobNoteResult> {
+    if (this.demoMode) {
+      return demoService.createJobNote(jobId, payload);
+    }
+    return this.request<JobNoteResult>(`/jobs/${jobId}/notes`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async createJobLineItem(
+    jobId: string,
+    payload: CreateJobLineItemPayload,
+  ): Promise<JobLineItemResult> {
+    if (this.demoMode) {
+      return demoService.createJobLineItem(jobId, payload);
+    }
+    return this.request<JobLineItemResult>(`/jobs/${jobId}/line-items`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteJobLineItem(jobId: string, lineItemId: string): Promise<void> {
+    if (this.demoMode) {
+      demoService.deleteJobLineItem(jobId, lineItemId);
+      return;
+    }
+    await this.request(`/jobs/${jobId}/line-items/${lineItemId}`, {
+      method: "DELETE",
     });
   }
 

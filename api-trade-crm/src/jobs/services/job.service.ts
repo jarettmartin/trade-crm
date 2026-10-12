@@ -6,6 +6,8 @@ import { JobStatus } from '../../common/enums/job-status.enum';
 import { JobNote } from '../entities/job-note.entity';
 import { JobLineItem } from '../entities/job-line-item.entity';
 import { CreateJobDto } from '../dto/create-job.dto';
+import { CreateJobLineItemDto } from '../dto/create-job-line-item.dto';
+import { CreateJobNoteDto } from '../dto/create-job-note.dto';
 import { UpdateJobDto } from '../dto/update-job.dto';
 
 @Injectable()
@@ -67,9 +69,12 @@ export class JobService {
         lineItems: true,
         invoices: { emailAttempts: true },
       },
+      // Notes and line items are shown in the order they were added. The order
+      // is derived from the row timestamps, so no client value decides it and
+      // `id` keeps it total when two rows share a timestamp.
       order: {
-        notes: { createdAt: 'ASC' },
-        lineItems: { sortOrder: 'ASC' },
+        notes: { createdAt: 'ASC', id: 'ASC' },
+        lineItems: { createdAt: 'ASC', id: 'ASC' },
         invoices: { createdAt: 'DESC' },
       },
     });
@@ -95,8 +100,6 @@ export class JobService {
   }
 
   async update(id: string, dto: UpdateJobDto, tenantId: string) {
-    const { notes, lineItems, ...jobData } = dto;
-
     const job = await this.jobRepository.findOne({
       where: { id, tenantId },
     });
@@ -106,45 +109,72 @@ export class JobService {
     }
 
     // Update job fields
-    Object.assign(job, jobData);
+    Object.assign(job, dto);
     await this.jobRepository.save(job);
 
-    // Replace notes if provided
-    if (notes !== undefined) {
-      await this.noteRepository.delete({ jobId: id, tenantId });
-      if (notes.length > 0) {
-        const noteEntities = notes.map((n) =>
-          this.noteRepository.create({
-            ...n,
-            tenantId,
-            jobId: id,
-          }),
-        );
-        await this.noteRepository.save(noteEntities);
-      }
-    }
+    // Return the same shape as GET /jobs/:id
+    return this.findById(id, tenantId);
+  }
 
-    // Replace line items if provided
-    if (lineItems !== undefined) {
-      await this.lineItemRepository.delete({ jobId: id, tenantId });
-      if (lineItems.length > 0) {
-        const lineItemEntities = lineItems.map((li) =>
-          this.lineItemRepository.create({
-            ...li,
-            tenantId,
-            jobId: id,
-          }),
-        );
-        await this.lineItemRepository.save(lineItemEntities);
-      }
-    }
-
-    // Return job with notes and line items
-    const updatedJob = await this.jobRepository.findOne({
-      where: { id, tenantId },
-      relations: { notes: true, lineItems: true },
+  /**
+   * Notes are cumulative and non-editable, so a caller adds one note at a time
+   * rather than replacing the whole collection on an update.
+   */
+  async createNote(jobId: string, dto: CreateJobNoteDto, tenantId: string) {
+    const job = await this.jobRepository.findOne({
+      where: { id: jobId, tenantId },
     });
 
-    return updatedJob;
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    const note = await this.noteRepository.save(
+      this.noteRepository.create({ ...dto, jobId, tenantId }),
+    );
+
+    // Reload so the response matches the shape returned by GET /jobs/:id.
+    const created = await this.noteRepository.findOne({
+      where: { id: note.id, tenantId },
+      relations: { user: true },
+    });
+
+    return created ?? note;
+  }
+
+  /**
+   * Line items are added and removed one at a time, like notes, so an update
+   * never rewrites rows that are already attached to the job.
+   */
+  async createLineItem(
+    jobId: string,
+    dto: CreateJobLineItemDto,
+    tenantId: string,
+  ) {
+    const job = await this.jobRepository.findOne({
+      where: { id: jobId, tenantId },
+    });
+
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    return this.lineItemRepository.save(
+      this.lineItemRepository.create({ ...dto, jobId, tenantId }),
+    );
+  }
+
+  async deleteLineItem(jobId: string, lineItemId: string, tenantId: string) {
+    const result = await this.lineItemRepository.delete({
+      id: lineItemId,
+      jobId,
+      tenantId,
+    });
+
+    if (!result.affected) {
+      throw new NotFoundException('Line item not found');
+    }
+
+    return { success: true };
   }
 }

@@ -20,6 +20,8 @@ import {
   peopleSharp,
   pricetagsOutline,
   pricetagsSharp,
+  chatbubbleEllipsesOutline,
+  chatbubbleEllipsesSharp,
   logOutOutline,
 } from "ionicons/icons";
 import { useAuth } from "../contexts/AuthContext";
@@ -56,6 +58,12 @@ const appPages: AppPage[] = [
     url: "/manage-business",
     iosIcon: businessOutline,
     mdIcon: businessSharp,
+  },
+  {
+    title: "Feedback",
+    url: "/feedback",
+    iosIcon: chatbubbleEllipsesOutline,
+    mdIcon: chatbubbleEllipsesSharp,
   },
 ];
 

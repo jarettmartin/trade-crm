@@ -92,13 +92,94 @@ ion-segment-button.md::part(indicator-background) {
   display: none;
 }
 
+/* ===== FORM CONTROLS =====
+ * iOS mode renders standalone search / select / textarea controls without a
+ * visible border, so they blend into the page. Draw the border around the whole
+ * control "section" (the search icon + input, or a label + control) rather than
+ * around the inner input, so each field reads as one boxed unit. Controls that
+ * already sit inside an `ion-item` keep the item's own bottom hairline. */
+ion-searchbar {
+  /* Ionic defines --background / --box-shadow inside the component's shadow
+     `:host` (specificity 0,1,0), so a plain `ion-searchbar` rule can't beat it —
+     force the value. The host is painted as one control below (it contains the
+     search icon), so the inner input must not paint its own box. */
+  --background: transparent !important;
+  --box-shadow: none !important;
+  background: var(--ion-item-background, #ffffff);
+  border: 1px solid var(--ion-color-medium);
+  border-radius: 8px;
+}
+
+/* A bit more breathing room between the search icon and the input text. Ionic
+   hard-codes that gap (1.875rem start padding on the input, i.e. ~3px of actual
+   space) behind a 4-class selector, so the value has to be forced. */
+.searchbar-input {
+  padding-inline-start: 40px !important;
+}
+
+/* A bordered section that groups a label together with its control (e.g. the
+   Jobs status filter, the Create Job address picker). */
+.field-group {
+  background: var(--ion-item-background, #ffffff);
+  border: 1px solid var(--ion-color-medium);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+/* Standalone textarea with no label of its own — the control is its own
+   section. Used for the job "add a note" field. Ionic paints --background on
+   the inner scoped wrapper, which has square corners that bleed past the host's
+   rounded border (the host has no padding to inset it), so paint the box on the
+   host instead — the same trick as the searchbar. */
+ion-textarea.control-bordered {
+  --background: transparent;
+  background: var(--ion-item-background, #ffffff);
+  --padding-start: 10px;
+  --padding-end: 10px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  border: 1px solid var(--ion-color-medium);
+  border-radius: 8px;
+}
+
+/* Encapsulates a whole form (or one group of fields) in a single bordered card,
+   matching the dynamic address blocks — same border, radius and padding, just
+   without the header/remove button. */
+.form-card {
+  border: 1px solid var(--ion-color-light-shade);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
 /* ===== SHARED PAGE LAYOUT =====
- * Applies a consistent mobile-friendly content width across all pages.
- * Pages wrap their IonContent children in this class. */
+ * Every page wraps its IonContent children in a layout container so widths
+ * stay consistent across the app. Let IonContent's `ion-padding` provide the
+ * surrounding gutter.
+ *
+ * Rule of thumb: pages that render a table take the full width; pages of forms
+ * or reading content are capped. Mixed pages (job detail, feedback) use a
+ * `.page-container` for the full-width parts and `.capped-container` for their
+ * form sections. */
 .page-container {
   width: 100%;
-  max-width: 500px;
+}
+
+/* `.capped-container` — a centered 600px cap for forms, detail views, and
+   reading content. Below 600px it behaves just like `.page-container`. */
+.capped-container {
+  width: 100%;
+  max-width: 600px;
   margin-left: auto;
+  margin-right: auto;
+}
+
+/* `.capped-container--left` — the same cap, flush left instead of centered.
+   Used when the capped blocks sit below full-width content (the note, line
+   item, costing and invoice sections on the job detail page) so they stay
+   aligned with the full-width lists above them. */
+.capped-container--left {
+  margin-left: 0;
   margin-right: auto;
 }
 

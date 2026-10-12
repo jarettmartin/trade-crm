@@ -11,10 +11,12 @@ import { JobNote } from '../jobs/entities/job-note.entity';
 import { JobLineItem } from '../jobs/entities/job-line-item.entity';
 import { Invoice } from '../invoices/entities/invoice.entity';
 import { CatalogItem } from '../catalog/entities/catalog-item.entity';
+import { Feedback } from '../feedback/entities/feedback.entity';
 import { CustomerType } from '../common/enums/customer-type.enum';
 import { JobStatus } from '../common/enums/job-status.enum';
 import { JobLineItemType } from '../common/enums/job-line-item-type.enum';
 import { CatalogItemType } from '../common/enums/catalog-item-type.enum';
+import { FeedbackType } from '../common/enums/feedback-type.enum';
 import { InvoiceStatus } from '../common/enums/invoice-status.enum';
 
 /**
@@ -64,7 +66,6 @@ interface DemoLineItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-  sortOrder?: number;
   catalogItemId?: string;
 }
 
@@ -105,6 +106,16 @@ interface DemoCatalogItem {
   type: string;
   description: string;
   unitPrice: number;
+}
+
+interface DemoFeedback {
+  id: string;
+  type: string;
+  subject?: string;
+  message: string;
+  userId?: string;
+  userEmail?: string;
+  createdAt: string;
 }
 
 interface DemoTenant {
@@ -169,6 +180,8 @@ async function seed() {
     const jobsDemo: DemoJob[] = loadJson<DemoJob[]>('jobs.json');
     const catalogItemsDemo: DemoCatalogItem[] =
       loadJson<DemoCatalogItem[]>('catalogItems.json');
+    const feedbackDemo: DemoFeedback[] =
+      loadJson<DemoFeedback[]>('feedback.json');
 
     // ---- Resolve tenant + reference user -------------------------------
     const firstUsers = await em.find(User, {
@@ -320,6 +333,30 @@ async function seed() {
       catalogItemsCreated++;
     }
 
+    // ---- Feedback submissions -------------------------------------------
+    let feedbackCreated = 0;
+    for (const f of feedbackDemo) {
+      const existing = await em.findOne(Feedback, {
+        where: {
+          tenantId: tenant.id,
+          message: f.message,
+        },
+      });
+      if (existing) continue;
+
+      const submission = em.create(Feedback, {
+        tenantId: tenant.id,
+        userId: refUser.id,
+        userEmail: refUser.email,
+        type: f.type as FeedbackType,
+        subject: f.subject || undefined,
+        message: f.message,
+        createdAt: new Date(f.createdAt),
+      });
+      await em.save(submission);
+      feedbackCreated++;
+    }
+
     // ---- Jobs + notes + line items + invoices ---------------------------
     const customersById = new Map(customersDemo.map((c) => [c.id, c]));
     let jobsCreated = 0;
@@ -388,7 +425,6 @@ async function seed() {
           quantity: li.quantity,
           unitPrice: li.unitPrice,
           lineTotal: li.lineTotal,
-          sortOrder: li.sortOrder ?? 0,
           catalogItemId: li.catalogItemId
             ? catalogItemIdMap.get(li.catalogItemId)
             : undefined,
@@ -432,7 +468,6 @@ async function seed() {
             quantity: Number(li.quantity),
             unitPrice: Number(li.unitPrice),
             lineTotal: Number(li.lineTotal),
-            sortOrder: li.sortOrder ?? 0,
           })),
           totals: {
             subtotal: inv.subtotal,
@@ -472,6 +507,7 @@ async function seed() {
       `Jobs created      : ${jobsCreated} (notes: ${notesCreated}, line items: ${lineItemsCreated})`,
     );
     console.log(`Catalog items    : ${catalogItemsCreated}`);
+    console.log(`Feedback         : ${feedbackCreated}`);
     console.log(`Invoices created  : ${invoicesCreated}`);
     console.log('Demo seed complete.');
   } catch (error) {

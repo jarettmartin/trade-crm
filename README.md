@@ -52,6 +52,8 @@ trade-crm/
 ├── ai/
 │   ├── agents/
 │   │   └── TASK.agent.md   # AI task agent instructions
+│   ├── skills/
+│   │   └── RELEASE.skill.md # Release procedure (loaded on demand)
 │   └── CONTEXT.md          # AI project context (architecture, standards)
 ├── docs/
 │   ├── GITFLOW.md          # Branching & release workflow
@@ -263,6 +265,7 @@ ssh ubuntu@<public_ip> \
 | `AWS_SECRET_ACCESS_KEY` | IAM secret key for Cognito admin + SES sends |
 | `SES_REGION`            | AWS SES region (invoice emailing)             |
 | `SES_FROM_EMAIL`        | From address for invoice emails (must be part of a verified SES identity) |
+| `FEEDBACK_NOTIFY_EMAIL` | Support inbox for feedback notifications (unset/empty → notifications disabled; no default is hardcoded, so set it in the gitignored `.env`) |
 
 ### Frontend (build-time)
 
@@ -323,6 +326,13 @@ parity updates, local sign-off testing (demo + real accounts, see
 [docs/GITFLOW.md](docs/GITFLOW.md) and `README.md`), Conventional Commits left
 for you to push, and `npm run release:start` / `npm run release:tag` for
 releasing after your PR merges.
+
+Recurring procedures are extracted into **skills** under
+[`ai/skills/`](ai/skills/) — self-contained modules the agent loads only when a
+task needs them, which keeps [`ai/CONTEXT.md`](ai/CONTEXT.md) focused on
+architecture and standards. The first one is
+[`ai/skills/RELEASE.skill.md`](ai/skills/RELEASE.skill.md) (release → tag →
+deploy).
 
 ### Example prompt
 

@@ -31,6 +31,8 @@ export class InvoiceService {
         customerAddress: true,
         lineItems: true,
       },
+      // Snapshot the items in the order they were added.
+      order: { lineItems: { createdAt: 'ASC', id: 'ASC' } },
     });
 
     if (!job) {
@@ -90,7 +92,6 @@ export class InvoiceService {
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
         lineTotal: Number(item.lineTotal),
-        sortOrder: item.sortOrder,
       })),
       totals: {
         subtotal: dto.subtotal,

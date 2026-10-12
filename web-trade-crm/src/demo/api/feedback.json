@@ -1,0 +1,28 @@
+[
+  {
+    "id": "demo-feedback-1",
+    "type": "FEATURE_REQUEST",
+    "subject": "Export invoice list to CSV",
+    "message": "It would help at tax time if I could export my invoices for a date range as a CSV file.",
+    "userId": "demo-user-1",
+    "userEmail": "demo@sprout-crm.com",
+    "createdAt": "2026-04-18T14:05:00.000Z"
+  },
+  {
+    "id": "demo-feedback-2",
+    "type": "BUG",
+    "subject": "Job list pagination jumps on mobile",
+    "message": "When the row count changes between pages the pagination buttons move up and down, which is hard to tap on my phone.",
+    "userId": "demo-user-1",
+    "userEmail": "demo@sprout-crm.com",
+    "createdAt": "2026-04-25T09:40:00.000Z"
+  },
+  {
+    "id": "demo-feedback-3",
+    "type": "CONTACT",
+    "message": "Please call me about adding a second user for my office manager.",
+    "userId": "demo-user-1",
+    "userEmail": "demo@sprout-crm.com",
+    "createdAt": "2026-04-30T16:20:00.000Z"
+  }
+]

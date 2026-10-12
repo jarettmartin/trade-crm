@@ -23,6 +23,19 @@ identical. Full agent instructions live in `ai/agents/TASK.agent.md`.
 | `npm run demo:seed` | `cd api-trade-crm && npm run db:seed-demo` — seeds the local DB with the web demo fixtures (idempotent), so a **real-account** login has data to test with |
 | `npm run demo:pdfs` | Regenerates the pre-built demo invoice PDFs from the demo seed |
 
+### Skills (load on demand)
+
+CONTEXT.md covers architecture and standards; recurring **procedures** live in
+skills under `ai/skills/`, loaded only when a task calls for them:
+
+| Skill | Use it for |
+| --- | --- |
+| [`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md) | Cutting, tagging, deploying, or rolling back a release (SDLC step 6) |
+
+Each skill is a self-contained module for one recurring task — keep them
+command-first, and free of facts that drift (read versions, paths, and state from
+the code rather than restating them).
+
 ### 1. Branch setup
 
 1. Gather the task type, task name, and details first (`ai/agents/TASK.agent.md`).
@@ -42,13 +55,14 @@ pagination) or shared UI behavior must be mirrored in demo mode**, otherwise
 demo mode silently drifts from reality.
 
 1. Update `demoService.ts` to return the same shapes / behavior.
-2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`, `catalogItems.json`).
+2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`, `catalogItems.json`, `feedback.json`).
 3. Invoice fixtures changed? Regenerate the pre-built PDFs: `npm run demo:pdfs`.
 4. Want real-account logins to see the data too? `npm run demo:seed`.
 
 ### 3. Implement + update docs
 
-- Follow this file's architecture and coding standards; keep changes scoped.
+- Follow this file's architecture and coding standards — and the patterns
+  already used by comparable code — keeping changes scoped.
 - Run the relevant tests/builds (backend or frontend).
 - Update docs **only if the change makes them inaccurate** (README, `docs/`,
   this file). Don't churn docs for docs' sake.
@@ -82,18 +96,14 @@ the environment, say so and ask the user to verify.
 ### 6. Release — after the PR merges
 
 Once the user has merged a **feature/fix** PR into `develop` (i.e. functionality
-changed — not just docs/chore), offer/perform the release:
+changed — not just docs/chore), offer the release. The full procedure — version
+choice, release branch, the two PRs, tagging, deploy, migrations, rollback —
+lives in [`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md): load that skill
+and follow it.
 
-1. `npm run release:start` — syncs `develop`, creates `release/vX.Y.Z`, bumps the
-   api + web versions in code (`--api-only` / `--web-only` for a single
-   deployable), and commits the bump. **The bump commit is exactly what the
-   release tags will point at.**
-2. Guide the user: push the release branch → PR `release/vX.Y.Z → main` (and a
-   second PR `release/vX.Y.Z → develop` so the version bump is kept).
-3. After the merge to `main`: `npm run release:tag`, then the user pushes the
-   tags: `git push origin --tags`.
-4. If they want this version deployed: `./scripts/deploy.sh` (API) and
-   `./scripts/deploy-frontend.sh` (web). If they skip the release, don't create tags.
+In short: `npm run release:start` → push + two PRs (`→ main`, `→ develop`) →
+`npm run release:tag` → deploy (`./scripts/deploy.sh`, `./scripts/deploy-frontend.sh`).
+Not releasing this one? Then don't create tags.
 
 ---
 
@@ -125,8 +135,7 @@ All commits follow **Conventional Commits** (`feat`, `fix`, `docs`, `style`, `re
 
 - API (`api-trade-crm/`) and web (`web-trade-crm/`) are **versioned independently** (SemVer in each `package.json`).
 - Release tags are prefixed per package: `api-v0.1.0`, `web-v0.1.0`.
-- Version bumps happen on `release/*` branches — never on feature branches. Use `npm run release:start` (see [SDLC Workflow](#sdlc-workflow-agent-process)).
-- Current release: API `v0.3.0` · Web `v0.3.0`.
+- Version bumps happen on `release/*` branches — never on feature branches. Use `npm run release:start` and follow [`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md); read the current versions from each `package.json` (or the git tags) rather than from a doc.
 
 ### Typical Feature Flow
 
@@ -193,50 +202,18 @@ Docker network or via SSH.
 
 ### Deployment Commands
 
-#### API (Lightsail)
+The full deploy, tag, and manual-migration sequence lives in
+[`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md) (*Deploy*, *Production
+operations*). In short:
 
 ```bash
-cp .env.production.example .env.production   # fill in secrets
-SSH_KEY=~/.ssh/id_ed25519 ./scripts/deploy.sh
+SSH_KEY=~/.ssh/id_ed25519 ./scripts/deploy.sh   # API: rsync + compose up --build
+./scripts/deploy-frontend.sh                     # Web: build + S3 sync + CF invalidate
 ```
 
-`deploy.sh` rsyncs the repo to the instance and runs
-`docker compose -f docker-compose.prod.yml up -d --build`, which builds the API
-image, runs migrations + seed, and starts the stack.
-
-#### Frontend (S3 + CloudFront)
-
-```bash
-./scripts/deploy-frontend.sh
-```
-
-Builds the SPA (reads `VITE_API_BASE` from `web-trade-crm/.env.production`),
-syncs `dist/` to the `sprout-crm-web` bucket, and invalidates CloudFront.
-
-#### Database Migrations (manual)
-
-Migrations run automatically on container start. To run manually, SSH in:
-
-```bash
-ssh ubuntu@<public_ip>
-cd ~/trade-crm
-docker compose -f docker-compose.prod.yml exec api \
-  node node_modules/typeorm/cli.js migration:run -d dist/config/data-source.js
-```
-
-#### Database access (manual)
-
-```bash
-ssh ubuntu@<public_ip>
-cd ~/trade-crm
-docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d trade_crm
-```
-
-For a local GUI client, forward the port (Postgres is bound to localhost only):
-
-```bash
-ssh -L 5432:127.0.0.1:5432 ubuntu@<public_ip>
-```
+Migrations run automatically on container start; manual migration runs and
+database access are in [`ai/skills/RELEASE.skill.md`](skills/RELEASE.skill.md)
+(*Production operations*).
 
 #### Database backups (automatic)
 
@@ -276,7 +253,7 @@ Runs daily at 1am Eastern via cron on the instance
 
 ### Backend (NestJS)
 
-- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `jobs`, `invoices`, `users`
+- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `feedback`, `jobs`, `invoices`, `users`
 - Common module (`common/`) for shared guards, decorators, DTOs, entities, and enums
 - Repository pattern used exclusively — no raw queries
 - Constructor injection for all dependencies
@@ -304,6 +281,7 @@ Runs daily at 1am Eastern via cron on the instance
 - A 409 is returned if a PENDING attempt already exists for the invoice (prevents duplicate concurrent sends).
 - `JobService.findById` loads `invoices.emailAttempts` so the job-detail payload already includes per-invoice email status.
 - Customer email validation already exists: `@IsEmail() @IsOptional()` on customer DTOs and `isValidEmail()` on the frontend.
+- **Other email types reuse this plumbing**: feedback submissions email an internal notification through the same `EmailService` (`feedback-email.hbs`, no attachment) — see `### Feedback`. That is the reference pattern for a new template-based email.
 - **Node runtime note**: AWS SDK v3 will require Node >= 22 starting 2027; the API image currently uses `node:20-alpine`. Non-blocking; bump `api-trade-crm/Dockerfile` in a future change.
 
 ### Authentication (AWS Cognito)
@@ -339,7 +317,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
   - `CatalogItemSearch` — Catalog picker for the job detail page: tenant catalog is fetched up-front (`api.fetchAllCatalogItems()`, pages the endpoint at limit 100), then filtered **locally** on every keystroke across description/type/unit price. Refetched on `useIonViewWillEnter` so catalog edits/deletes land when a job page is revisited. Includes the "Add Custom Line Item" button that switches to the manual form.
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
-  - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings) + logout
+  - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings, Feedback) + logout
 - Paginated tables on the Jobs page (the primary job list) and the Manage Customers / Create Job pages (below the search bar) share `PaginatedTable`; the real API orders by `createdAt DESC` and demo mode mirrors that
 - PDF handling:
   - In-memory `pdfCache.ts` (Map<string, Blob>) caches downloaded PDFs for the session
@@ -389,10 +367,15 @@ src/
 │   ├── dto/
 │   ├── entities/
 │   └── services/
+├── feedback/                        # In-app feedback/bug/feature-request/contact submissions
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   └── services/                    # feedback.service + feedback-email.service (internal notification)
 ├── email/                            # AWS SES integration (email sending via Handlebars templates)
 │   ├── services/email.service.ts     # SESv2 SendEmail (raw MIME + attachment) + template renderer
 │   ├── email-templates.ts            # .hbs loader/compiler (subject + body per file)
-│   ├── templates/                    # Handlebars email templates (invoice-email.hbs, …)
+│   ├── templates/                    # Handlebars email templates (invoice-email.hbs, feedback-email.hbs)
 │   └── mime.ts                       # Dependency-free RFC 5322 MIME builder
 ├── invoices/                        # Invoice creation, PDF generation, emailing
 │   ├── controllers/                  # invoice.controller, invoice-email.controller
@@ -454,7 +437,8 @@ src/
 
 - Job: `title`, `description`, `status` (DRAFT/ASSIGNED/IN_PROGRESS/COMPLETED/CANCELLED), `customerId`, `customerAddressId`, `assignedUserId`, `scheduledStart/End`, `completedAt`
 - Note: `userId`, `note` (cumulative, non-editable)
-- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `sortOrder`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`)
+- `PATCH /jobs/:id` accepts job fields only — notes and line items have their own endpoints (`POST /jobs/:id/notes`, `POST /jobs/:id/line-items`, `DELETE /jobs/:id/line-items/:lineItemId`), so a child row is inserted or removed individually and existing rows keep their `id` and `createdAt`. Both child lists are returned in the order they were added (`createdAt` ASC, server-derived) — no client sends or tracks an ordering value
+- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`)
 
 ### CatalogItem
 
@@ -462,6 +446,16 @@ src/
 - `JobLineItem.catalogItemId` is an **optional reference only** — every display value is always snapshotted onto the `job_line_items` row at add time, so editing or deleting a catalog item never changes existing line items (deleting a catalog item just clears the reference via `ON DELETE SET NULL`)
 - Catalog search on the Create/Job detail page loads the tenant's items up-front and filters **locally** (description/type/unit price); pick an item to prefill the normal manual line item form (editable before applying), or use the "Add Custom Line Item" button for a blank entry
 - Management UI: `/manage-catalog` (paginated table + free-text search across description/type/price + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation)
+
+### Feedback
+
+- Support submissions from in-app users: `type` (FEEDBACK/BUG/FEATURE_REQUEST/CONTACT), `subject` (nullable, ≤255), `message` (≤1000), plus a `userEmail` snapshot of the submitter
+- `POST /feedback` (TenantGuard) records a submission — `tenantId`, `userId`, and `userEmail` always come from the verified token, never the body
+- `GET /feedback` (TenantGuard) lists the tenant's submissions newest-first (`createdAt DESC`, paginated)
+- **Deliberately has no relations/foreign keys** to `tenants` or `users` (plain scalar `tenantId`/`userId` columns) so feedback history survives a user or tenant being changed/deleted; `tenantId` still scopes every query
+- **Every submission also emails an internal notification** to the support inbox in `FEEDBACK_NOTIFY_EMAIL` (env-only: unset or empty → notifications disabled, and submissions are recorded as `SKIPPED`; no address is hardcoded in the repo, so the value lives in the gitignored `api-trade-crm/.env` locally and `.env.production` when deployed). Strictly outside the user's world: the submission is saved first, the send is fire-and-forget via `FeedbackEmailService` (template `src/email/templates/feedback-email.hbs`, From `SES_FROM_EMAIL`, Reply-To the submitter), and a failure can never slow down or fail the user's request.
+- The notification outcome is tracked on the row itself (`emailStatus` PENDING/SENT/FAILED/SKIPPED + `emailRecipient`, `emailMessageId`, `emailErrorMessage`, `emailSentAt`) but **never reaches a client**: the five columns are `@Exclude()`d on the entity and `FeedbackController` registers `ClassSerializerInterceptor`, so serialization strips them for every response shape (bare entity, array, and the paginated `{ data, meta }` wrapper). That is the canonical Nest pattern for hiding entity fields — the alternative (a response DTO + mapper) has to be remembered at every call site, which is exactly the leak this replaces. Caveat: `@Exclude()` only applies to class instances, which TypeORM returns; a plain object would pass through untouched. Recovery note: those columns are nullable and nothing is written to them by the demo seed, so pre-existing/demo-seeded rows read NULL ("not tracked") rather than a fabricated PENDING; stale PENDING rows older than 30 min are flagged FAILED on startup like `InvoiceEmailService`.
+- UI: `/feedback` (sidemenu link) — submit form + the tenant's own submission history
 
 ### Invoice
 
@@ -477,6 +471,23 @@ src/
 ---
 
 ## Coding Standards
+
+The rules below cover the parts of the codebase that must stay consistent. They
+are not a full description of the project's style, so **the existing code is the
+source of truth**:
+
+- Before writing something new, find the closest existing example of the same
+  kind of thing (page, component, service, controller, DTO, test) and follow it
+  — structure, naming, file layout, styling, error handling, test style.
+  Consistent beats clever.
+- Reuse what's already there — shared components, services/utilities, CSS
+  classes — before adding a new one. If you're about to introduce a second way
+  of doing something the codebase already does, extend the existing one
+  instead, or explain why it has to differ.
+- When a convention doesn't cover the case, pick whichever option looks most
+  like its neighbours rather than designing a new approach.
+- If a task genuinely needs a new pattern or a deliberate deviation from an
+  established one, say so in your summary and document it where it lives.
 
 ### Backend
 
@@ -494,6 +505,7 @@ src/
 
 - Singleton `api.ts` class for all HTTP — never use raw `fetch` outside of it
 - Shared components for reusable UI (CustomerSearch, CustomerTable, PaginatedTable, Menu)
+- Shared layout and styling classes live in `src/theme/variables.css` (page containers, form cards, form controls) — reuse them instead of page-local styles, and read the comment above a class to see where it's meant to be used
 - Shared services for cross-cutting concerns (format, validation, pdfCache)
 - `IonActionSheet` for inline status changes (invoice status)
 - `IonSelect` + `interface="popover"` for dropdown menus
