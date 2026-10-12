@@ -244,6 +244,23 @@ export interface CreateFeedbackPayload {
   message: string;
 }
 
+/** A submission from the public (unauthenticated) contact form. */
+export interface ContactSubmissionResult {
+  id: string;
+  type: string;
+  email: string;
+  subject?: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface CreateContactSubmissionPayload {
+  type: string;
+  email: string;
+  subject?: string;
+  message: string;
+}
+
 export interface InvoiceResult {
   id: string;
   invoiceNumber: number;
@@ -551,6 +568,18 @@ class ApiService {
     return this.request<PaginatedFeedbackResponse>(
       `/feedback?page=${page}&limit=${limit}`,
     );
+  }
+
+  // ---- Public contact form ----
+  // Unguarded endpoint: the unauthenticated contact page has no token to send.
+  async submitContact(payload: CreateContactSubmissionPayload) {
+    if (this.demoMode) {
+      return demoService.submitContact(payload);
+    }
+    return this.request<ContactSubmissionResult>("/contact", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   }
 
   async fetchJobs(page: number = 1, limit: number = 10, status?: string) {

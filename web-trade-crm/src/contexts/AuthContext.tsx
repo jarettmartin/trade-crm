@@ -141,6 +141,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       isAuthenticated: false,
       isLoading: false,
     });
+    // Hard redirect to the public home page. Swapping the authenticated outlet
+    // for the public one leaves Ionic's router stack stale (the URL stays on an
+    // authenticated-only path and nothing renders), so mirror `login()` and do a
+    // full page navigation to reset it.
+    window.location.href = "/";
   }, []);
 
   // Keep the ref in sync so the api callback always calls the latest logout

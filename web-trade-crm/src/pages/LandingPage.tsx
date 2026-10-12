@@ -2,38 +2,23 @@ import { useEffect } from "react";
 import {
   IonButton,
   IonContent,
-  IonHeader,
   IonPage,
-  IonTitle,
-  IonToolbar,
-  IonButtons,
   IonText,
   IonCard,
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
 } from "@ionic/react";
-import { useHistory } from "react-router-dom";
+import PublicHeader from "../components/PublicHeader";
 
 const LandingPage: React.FC = () => {
   useEffect(() => {
     document.title = "Sprout CRM";
   }, []);
 
-  const history = useHistory();
-
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Sprout CRM</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={() => history.push("/sign-in")}>
-              Sign In
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <PublicHeader />
       <IonContent className="ion-padding">
         <div className="capped-container">
           {/* Hero Section */}

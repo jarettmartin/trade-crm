@@ -1,0 +1,95 @@
+/* ===== PUBLIC HEADER =====
+ * Responsive header for the unauthenticated space:
+ *   - >= 992px (desktop): inline horizontal nav — logo + links + actions
+ *   - < 992px (mobile): hamburger that opens the PublicMenu drawer; the text
+ *     links move into that drawer, while the logo and the Try Demo / Login
+ *     buttons stay in the bar.
+ * 992px matches Ionic's default split-pane breakpoint, so the public space
+ * collapses at the same width as the rest of the app. */
+.public-header {
+  --min-height: 60px;
+}
+
+.public-header__inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.public-header__logo {
+  display: block;
+  height: 32px;
+  width: auto;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.public-header__links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.public-header__item {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  margin: 0;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+  white-space: nowrap;
+}
+
+button.public-header__item {
+  cursor: pointer;
+}
+
+button.public-header__item:hover {
+  color: var(--ion-color-primary);
+}
+
+/* Items that don't route anywhere yet — visible but not interactive. */
+.public-header__item--inactive {
+  color: var(--ion-color-medium);
+  cursor: default;
+}
+
+/* Current page — highlighted in the brand green. */
+.public-header__item--active {
+  color: var(--ion-color-primary);
+}
+
+.public-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Hamburger is mobile-only (see the media query below). */
+.public-header__hamburger {
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .public-header__hamburger {
+    display: inline-flex;
+  }
+
+  /* Tighter gaps to leave room for the CTAs alongside the logo. */
+  .public-header__inner {
+    gap: 12px;
+  }
+
+  /* Only the text links collapse into the PublicMenu drawer. */
+  .public-header__links {
+    display: none;
+  }
+}
