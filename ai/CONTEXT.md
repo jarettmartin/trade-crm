@@ -42,13 +42,14 @@ pagination) or shared UI behavior must be mirrored in demo mode**, otherwise
 demo mode silently drifts from reality.
 
 1. Update `demoService.ts` to return the same shapes / behavior.
-2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`, `catalogItems.json`).
+2. Update the fixtures in `src/demo/api/` (`tenant.json`, `customers.json`, `jobs.json`, `catalogItems.json`, `feedback.json`).
 3. Invoice fixtures changed? Regenerate the pre-built PDFs: `npm run demo:pdfs`.
 4. Want real-account logins to see the data too? `npm run demo:seed`.
 
 ### 3. Implement + update docs
 
-- Follow this file's architecture and coding standards; keep changes scoped.
+- Follow this file's architecture and coding standards — and the patterns
+  already used by comparable code — keeping changes scoped.
 - Run the relevant tests/builds (backend or frontend).
 - Update docs **only if the change makes them inaccurate** (README, `docs/`,
   this file). Don't churn docs for docs' sake.
@@ -276,7 +277,7 @@ Runs daily at 1am Eastern via cron on the instance
 
 ### Backend (NestJS)
 
-- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `jobs`, `invoices`, `users`
+- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `feedback`, `jobs`, `invoices`, `users`
 - Common module (`common/`) for shared guards, decorators, DTOs, entities, and enums
 - Repository pattern used exclusively — no raw queries
 - Constructor injection for all dependencies
@@ -304,6 +305,7 @@ Runs daily at 1am Eastern via cron on the instance
 - A 409 is returned if a PENDING attempt already exists for the invoice (prevents duplicate concurrent sends).
 - `JobService.findById` loads `invoices.emailAttempts` so the job-detail payload already includes per-invoice email status.
 - Customer email validation already exists: `@IsEmail() @IsOptional()` on customer DTOs and `isValidEmail()` on the frontend.
+- **Other email types reuse this plumbing**: feedback submissions email an internal notification through the same `EmailService` (`feedback-email.hbs`, no attachment) — see `### Feedback`. That is the reference pattern for a new template-based email.
 - **Node runtime note**: AWS SDK v3 will require Node >= 22 starting 2027; the API image currently uses `node:20-alpine`. Non-blocking; bump `api-trade-crm/Dockerfile` in a future change.
 
 ### Authentication (AWS Cognito)
@@ -339,7 +341,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
   - `CatalogItemSearch` — Catalog picker for the job detail page: tenant catalog is fetched up-front (`api.fetchAllCatalogItems()`, pages the endpoint at limit 100), then filtered **locally** on every keystroke across description/type/unit price. Refetched on `useIonViewWillEnter` so catalog edits/deletes land when a job page is revisited. Includes the "Add Custom Line Item" button that switches to the manual form.
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
-  - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings) + logout
+  - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings, Feedback) + logout
 - Paginated tables on the Jobs page (the primary job list) and the Manage Customers / Create Job pages (below the search bar) share `PaginatedTable`; the real API orders by `createdAt DESC` and demo mode mirrors that
 - PDF handling:
   - In-memory `pdfCache.ts` (Map<string, Blob>) caches downloaded PDFs for the session
@@ -389,10 +391,15 @@ src/
 │   ├── dto/
 │   ├── entities/
 │   └── services/
+├── feedback/                        # In-app feedback/bug/feature-request/contact submissions
+│   ├── controllers/
+│   ├── dto/
+│   ├── entities/
+│   └── services/                    # feedback.service + feedback-email.service (internal notification)
 ├── email/                            # AWS SES integration (email sending via Handlebars templates)
 │   ├── services/email.service.ts     # SESv2 SendEmail (raw MIME + attachment) + template renderer
 │   ├── email-templates.ts            # .hbs loader/compiler (subject + body per file)
-│   ├── templates/                    # Handlebars email templates (invoice-email.hbs, …)
+│   ├── templates/                    # Handlebars email templates (invoice-email.hbs, feedback-email.hbs)
 │   └── mime.ts                       # Dependency-free RFC 5322 MIME builder
 ├── invoices/                        # Invoice creation, PDF generation, emailing
 │   ├── controllers/                  # invoice.controller, invoice-email.controller
@@ -464,6 +471,16 @@ src/
 - Catalog search on the Create/Job detail page loads the tenant's items up-front and filters **locally** (description/type/unit price); pick an item to prefill the normal manual line item form (editable before applying), or use the "Add Custom Line Item" button for a blank entry
 - Management UI: `/manage-catalog` (paginated table + free-text search across description/type/price + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation)
 
+### Feedback
+
+- Support submissions from in-app users: `type` (FEEDBACK/BUG/FEATURE_REQUEST/CONTACT), `subject` (nullable, ≤255), `message` (≤1000), plus a `userEmail` snapshot of the submitter
+- `POST /feedback` (TenantGuard) records a submission — `tenantId`, `userId`, and `userEmail` always come from the verified token, never the body
+- `GET /feedback` (TenantGuard) lists the tenant's submissions newest-first (`createdAt DESC`, paginated)
+- **Deliberately has no relations/foreign keys** to `tenants` or `users` (plain scalar `tenantId`/`userId` columns) so feedback history survives a user or tenant being changed/deleted; `tenantId` still scopes every query
+- **Every submission also emails an internal notification** to the support inbox in `FEEDBACK_NOTIFY_EMAIL` (env-only: unset or empty → notifications disabled, and submissions are recorded as `SKIPPED`; no address is hardcoded in the repo, so the value lives in the gitignored `api-trade-crm/.env` locally and `.env.production` when deployed). Strictly outside the user's world: the submission is saved first, the send is fire-and-forget via `FeedbackEmailService` (template `src/email/templates/feedback-email.hbs`, From `SES_FROM_EMAIL`, Reply-To the submitter), and a failure can never slow down or fail the user's request.
+- The notification outcome is tracked on the row itself (`emailStatus` PENDING/SENT/FAILED/SKIPPED + `emailRecipient`, `emailMessageId`, `emailErrorMessage`, `emailSentAt`) but **never reaches a client**: the five columns are `@Exclude()`d on the entity and `FeedbackController` registers `ClassSerializerInterceptor`, so serialization strips them for every response shape (bare entity, array, and the paginated `{ data, meta }` wrapper). That is the canonical Nest pattern for hiding entity fields — the alternative (a response DTO + mapper) has to be remembered at every call site, which is exactly the leak this replaces. Caveat: `@Exclude()` only applies to class instances, which TypeORM returns; a plain object would pass through untouched. Recovery note: those columns are nullable and nothing is written to them by the demo seed, so pre-existing/demo-seeded rows read NULL ("not tracked") rather than a fabricated PENDING; stale PENDING rows older than 30 min are flagged FAILED on startup like `InvoiceEmailService`.
+- UI: `/feedback` (sidemenu link) — submit form + the tenant's own submission history
+
 ### Invoice
 
 - `jobId`, `invoiceNumber` (8-digit, starts at 88880001), `version` (per job), `status` (DRAFT/ISSUED/PAID/VOID/SUPERSEDED), `subtotal`, `taxPercent`, `taxAmount`, `total`, `issuedAt`, `paidAt`, `snapshot` (JSONB — frozen copy of job data at time of invoice)
@@ -478,6 +495,23 @@ src/
 ---
 
 ## Coding Standards
+
+The rules below cover the parts of the codebase that must stay consistent. They
+are not a full description of the project's style, so **the existing code is the
+source of truth**:
+
+- Before writing something new, find the closest existing example of the same
+  kind of thing (page, component, service, controller, DTO, test) and follow it
+  — structure, naming, file layout, styling, error handling, test style.
+  Consistent beats clever.
+- Reuse what's already there — shared components, services/utilities, CSS
+  classes — before adding a new one. If you're about to introduce a second way
+  of doing something the codebase already does, extend the existing one
+  instead, or explain why it has to differ.
+- When a convention doesn't cover the case, pick whichever option looks most
+  like its neighbours rather than designing a new approach.
+- If a task genuinely needs a new pattern or a deliberate deviation from an
+  established one, say so in your summary and document it where it lives.
 
 ### Backend
 
@@ -495,6 +529,7 @@ src/
 
 - Singleton `api.ts` class for all HTTP — never use raw `fetch` outside of it
 - Shared components for reusable UI (CustomerSearch, CustomerTable, PaginatedTable, Menu)
+- Shared layout and styling classes live in `src/theme/variables.css` (page containers, form cards, form controls) — reuse them instead of page-local styles, and read the comment above a class to see where it's meant to be used
 - Shared services for cross-cutting concerns (format, validation, pdfCache)
 - `IonActionSheet` for inline status changes (invoice status)
 - `IonSelect` + `interface="popover"` for dropdown menus

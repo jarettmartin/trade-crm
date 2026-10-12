@@ -154,6 +154,46 @@ describe("demoService catalog items", () => {
     expect(fetched.description).toBe("Test mulch");
     expect(fetched.unitPrice).toBe(11);
   });
+});
+
+describe("demoService feedback", () => {
+  it("returns seeded submissions newest-first with pagination meta", () => {
+    const res = demoService.fetchFeedback(1, 2);
+    expect(res.meta.page).toBe(1);
+    expect(res.meta.limit).toBe(2);
+    expect(res.meta.total).toBeGreaterThanOrEqual(3);
+    expect(res.data.length).toBe(2);
+
+    const times = res.data.map((f) => new Date(f.createdAt).getTime());
+    const sorted = [...times].sort((a, b) => b - a);
+    expect(times).toEqual(sorted);
+  });
+
+  it("puts a new submission on the first page (newest-first)", () => {
+    const created = demoService.submitFeedback({
+      type: "BUG",
+      subject: "  Subject with padding  ",
+      message: "  Something broke  ",
+    });
+    expect(created.id).toBeTruthy();
+    expect(created.type).toBe("BUG");
+    expect(created.subject).toBe("Subject with padding");
+    expect(created.message).toBe("Something broke");
+    expect(created.userEmail).toBe("demo@sprout-crm.com");
+
+    const first = demoService.fetchFeedback(1, 10);
+    expect(first.data[0].id).toBe(created.id);
+  });
+
+  it("omits a blank subject", () => {
+    const created = demoService.submitFeedback({
+      type: "CONTACT",
+      subject: "   ",
+      message: "Please call me",
+    });
+    expect(created.subject).toBeUndefined();
+  });
+});
 
 describe("demoService.createJobNote", () => {
   it("appends one note and leaves the existing ones untouched", () => {
@@ -253,6 +293,4 @@ describe("demoService job line items", () => {
     ).toThrow();
     expect(() => demoService.deleteJobLineItem("demo-job-1", "nope")).toThrow();
   });
-});
-
 });

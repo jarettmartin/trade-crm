@@ -263,6 +263,7 @@ ssh ubuntu@<public_ip> \
 | `AWS_SECRET_ACCESS_KEY` | IAM secret key for Cognito admin + SES sends |
 | `SES_REGION`            | AWS SES region (invoice emailing)             |
 | `SES_FROM_EMAIL`        | From address for invoice emails (must be part of a verified SES identity) |
+| `FEEDBACK_NOTIFY_EMAIL` | Support inbox for feedback notifications (unset/empty → notifications disabled; no default is hardcoded, so set it in the gitignored `.env`) |
 
 ### Frontend (build-time)
 

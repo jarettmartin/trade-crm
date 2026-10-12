@@ -22,6 +22,7 @@ import ManageBusinessPage from "./pages/ManageBusinessPage";
 import ManageCustomersPage from "./pages/ManageCustomersPage";
 import ManageCatalogPage from "./pages/ManageCatalogPage";
 import CatalogItemFormPage from "./pages/CatalogItemFormPage";
+import FeedbackPage from "./pages/FeedbackPage";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -110,6 +111,9 @@ const AppContent: React.FC = () => {
               </Route>
               <Route path="/edit-catalog-item/:id" exact={true}>
                 <CatalogItemFormPage />
+              </Route>
+              <Route path="/feedback" exact={true}>
+                <FeedbackPage />
               </Route>
               <Route path="/invoice-preview/:id" exact={true}>
                 <InvoicePreviewPage />

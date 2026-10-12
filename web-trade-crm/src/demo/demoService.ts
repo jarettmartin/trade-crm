@@ -2,6 +2,7 @@ import tenantSeed from "./api/tenant.json";
 import customersSeed from "./api/customers.json";
 import jobsSeed from "./api/jobs.json";
 import catalogItemsSeed from "./api/catalogItems.json";
+import feedbackSeed from "./api/feedback.json";
 import type {
   CustomerResult,
   JobResult,
@@ -13,6 +14,7 @@ import type {
   PaginatedJobsResponse,
   PaginatedCustomersResponse,
   PaginatedCatalogItemsResponse,
+  PaginatedFeedbackResponse,
   CreateTenantPayload,
   UpdateTenantPayload,
   CreateTenantResponse,
@@ -20,7 +22,9 @@ import type {
   CreateJobPayload,
   CreateJobLineItemPayload,
   CreateCatalogItemPayload,
+  CreateFeedbackPayload,
   CatalogItemResult,
+  FeedbackResult,
 } from "../services/api";
 
 // ---------------------------------------------------------------------------
@@ -33,6 +37,7 @@ const customers: CustomerResult[] = structuredClone(
 ) as unknown as CustomerResult[];
 const jobs: JobSeed[] = structuredClone(jobsSeed);
 const catalogItems: CatalogItemResult[] = structuredClone(catalogItemsSeed);
+const feedbackSubmissions: FeedbackResult[] = structuredClone(feedbackSeed);
 
 interface JobSeed {
   id: string;
@@ -352,6 +357,34 @@ export const demoService = {
         }
       }
     }
+  },
+
+  // ---- Feedback ----
+  fetchFeedback(page: number, limit: number): PaginatedFeedbackResponse {
+    // Mirror the real API (FeedbackService.findAll orders by createdAt DESC).
+    const sorted = [...feedbackSubmissions].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const start = (page - 1) * limit;
+    const data = sorted.slice(start, start + limit).map((f) => ({ ...f }));
+    return { data, meta: { page, limit, total, totalPages } };
+  },
+
+  submitFeedback(payload: CreateFeedbackPayload): FeedbackResult {
+    // Tenant/author mirror the demo account in AuthContext (demoUser).
+    const submission: FeedbackResult = {
+      id: `demo-feedback-${Date.now()}`,
+      type: payload.type,
+      subject: payload.subject?.trim() || undefined,
+      message: payload.message.trim(),
+      userId: "demo-user-1",
+      userEmail: "demo@sprout-crm.com",
+      createdAt: new Date().toISOString(),
+    };
+    feedbackSubmissions.unshift(submission);
+    return { ...submission };
   },
 
   // ---- Jobs ----
