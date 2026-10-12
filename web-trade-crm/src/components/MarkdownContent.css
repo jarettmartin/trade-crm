@@ -1,0 +1,27 @@
+/* Renders the Markdown subset used by the legal documents — see
+   MarkdownContent.tsx. IonContent already supplies the base typography, so this
+   only tightens heading spacing, list indentation, and the reading rhythm. */
+.markdown-content h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.markdown-content h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 24px 0 4px;
+}
+
+.markdown-content p {
+  margin: 0 0 10px;
+}
+
+.markdown-content ul {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+
+.markdown-content li {
+  margin-bottom: 4px;
+}

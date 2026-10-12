@@ -1,20 +1,71 @@
 import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import {
+  IonButton,
+  IonCheckbox,
   IonContent,
-  IonPage,
+  IonInput,
   IonItem,
   IonLabel,
-  IonInput,
-  IonButton,
+  IonModal,
+  IonPage,
+  IonSpinner,
   IonText,
   IonToast,
-  IonSpinner,
 } from "@ionic/react";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api";
 import { isValidEmail } from "../services/validation";
 import PublicHeader from "../components/PublicHeader";
+import PrivacyPolicy from "../legal/PrivacyPolicy";
+import TermsOfService from "../legal/TermsOfService";
+
+/**
+ * A consent row for the signup form: a checkbox plus a button that opens the
+ * document in a modal so it can be read before agreeing. A real `<button>` (not
+ * a span) keeps it keyboard-reachable and unambiguous next to the checkbox.
+ */
+const LegalConsent: React.FC<{
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  onOpen: () => void;
+  label: string;
+  linkLabel: string;
+}> = ({ checked, onCheckedChange, onOpen, label, linkLabel }) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 8,
+      margin: "12px 16px 0",
+    }}
+  >
+    <IonCheckbox
+      checked={checked}
+      onIonChange={(e) => onCheckedChange(e.detail.checked)}
+      aria-label={`${label} ${linkLabel}`}
+    />
+    <span style={{ fontSize: 14, color: "var(--ion-color-medium)" }}>
+      {label}{" "}
+      <button
+        type="button"
+        onClick={onOpen}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          margin: 0,
+          font: "inherit",
+          color: "var(--ion-color-primary)",
+          textDecoration: "underline",
+          cursor: "pointer",
+        }}
+      >
+        {linkLabel}
+      </button>
+    </span>
+  </div>
+);
 
 const AuthPage: React.FC = () => {
   useEffect(() => {
@@ -33,6 +84,14 @@ const AuthPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
+  // Signup consent: each document opens in a modal from its consent row.
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [openDocument, setOpenDocument] = useState<
+    null | "privacy" | "terms"
+  >(null);
+
+  const agreementsAccepted = agreedToPrivacy && agreedToTerms;
 
   const toggleMode = () => {
     setMode(mode === "login" ? "register" : "login");
@@ -70,6 +129,12 @@ const AuthPage: React.FC = () => {
     }
     if (password.length < 8) {
       setError("Password must be at least 8 characters");
+      return;
+    }
+    if (!agreementsAccepted) {
+      setError(
+        "Please agree to the Privacy Policy and Terms of Service to create an account",
+      );
       return;
     }
     setLoading(true);
@@ -198,14 +263,31 @@ const AuthPage: React.FC = () => {
           )}
 
           {mode === "register" && (
-            <IonItem>
-              <IonLabel position="stacked">Invite Code</IonLabel>
-              <IonInput
-                value={inviteCode}
-                onIonInput={(e) => setInviteCode(e.detail.value!)}
-                placeholder="Enter your invite code"
+            <>
+              <IonItem>
+                <IonLabel position="stacked">Invite Code</IonLabel>
+                <IonInput
+                  value={inviteCode}
+                  onIonInput={(e) => setInviteCode(e.detail.value!)}
+                  placeholder="Enter your invite code"
+                />
+              </IonItem>
+
+              <LegalConsent
+                checked={agreedToPrivacy}
+                onCheckedChange={setAgreedToPrivacy}
+                onOpen={() => setOpenDocument("privacy")}
+                label="I have read and agree to the"
+                linkLabel="Privacy Policy"
               />
-            </IonItem>
+              <LegalConsent
+                checked={agreedToTerms}
+                onCheckedChange={setAgreedToTerms}
+                onOpen={() => setOpenDocument("terms")}
+                label="I have read and agree to the"
+                linkLabel="Terms of Service"
+              />
+            </>
           )}
 
           {mode === "reset-confirm" && (
@@ -247,8 +329,9 @@ const AuthPage: React.FC = () => {
                     ? handleResetPassword
                     : handleConfirmReset
             }
-            disabled={loading}
+            disabled={loading || (mode === "register" && !agreementsAccepted)}
             style={{ marginTop: 16 }}
+            data-testid="auth-submit"
           >
             {loading ? (
               <IonSpinner />
@@ -317,6 +400,20 @@ const AuthPage: React.FC = () => {
           color="success"
         />
       </IonContent>
+
+      {/* The legal documents, opened from the signup consent rows. */}
+      <IonModal
+        isOpen={openDocument === "privacy"}
+        onDidDismiss={() => setOpenDocument(null)}
+      >
+        <PrivacyPolicy onClose={() => setOpenDocument(null)} />
+      </IonModal>
+      <IonModal
+        isOpen={openDocument === "terms"}
+        onDidDismiss={() => setOpenDocument(null)}
+      >
+        <TermsOfService onClose={() => setOpenDocument(null)} />
+      </IonModal>
     </IonPage>
   );
 };

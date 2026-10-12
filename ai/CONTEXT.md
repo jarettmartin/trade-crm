@@ -333,6 +333,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `api.sendInvoiceEmail()` returns a PENDING attempt which is shown **immediately** on the card; the UI polls `api.fetchInvoiceEmailAttempts()` until `SENT`/`FAILED`, then reloads the job
   - Attempt entries read **"Email sent to <recipient>"** with an optional status tag appended: `· PENDING` (amber, in flight) or `· ERROR` (red, with the error message). SENT has **no tag** — assumed success
   - Demo mode mirrors this in `demoService.ts` (simulated ~2s delivery; emails containing `fail@` or ending `.fail` simulate a failure so the ERROR state is testable)
+- Legal documents (Privacy Policy + Terms of Service) live in `src/legal/` as `.md` files imported with Vite's `?raw` — so the wording is never re-typed — and are rendered by the dependency-free `MarkdownContent` (headings, paragraphs, `-` lists, `**bold**`, two-space hard breaks). Registration requires agreeing to both: each consent row opens its document in an `IonModal`, and the Register button stays disabled until both boxes are ticked. There is deliberately **no nav item** for them (signup-only for now; a footer entry point comes later)
 - Validation:
   - Frontend `validation.ts` helpers: `isValidEmail()`, `isValidPhone()`
   - Forms validate before submit (email format, phone format, required fields)
@@ -413,9 +414,10 @@ src/
 src/
 ├── App.tsx                          # Root app with routing + auth gating
 ├── main.tsx                         # Entry point
-├── components/                      # Reusable components (CustomerSearch, CustomerTable, CatalogItemSearch, PaginatedTable, Menu, PublicHeader, PublicMenu, publicNav)
+├── components/                      # Reusable components (CustomerSearch, CustomerTable, CatalogItemSearch, PaginatedTable, Menu, PublicHeader, PublicMenu, publicNav, MarkdownContent)
 ├── contexts/                        # AuthContext (user, login, logout, updateUser)
-├── pages/                           # Route-level pages (Auth, Home, Create/Manage pages, Catalog pages)
+├── legal/                           # Privacy Policy + Terms of Service (.md files + modal-ready wrappers)
+├── pages/                           # Route-level pages (Auth, Home, Create/Manage pages, Catalog pages, public BetaProgram/Contact)
 ├── services/                        # API client, PDF cache, formatting, validation
 └── theme/                           # Ionic theme overrides
 ```

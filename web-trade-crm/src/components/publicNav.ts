@@ -1,6 +1,5 @@
 import {
   chatbubbleOutline,
-  documentTextOutline,
   flaskOutline,
   homeOutline,
 } from "ionicons/icons";
@@ -19,12 +18,13 @@ export interface PublicNavItem {
   icon: string;
 }
 
-/** Nav items, in order. Items without a `url` render inert until they exist. */
+/** Nav items, in order. Every item currently routes somewhere; `url` stays
+ *  optional so a future item can appear before its page exists (it then renders
+ *  inert instead of as a dead link). */
 export const publicNavItems: PublicNavItem[] = [
   { title: "Sprout CRM", url: "/", icon: homeOutline },
   { title: "Early Access", url: "/beta-program", icon: flaskOutline },
   { title: "Contact", url: "/contact", icon: chatbubbleOutline },
-  { title: "TOS & Privacy", icon: documentTextOutline },
 ];
 
 // Demo mode is switched on from the `?demo=true` query string when AuthProvider
