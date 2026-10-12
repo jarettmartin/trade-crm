@@ -14,6 +14,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api";
 import { isValidEmail } from "../services/validation";
+import PublicHeader from "../components/PublicHeader";
 
 const AuthPage: React.FC = () => {
   useEffect(() => {
@@ -137,15 +138,8 @@ const AuthPage: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent
-        className="ion-padding"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-        }}
-      >
+      <PublicHeader />
+      <IonContent className="ion-padding center-content">
         <div className="capped-container">
           <div style={{ textAlign: "center" }}>
             <img

@@ -10,6 +10,7 @@ import { IonReactRouter } from "@ionic/react-router";
 import { Redirect, Route, Switch } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Menu from "./components/Menu";
+import PublicMenu from "./components/PublicMenu";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
@@ -133,17 +134,20 @@ const AppContent: React.FC = () => {
             </Route>
           </Switch>
         ) : (
-          <Switch>
-            <Route path="/" exact={true}>
-              <LandingPage />
-            </Route>
-            <Route path="/sign-in" exact={true}>
-              <AuthPage />
-            </Route>
-            <Route>
-              <Redirect to="/" />
-            </Route>
-          </Switch>
+          <IonSplitPane contentId="public-main" when={false}>
+            <PublicMenu />
+            <IonRouterOutlet id="public-main">
+              <Route path="/" exact={true}>
+                <LandingPage />
+              </Route>
+              <Route path="/sign-in" exact={true}>
+                <AuthPage />
+              </Route>
+              <Route>
+                <Redirect to="/" />
+              </Route>
+            </IonRouterOutlet>
+          </IonSplitPane>
         )}
       </IonReactRouter>
     </IonApp>

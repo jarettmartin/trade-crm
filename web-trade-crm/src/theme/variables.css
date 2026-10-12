@@ -183,6 +183,16 @@ ion-textarea.control-bordered {
   margin-right: auto;
 }
 
+/* `.center-content` — vertically centers a page's content within the content
+   area (below the header). Applied to the sign-in page so its card stays
+   centered now that the public nav occupies the top of the page. `safe`
+   keeps the top reachable if the content is taller than the viewport. */
+.center-content::part(scroll) {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+}
+
 /* ===== DARK MODE ===== */
 @media (prefers-color-scheme: dark) {
   :root {
