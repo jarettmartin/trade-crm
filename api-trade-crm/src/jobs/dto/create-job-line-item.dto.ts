@@ -29,10 +29,6 @@ export class CreateJobLineItemDto {
   @IsNumber()
   lineTotal!: number;
 
-  @Type(() => Number)
-  @IsNumber()
-  sortOrder!: number;
-
   @IsUUID()
   @IsOptional()
   catalogItemId?: string;

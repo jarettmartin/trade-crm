@@ -122,8 +122,8 @@ const ManageCatalogPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent>
-        <div style={{ padding: "16px" }}>
+      <IonContent className="ion-padding">
+        <div className="page-container">
           <div
             style={{
               display: "flex",
@@ -132,6 +132,7 @@ const ManageCatalogPage: React.FC = () => {
             }}
           >
             <IonButton
+              fill="outline"
               onClick={() => history.push("/create-catalog-item")}
               data-testid="new-catalog-item"
             >
@@ -169,18 +170,21 @@ const ManageCatalogPage: React.FC = () => {
                 {typeLabel[type]}
               </IonLabel>
             ))}
-            {selectedTypes.size > 0 && (
-              <IonButton
-                size="small"
-                fill="clear"
-                onClick={() => {
-                  setSelectedTypes(new Set());
-                  loadItems(1, new Set(), searchText);
-                }}
-              >
-                Clear
-              </IonButton>
-            )}
+            {/* Always rendered (just hidden) so toggling the first filter
+                doesn't change the row height and shift the content below. */}
+            <IonButton
+              size="small"
+              fill="clear"
+              onClick={() => {
+                setSelectedTypes(new Set());
+                loadItems(1, new Set(), searchText);
+              }}
+              style={{
+                visibility: selectedTypes.size > 0 ? "visible" : "hidden",
+              }}
+            >
+              Clear
+            </IonButton>
           </div>
 
           <PaginatedTable

@@ -15,7 +15,7 @@ import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
 import CreateTenantPage from "./pages/CreateTenantPage";
 import CreateJobPage from "./pages/CreateJobPage";
-import CreateCustomerPage from "./pages/CreateCustomerPage";
+import CustomerFormPage from "./pages/CustomerFormPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import InvoicePreviewPage from "./pages/InvoicePreviewPage";
 import ManageBusinessPage from "./pages/ManageBusinessPage";
@@ -47,7 +47,9 @@ import "@ionic/react/css/palettes/dark.system.css";
 /* Theme variables */
 import "./theme/variables.css";
 
-setupIonicReact();
+// Force iOS mode for every Ionic component so the UI looks identical across
+// platforms (desktop browsers would otherwise default to Material Design).
+setupIonicReact({ mode: "ios" });
 
 const AppContent: React.FC = () => {
   useEffect(() => {
@@ -90,7 +92,10 @@ const AppContent: React.FC = () => {
                 <CreateJobPage />
               </Route>
               <Route path="/create-customer" exact={true}>
-                <CreateCustomerPage />
+                <CustomerFormPage />
+              </Route>
+              <Route path="/edit-customer/:id" exact={true}>
+                <CustomerFormPage />
               </Route>
               <Route path="/job/:id" exact={true}>
                 <JobDetailPage />

@@ -59,27 +59,29 @@ const InvoicePreviewPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        {!objectUrl && !error && (
-          <div style={{ textAlign: "center", padding: "32px" }}>
-            <IonSpinner />
-          </div>
-        )}
-        {error && (
-          <div style={{ textAlign: "center", padding: "32px" }}>
-            <IonText color="danger">{error}</IonText>
-          </div>
-        )}
-        {objectUrl && (
-          <iframe
-            src={objectUrl}
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "none",
-            }}
-            title="Invoice PDF"
-          />
-        )}
+        <div className="page-container" style={{ height: "100%" }}>
+          {!objectUrl && !error && (
+            <div style={{ textAlign: "center", padding: "32px" }}>
+              <IonSpinner />
+            </div>
+          )}
+          {error && (
+            <div style={{ textAlign: "center", padding: "32px" }}>
+              <IonText color="danger">{error}</IonText>
+            </div>
+          )}
+          {objectUrl && (
+            <iframe
+              src={objectUrl}
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+              }}
+              title="Invoice PDF"
+            />
+          )}
+        </div>
       </IonContent>
     </IonPage>
   );

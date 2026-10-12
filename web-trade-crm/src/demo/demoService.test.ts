@@ -194,3 +194,103 @@ describe("demoService feedback", () => {
     expect(created.subject).toBeUndefined();
   });
 });
+
+describe("demoService.createJobNote", () => {
+  it("appends one note and leaves the existing ones untouched", () => {
+    const before = demoService.fetchJob("demo-job-1");
+    const seeded = before.notes[0];
+    expect(seeded.createdAt).toBe("2026-04-16T10:30:00.000Z");
+
+    demoService.createJobNote("demo-job-1", {
+      note: "Follow-up visit scheduled.",
+      userId: "demo-user-1",
+    });
+
+    const after = demoService.fetchJob("demo-job-1");
+    expect(after.notes).toHaveLength(before.notes.length + 1);
+
+    // The pre-existing note keeps its id and timestamp...
+    expect(after.notes[0].id).toBe(seeded.id);
+    expect(after.notes[0].createdAt).toBe(seeded.createdAt);
+
+    // ...and the appended one is stamped now.
+    const added = after.notes[after.notes.length - 1];
+    expect(added.note).toBe("Follow-up visit scheduled.");
+    expect(added.id).not.toBe(seeded.id);
+    expect(Number.isNaN(new Date(added.createdAt).getTime())).toBe(false);
+  });
+
+  it("rejects an unknown job", () => {
+    expect(() =>
+      demoService.createJobNote("nope", { note: "Hi", userId: "demo-user-1" }),
+    ).toThrow();
+  });
+
+  it("updateJob ignores notes and line items, mirroring the API", () => {
+    const before = demoService.fetchJob("demo-job-1");
+
+    demoService.updateJob("demo-job-1", {
+      notes: [{ note: "Should not appear", userId: "demo-user-1" }],
+      lineItems: [],
+    });
+
+    const after = demoService.fetchJob("demo-job-1");
+    expect(after.notes.map((n) => n.note)).toEqual(
+      before.notes.map((n) => n.note),
+    );
+    expect(after.lineItems.map((li) => li.id)).toEqual(
+      before.lineItems.map((li) => li.id),
+    );
+  });
+});
+
+describe("demoService job line items", () => {
+  it("createJobLineItem appends one item and keeps the others", () => {
+    const before = demoService.fetchJob("demo-job-1");
+    const first = before.lineItems[0];
+
+    const created = demoService.createJobLineItem("demo-job-1", {
+      type: "MATERIAL",
+      description: "Test mulch",
+      quantity: 2,
+      unitPrice: 10,
+      lineTotal: 20,
+    });
+
+    const after = demoService.fetchJob("demo-job-1");
+    expect(after.lineItems).toHaveLength(before.lineItems.length + 1);
+    expect(after.lineItems.map((li) => li.id)).toContain(created.id);
+
+    // Pre-existing items keep their ids, snapshots and catalog references.
+    const survivor = after.lineItems.find((li) => li.id === first.id);
+    expect(survivor?.lineTotal).toBe(first.lineTotal);
+    expect(survivor?.catalogItemId).toBe(first.catalogItemId);
+  });
+
+  it("deleteJobLineItem removes only the requested item", () => {
+    const before = demoService.fetchJob("demo-job-1");
+    const target = before.lineItems[0];
+
+    demoService.deleteJobLineItem("demo-job-1", target.id);
+
+    const after = demoService.fetchJob("demo-job-1");
+    expect(after.lineItems).toHaveLength(before.lineItems.length - 1);
+    expect(after.lineItems.map((li) => li.id)).not.toContain(target.id);
+    expect(after.lineItems.map((li) => li.id)).toContain(
+      before.lineItems[1].id,
+    );
+  });
+
+  it("rejects unknown jobs and unknown line items", () => {
+    expect(() =>
+      demoService.createJobLineItem("nope", {
+        type: "SERVICE",
+        description: "X",
+        quantity: 1,
+        unitPrice: 1,
+        lineTotal: 1,
+      }),
+    ).toThrow();
+    expect(() => demoService.deleteJobLineItem("demo-job-1", "nope")).toThrow();
+  });
+});

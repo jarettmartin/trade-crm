@@ -460,7 +460,8 @@ src/
 
 - Job: `title`, `description`, `status` (DRAFT/ASSIGNED/IN_PROGRESS/COMPLETED/CANCELLED), `customerId`, `customerAddressId`, `assignedUserId`, `scheduledStart/End`, `completedAt`
 - Note: `userId`, `note` (cumulative, non-editable)
-- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `sortOrder`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`)
+- `PATCH /jobs/:id` accepts job fields only — notes and line items have their own endpoints (`POST /jobs/:id/notes`, `POST /jobs/:id/line-items`, `DELETE /jobs/:id/line-items/:lineItemId`), so a child row is inserted or removed individually and existing rows keep their `id` and `createdAt`. Both child lists are returned in the order they were added (`createdAt` ASC, server-derived) — no client sends or tracks an ordering value
+- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`)
 
 ### CatalogItem
 

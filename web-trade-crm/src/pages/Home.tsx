@@ -149,8 +149,11 @@ const Home: React.FC = () => {
               marginBottom: "16px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <IonText color="medium">
+            <div
+              className="field-group"
+              style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <IonText color="medium" style={{ whiteSpace: "nowrap" }}>
                 <small>Filter by status</small>
               </IonText>
               <IonSelect
@@ -170,7 +173,6 @@ const Home: React.FC = () => {
               </IonSelect>
             </div>
             <IonButton
-              size="small"
               fill="outline"
               onClick={() => history.push("/create-job")}
             >

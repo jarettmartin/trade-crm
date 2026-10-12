@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -10,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { JobService } from '../services/job.service';
 import { CreateJobDto } from '../dto/create-job.dto';
+import { CreateJobLineItemDto } from '../dto/create-job-line-item.dto';
+import { CreateJobNoteDto } from '../dto/create-job-note.dto';
 import { UpdateJobDto } from '../dto/update-job.dto';
 import { QueryJobsDto } from '../dto/query-jobs.dto';
 import { TenantGuard } from '../../common/guards/tenant.guard';
@@ -60,5 +63,35 @@ export class JobController {
     @CurrentUser() user: CurrentUserType,
   ) {
     return this.jobService.update(id, dto, user.tenantId!);
+  }
+
+  @Post(':id/notes')
+  @UseGuards(TenantGuard)
+  async createNote(
+    @Param('id') id: string,
+    @Body() dto: CreateJobNoteDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.jobService.createNote(id, dto, user.tenantId!);
+  }
+
+  @Post(':id/line-items')
+  @UseGuards(TenantGuard)
+  async createLineItem(
+    @Param('id') id: string,
+    @Body() dto: CreateJobLineItemDto,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.jobService.createLineItem(id, dto, user.tenantId!);
+  }
+
+  @Delete(':id/line-items/:lineItemId')
+  @UseGuards(TenantGuard)
+  async deleteLineItem(
+    @Param('id') id: string,
+    @Param('lineItemId') lineItemId: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    return this.jobService.deleteLineItem(id, lineItemId, user.tenantId!);
   }
 }
