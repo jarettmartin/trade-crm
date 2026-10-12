@@ -409,7 +409,7 @@ class ApiService {
     return this.request<CustomerResult>(`/customers/${id}`);
   }
 
-  async updateCustomer(id: string, payload: Record<string, unknown>) {
+  async updateCustomer(id: string, payload: CreateCustomerPayload) {
     if (this.demoMode) {
       return demoService.updateCustomer(id, payload);
     }

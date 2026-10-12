@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   IonContent,
   IonHeader,
@@ -34,6 +34,8 @@ const CreateJobPage: React.FC = () => {
   const history = useHistory();
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerResult | null>(null);
+  const jobFormRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLIonContentElement | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -69,6 +71,25 @@ const CreateJobPage: React.FC = () => {
     setSelectedCustomer(null);
     setSelectedAddressId("");
   };
+
+  // When a customer is picked (from the search box or the table), bring the
+  // newly revealed job form into view. Uses Ionic's own scroll API (a plain
+  // scrollIntoView is a no-op inside ion-content); deferred a frame so the
+  // revealed content is laid out first.
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    const raf = requestAnimationFrame(async () => {
+      const content = contentRef.current;
+      const target = jobFormRef.current;
+      if (!content || !target) return;
+      const scrollEl = await content.getScrollElement();
+      const delta =
+        target.getBoundingClientRect().top -
+        scrollEl.getBoundingClientRect().top;
+      content.scrollToPoint(0, scrollEl.scrollTop + delta - 8, 300);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [selectedCustomer]);
 
   const loadCustomersTable = async (pageNum: number) => {
     setCustomersLoading(true);
@@ -143,7 +164,7 @@ const CreateJobPage: React.FC = () => {
           <IonTitle>New Job</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <IonContent className="ion-padding" ref={contentRef}>
         <div className="page-container">
           <CustomerSearch onSelect={handleSelectCustomer} />
 
@@ -169,15 +190,7 @@ const CreateJobPage: React.FC = () => {
           />
 
           {selectedCustomer && (
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "12px",
-                border: "1px solid var(--ion-color-light-shade)",
-                borderRadius: "8px",
-                background: "var(--ion-background-color)",
-              }}
-            >
+            <div className="form-card" ref={jobFormRef} style={{ marginTop: "16px" }}>
               <div
                 style={{
                   display: "flex",
@@ -221,7 +234,7 @@ const CreateJobPage: React.FC = () => {
 
               {selectedCustomer.addresses &&
                 selectedCustomer.addresses.length > 0 && (
-                  <div style={{ marginTop: "12px" }}>
+                  <div className="field-group" style={{ marginTop: "12px" }}>
                     <IonLabel
                       style={{
                         fontSize: "14px",
@@ -256,8 +269,8 @@ const CreateJobPage: React.FC = () => {
           )}
 
           {selectedCustomer && (
-            <>
-              <IonItem style={{ marginTop: "16px" }}>
+            <div className="form-card">
+              <IonItem>
                 <IonLabel position="stacked">
                   Job Title <IonText color="danger">*</IonText>
                 </IonLabel>
@@ -277,7 +290,7 @@ const CreateJobPage: React.FC = () => {
                   placeholder="Describe the work to be done..."
                 />
               </IonItem>
-            </>
+            </div>
           )}
 
           <div

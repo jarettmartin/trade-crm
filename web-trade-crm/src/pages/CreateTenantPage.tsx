@@ -69,7 +69,7 @@ const CreateTenantPage: React.FC = () => {
   return (
     <IonPage>
       <IonContent className="ion-padding">
-        <div className="page-container" style={{ marginTop: "40px" }}>
+        <div className="capped-container" style={{ marginTop: "40px" }}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
             <h1
               style={{

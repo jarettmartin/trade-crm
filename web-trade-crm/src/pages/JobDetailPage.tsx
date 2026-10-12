@@ -506,12 +506,23 @@ const JobDetailPage: React.FC = () => {
           )}
 
           {/* === STATUS === */}
-          <IonItem style={{ marginTop: "16px" }}>
-            <IonLabel>Status</IonLabel>
+          <div
+            className="field-group"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              marginTop: "16px",
+            }}
+          >
+            <IonText color="medium" style={{ whiteSpace: "nowrap" }}>
+              <small>Status</small>
+            </IonText>
             <IonSelect
               value={status}
               onIonChange={(e) => handleStatusChange(e.detail.value)}
               interface="popover"
+              style={{ minWidth: "120px" }}
             >
               {Object.entries(statusLabel).map(([val, label]) => (
                 <IonSelectOption key={val} value={val}>
@@ -519,7 +530,7 @@ const JobDetailPage: React.FC = () => {
                 </IonSelectOption>
               ))}
             </IonSelect>
-          </IonItem>
+          </div>
 
           {/* === NOTES === */}
           <IonText>
@@ -561,12 +572,16 @@ const JobDetailPage: React.FC = () => {
             </div>
           ))}
 
-          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+          <div
+            className="capped-container capped-container--left"
+            style={{ display: "flex", gap: "8px", marginTop: "8px" }}
+          >
             <IonTextarea
               rows={2}
               value={newNote}
               onIonInput={(e) => setNewNote(e.detail.value || "")}
               placeholder="Add a note..."
+              className="control-bordered"
               style={{ flex: 1 }}
             />
             <IonButton onClick={addNote} disabled={!newNote.trim()}>
@@ -665,6 +680,7 @@ const JobDetailPage: React.FC = () => {
 
           {/* === ADD LINE ITEM === */}
           <div
+            className="capped-container capped-container--left"
             style={{
               border: "1px solid var(--ion-color-light-shade)",
               borderRadius: "8px",
@@ -776,6 +792,7 @@ const JobDetailPage: React.FC = () => {
           </IonText>
 
           <div
+            className="capped-container capped-container--left"
             style={{
               border: "1px solid var(--ion-color-light-shade)",
               borderRadius: "8px",
@@ -889,6 +906,7 @@ const JobDetailPage: React.FC = () => {
           </IonText>
 
           <IonButton
+            className="capped-container capped-container--left"
             expand="block"
             onClick={handleCreateInvoice}
             disabled={creatingInvoice || !invoiceOutOfDate}
@@ -913,7 +931,10 @@ const JobDetailPage: React.FC = () => {
           )}
 
           {job.invoices.map((inv) => (
-            <IonCard key={inv.id}>
+            <IonCard
+              key={inv.id}
+              className="capped-container capped-container--left"
+            >
               <div
                 style={{
                   display: "flex",

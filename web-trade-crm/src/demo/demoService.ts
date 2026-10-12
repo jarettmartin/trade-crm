@@ -237,11 +237,36 @@ export const demoService = {
     return { ...newCustomer };
   },
 
-  updateCustomer(id: string, payload: Record<string, unknown>): CustomerResult {
+  updateCustomer(id: string, payload: CreateCustomerPayload): CustomerResult {
     const idx = customers.findIndex((c) => c.id === id);
     if (idx === -1) throw new Error("Customer not found");
-    customers[idx] = { ...customers[idx], ...payload } as CustomerResult;
-    return { ...customers[idx] };
+    const existing = customers[idx];
+    const existingAddresses = existing.addresses || [];
+    // Reconcile addresses positionally, like the API does: existing rows keep
+    // their id, new rows get one, and surplus rows are dropped — so a job's
+    // customerAddressId keeps resolving after an edit.
+    const addresses = payload.addresses.map((a, i) => ({
+      id: existingAddresses[i]?.id ?? `demo-addr-${Date.now()}-${i}`,
+      addressLine1: a.addressLine1,
+      addressLine2: a.addressLine2 ?? undefined,
+      city: a.city,
+      stateProvince: a.stateProvince,
+      zipPostalCode: a.zipPostalCode,
+      isDefault: a.isDefault ?? i === 0,
+    }));
+    const updated: CustomerResult = {
+      ...existing,
+      type: payload.type,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      companyName: payload.companyName ?? undefined,
+      phone: payload.phone,
+      email: payload.email ?? undefined,
+      notes: payload.notes ?? undefined,
+      addresses,
+    };
+    customers[idx] = updated;
+    return { ...updated, addresses: addresses.map((a) => ({ ...a })) };
   },
 
   // ---- Catalog items ----
