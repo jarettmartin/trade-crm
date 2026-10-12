@@ -64,7 +64,6 @@ interface DemoLineItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-  sortOrder?: number;
   catalogItemId?: string;
 }
 
@@ -388,7 +387,6 @@ async function seed() {
           quantity: li.quantity,
           unitPrice: li.unitPrice,
           lineTotal: li.lineTotal,
-          sortOrder: li.sortOrder ?? 0,
           catalogItemId: li.catalogItemId
             ? catalogItemIdMap.get(li.catalogItemId)
             : undefined,
@@ -432,7 +430,6 @@ async function seed() {
             quantity: Number(li.quantity),
             unitPrice: Number(li.unitPrice),
             lineTotal: Number(li.lineTotal),
-            sortOrder: li.sortOrder ?? 0,
           })),
           totals: {
             subtotal: inv.subtotal,

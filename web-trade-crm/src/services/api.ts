@@ -169,7 +169,15 @@ export interface JobLineItemResult {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-  sortOrder: number;
+  catalogItemId?: string;
+}
+
+export interface CreateJobLineItemPayload {
+  type: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
   catalogItemId?: string;
 }
 
@@ -524,6 +532,42 @@ class ApiService {
     return this.request(`/jobs/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
+    });
+  }
+
+  async createJobNote(
+    jobId: string,
+    payload: { note: string; userId: string },
+  ): Promise<JobNoteResult> {
+    if (this.demoMode) {
+      return demoService.createJobNote(jobId, payload);
+    }
+    return this.request<JobNoteResult>(`/jobs/${jobId}/notes`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async createJobLineItem(
+    jobId: string,
+    payload: CreateJobLineItemPayload,
+  ): Promise<JobLineItemResult> {
+    if (this.demoMode) {
+      return demoService.createJobLineItem(jobId, payload);
+    }
+    return this.request<JobLineItemResult>(`/jobs/${jobId}/line-items`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteJobLineItem(jobId: string, lineItemId: string): Promise<void> {
+    if (this.demoMode) {
+      demoService.deleteJobLineItem(jobId, lineItemId);
+      return;
+    }
+    await this.request(`/jobs/${jobId}/line-items/${lineItemId}`, {
+      method: "DELETE",
     });
   }
 

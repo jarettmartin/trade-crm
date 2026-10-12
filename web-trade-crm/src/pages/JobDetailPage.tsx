@@ -26,7 +26,13 @@ import {
 } from "@ionic/react";
 import { trashOutline, downloadOutline, eyeOutline, mailOutline } from "ionicons/icons";
 import { useParams } from "react-router-dom";
-import { api, JobDetailResult, InvoiceEmailAttemptResult, CatalogItemResult } from "../services/api";
+import {
+  api,
+  JobDetailResult,
+  InvoiceEmailAttemptResult,
+  CatalogItemResult,
+  CreateJobLineItemPayload,
+} from "../services/api";
 import CatalogItemSearch from "../components/CatalogItemSearch";
 import { useAuth } from "../contexts/AuthContext";
 import { formatInvoiceNumber } from "../services/format";
@@ -163,15 +169,8 @@ const JobDetailPage: React.FC = () => {
 
   const addNote = async () => {
     if (!newNote.trim() || !user) return;
-    const notePayload = { note: newNote.trim(), userId: user.id };
     try {
-      const notes = job?.notes || [];
-      await api.updateJob(id, {
-        notes: [
-          ...notes.map((n) => ({ note: n.note, userId: n.user.id })),
-          notePayload,
-        ],
-      });
+      await api.createJobNote(id, { note: newNote.trim(), userId: user.id });
       setNewNote("");
       await loadJob();
     } catch (err) {
@@ -180,21 +179,8 @@ const JobDetailPage: React.FC = () => {
   };
 
   const deleteLineItem = async (lineItemId: string) => {
-    if (!job) return;
-    const remaining = job.lineItems.filter((li) => li.id !== lineItemId);
-    const lineItemsPayload = remaining.map((li) => ({
-      type: li.type,
-      description: li.description,
-      quantity: Number(li.quantity),
-      unitPrice: Number(li.unitPrice),
-      lineTotal: Number(li.lineTotal),
-      sortOrder: Number(li.sortOrder),
-      // Keep the snapshot + catalog reference on surviving items. The API
-      // replaces all line items on save, so the reference must be re-sent.
-      catalogItemId: li.catalogItemId ?? undefined,
-    }));
     try {
-      await api.updateJob(id, { lineItems: lineItemsPayload });
+      await api.deleteJobLineItem(id, lineItemId);
       await loadJob();
     } catch (err) {
       showToastMsg(
@@ -238,29 +224,19 @@ const JobDetailPage: React.FC = () => {
     const price = parseFloat(liPrice);
     if (isNaN(qty) || isNaN(price)) return;
     const lineTotal = qty * price;
-    const newItem = {
+    const newItem: CreateJobLineItemPayload = {
       type: liType,
       description: liDesc.trim(),
       quantity: qty,
       unitPrice: price,
       lineTotal,
-      sortOrder: job.lineItems.length,
       // Optional FK back to the catalog item the user picked. All details are
       // snapshotted onto this line item, so later catalog edits or deletes
       // never change what's been added here.
       catalogItemId: liCatalogItemId ?? undefined,
     };
     try {
-      const existing = job.lineItems.map((li) => ({
-        type: li.type,
-        description: li.description,
-        quantity: Number(li.quantity),
-        unitPrice: Number(li.unitPrice),
-        lineTotal: Number(li.lineTotal),
-        sortOrder: Number(li.sortOrder),
-        catalogItemId: li.catalogItemId ?? undefined,
-      }));
-      await api.updateJob(id, { lineItems: [...existing, newItem] });
+      await api.createJobLineItem(id, newItem);
       setLiDesc("");
       setLiQty("");
       setLiPrice("");
@@ -572,7 +548,7 @@ const JobDetailPage: React.FC = () => {
               </IonText>
               <IonText color="medium">
                 <small>
-                  {note.user.firstName} {note.user.lastName} —{" "}
+                  —{" "}
                   {new Date(note.createdAt).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
