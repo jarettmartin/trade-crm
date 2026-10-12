@@ -35,7 +35,7 @@ const LandingPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <div className="page-container">
+        <div className="capped-container">
           {/* Hero Section */}
           <div style={{ textAlign: "center", marginTop: 32, marginBottom: 48 }}>
             <img

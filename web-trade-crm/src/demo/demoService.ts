@@ -7,6 +7,7 @@ import type {
   JobResult,
   JobDetailResult,
   JobLineItemResult,
+  JobNoteResult,
   InvoiceResult,
   InvoiceEmailAttemptResult,
   PaginatedJobsResponse,
@@ -17,6 +18,7 @@ import type {
   CreateTenantResponse,
   CreateCustomerPayload,
   CreateJobPayload,
+  CreateJobLineItemPayload,
   CreateCatalogItemPayload,
   CatalogItemResult,
 } from "../services/api";
@@ -235,11 +237,36 @@ export const demoService = {
     return { ...newCustomer };
   },
 
-  updateCustomer(id: string, payload: Record<string, unknown>): CustomerResult {
+  updateCustomer(id: string, payload: CreateCustomerPayload): CustomerResult {
     const idx = customers.findIndex((c) => c.id === id);
     if (idx === -1) throw new Error("Customer not found");
-    customers[idx] = { ...customers[idx], ...payload } as CustomerResult;
-    return { ...customers[idx] };
+    const existing = customers[idx];
+    const existingAddresses = existing.addresses || [];
+    // Reconcile addresses positionally, like the API does: existing rows keep
+    // their id, new rows get one, and surplus rows are dropped — so a job's
+    // customerAddressId keeps resolving after an edit.
+    const addresses = payload.addresses.map((a, i) => ({
+      id: existingAddresses[i]?.id ?? `demo-addr-${Date.now()}-${i}`,
+      addressLine1: a.addressLine1,
+      addressLine2: a.addressLine2 ?? undefined,
+      city: a.city,
+      stateProvince: a.stateProvince,
+      zipPostalCode: a.zipPostalCode,
+      isDefault: a.isDefault ?? i === 0,
+    }));
+    const updated: CustomerResult = {
+      ...existing,
+      type: payload.type,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      companyName: payload.companyName ?? undefined,
+      phone: payload.phone,
+      email: payload.email ?? undefined,
+      notes: payload.notes ?? undefined,
+      addresses,
+    };
+    customers[idx] = updated;
+    return { ...updated, addresses: addresses.map((a) => ({ ...a })) };
   },
 
   // ---- Catalog items ----
@@ -374,43 +401,59 @@ export const demoService = {
   updateJob(id: string, payload: Record<string, unknown>): void {
     const idx = jobs.findIndex((j) => j.id === id);
     if (idx === -1) throw new Error("Job not found");
-    // Handle special nested fields
-    if (payload.notes) {
-      // The frontend sends notes as { note, userId } without a user object or
-      // timestamp. Reconstruct full note records so existing seeded notes keep
-      // their metadata and newly added notes get a createdAt + user (mirrors
-      // how the real backend re-creates note rows and auto-assigns createdAt).
-      const incoming = payload.notes as Array<{ note: string; userId: string }>;
-      const existing = [...jobs[idx].notes];
-      jobs[idx].notes = incoming.map((n, i) => {
-        // Match by content first so existing notes retain their original
-        // id/createdAt/user even if one is deleted from the middle.
-        const prev =
-          existing.find((e) => e.note === n.note && e.user.id === n.userId) ??
-          existing[i];
-        if (prev) {
-          // Remove matched note so it can't be reused for duplicates
-          existing.splice(existing.indexOf(prev), 1);
-        }
-        return {
-          id: prev?.id ?? `demo-note-${Date.now()}-${i}`,
-          note: n.note,
-          createdAt: prev?.createdAt ?? new Date().toISOString(),
-          user: prev?.user ?? {
-            id: n.userId,
-            firstName: "Demo",
-            lastName: "User",
-          },
-        };
-      });
-      delete payload.notes;
-    }
-    if (payload.lineItems) {
-      jobs[idx].lineItems = payload.lineItems as JobLineItemResult[];
-      delete payload.lineItems;
-    }
+    // Notes and line items have their own endpoints, mirroring the API where
+    // PATCH /jobs/:id only accepts job fields.
+    delete payload.notes;
+    delete payload.lineItems;
     // Apply remaining scalar fields
     Object.assign(jobs[idx], payload);
+  },
+
+  createJobLineItem(
+    jobId: string,
+    payload: CreateJobLineItemPayload,
+  ): JobLineItemResult {
+    const job = jobs.find((j) => j.id === jobId);
+    if (!job) throw new Error("Job not found");
+
+    const item: JobLineItemResult = {
+      ...payload,
+      id: `demo-li-${Date.now()}`,
+    };
+    job.lineItems.push(item);
+
+    return { ...item };
+  },
+
+  deleteJobLineItem(jobId: string, lineItemId: string): { success: true } {
+    const job = jobs.find((j) => j.id === jobId);
+    if (!job) throw new Error("Job not found");
+
+    const remaining = job.lineItems.filter((li) => li.id !== lineItemId);
+    if (remaining.length === job.lineItems.length) {
+      throw new Error("Line item not found");
+    }
+    job.lineItems = remaining;
+
+    return { success: true };
+  },
+
+  createJobNote(
+    jobId: string,
+    payload: { note: string; userId: string },
+  ): JobNoteResult {
+    const job = jobs.find((j) => j.id === jobId);
+    if (!job) throw new Error("Job not found");
+
+    const note: JobNoteSeed = {
+      id: `demo-note-${Date.now()}`,
+      note: payload.note,
+      createdAt: new Date().toISOString(),
+      user: { id: payload.userId, firstName: "Demo", lastName: "User" },
+    };
+    job.notes.push(note);
+
+    return { ...note, user: { ...note.user } };
   },
 
   // ---- Invoices ----

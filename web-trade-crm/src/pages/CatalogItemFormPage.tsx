@@ -166,50 +166,52 @@ const CatalogItemFormPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent>
-        <div style={{ padding: "16px" }}>
-          <IonItem>
-            <IonLabel position="stacked">
-              Description <IonText color="danger">*</IonText>
-            </IonLabel>
-            <IonTextarea
-              rows={3}
-              value={description}
-              onIonInput={(e) => setDescription(e.detail.value || "")}
-              placeholder="e.g. Tree pruning"
-            />
-          </IonItem>
+      <IonContent className="ion-padding">
+        <div className="capped-container">
+          <div className="form-card">
+            <IonItem>
+              <IonLabel position="stacked">
+                Description <IonText color="danger">*</IonText>
+              </IonLabel>
+              <IonTextarea
+                rows={3}
+                value={description}
+                onIonInput={(e) => setDescription(e.detail.value || "")}
+                placeholder="e.g. Tree pruning"
+              />
+            </IonItem>
 
-          <IonItem>
-            <IonLabel position="stacked">
-              Type <IonText color="danger">*</IonText>
-            </IonLabel>
-            <IonSelect
-              value={type}
-              onIonChange={(e) => setType(e.detail.value)}
-              interface="popover"
-            >
-              {CATALOG_TYPES.map((t) => (
-                <IonSelectOption key={t} value={t}>
-                  {typeLabel[t]}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-          </IonItem>
+            <IonItem>
+              <IonLabel position="stacked">
+                Type <IonText color="danger">*</IonText>
+              </IonLabel>
+              <IonSelect
+                value={type}
+                onIonChange={(e) => setType(e.detail.value)}
+                interface="popover"
+              >
+                {CATALOG_TYPES.map((t) => (
+                  <IonSelectOption key={t} value={t}>
+                    {typeLabel[t]}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
 
-          <IonItem>
-            <IonLabel position="stacked">
-              Unit Price <IonText color="danger">*</IonText>
-            </IonLabel>
-            <IonInput
-              type="number"
-              min="0"
-              step="0.01"
-              value={unitPrice}
-              onIonInput={(e) => setUnitPrice(e.detail.value || "")}
-              placeholder="0.00"
-            />
-          </IonItem>
+            <IonItem>
+              <IonLabel position="stacked">
+                Unit Price <IonText color="danger">*</IonText>
+              </IonLabel>
+              <IonInput
+                type="number"
+                min="0"
+                step="0.01"
+                value={unitPrice}
+                onIonInput={(e) => setUnitPrice(e.detail.value || "")}
+                placeholder="0.00"
+              />
+            </IonItem>
+          </div>
 
           <div
             style={{

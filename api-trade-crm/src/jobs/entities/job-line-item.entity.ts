@@ -24,9 +24,6 @@ export class JobLineItem extends TenantScopedEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   lineTotal!: number;
 
-  @Column({ type: 'int', default: 0 })
-  sortOrder!: number;
-
   /**
    * Optional reference to the catalog item this line item was created from.
    * All display values (type/description/unitPrice/…) are always snapshotted

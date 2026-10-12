@@ -84,7 +84,6 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
         }}
       >
         <IonButton
-          size="small"
           fill="outline"
           onClick={() => history.push("/create-customer")}
         >

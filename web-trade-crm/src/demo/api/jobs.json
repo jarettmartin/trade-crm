@@ -23,7 +23,6 @@
         "quantity": 4,
         "unitPrice": 75,
         "lineTotal": 300,
-        "sortOrder": 1,
         "catalogItemId": "demo-catalog-1"
       },
       {
@@ -33,7 +32,6 @@
         "quantity": 2,
         "unitPrice": 85,
         "lineTotal": 170,
-        "sortOrder": 2,
         "catalogItemId": "demo-catalog-2"
       },
       {
@@ -43,7 +41,6 @@
         "quantity": 5,
         "unitPrice": 12,
         "lineTotal": 60,
-        "sortOrder": 3,
         "catalogItemId": "demo-catalog-3"
       },
       {
@@ -53,7 +50,6 @@
         "quantity": 3,
         "unitPrice": 65,
         "lineTotal": 195,
-        "sortOrder": 4,
         "catalogItemId": "demo-catalog-4"
       }
     ],
@@ -101,7 +97,6 @@
         "quantity": 3,
         "unitPrice": 200,
         "lineTotal": 600,
-        "sortOrder": 1,
         "catalogItemId": "demo-catalog-5"
       },
       {
@@ -111,7 +106,6 @@
         "quantity": 2,
         "unitPrice": 80,
         "lineTotal": 160,
-        "sortOrder": 2,
         "catalogItemId": "demo-catalog-6"
       },
       {
@@ -121,7 +115,6 @@
         "quantity": 10,
         "unitPrice": 8,
         "lineTotal": 80,
-        "sortOrder": 3,
         "catalogItemId": "demo-catalog-7"
       }
     ],
@@ -163,7 +156,6 @@
         "quantity": 8,
         "unitPrice": 55,
         "lineTotal": 440,
-        "sortOrder": 1,
         "catalogItemId": "demo-catalog-8"
       },
       {
@@ -172,8 +164,7 @@
         "description": "Dining room painting (two coats)",
         "quantity": 6,
         "unitPrice": 55,
-        "lineTotal": 330,
-        "sortOrder": 2
+        "lineTotal": 330
       },
       {
         "id": "demo-li-10",
@@ -182,7 +173,6 @@
         "quantity": 1,
         "unitPrice": 180,
         "lineTotal": 180,
-        "sortOrder": 3,
         "catalogItemId": "demo-catalog-9"
       },
       {
@@ -191,8 +181,7 @@
         "description": "Drop cloths and tape",
         "quantity": 1,
         "unitPrice": 35,
-        "lineTotal": 35,
-        "sortOrder": 4
+        "lineTotal": 35
       }
     ],
     "invoices": []
@@ -213,8 +202,7 @@
         "description": "Deck boards (6ft pressure treated)",
         "quantity": 3,
         "unitPrice": 18,
-        "lineTotal": 54,
-        "sortOrder": 1
+        "lineTotal": 54
       },
       {
         "id": "demo-li-13",
@@ -223,7 +211,6 @@
         "quantity": 2,
         "unitPrice": 45,
         "lineTotal": 90,
-        "sortOrder": 2,
         "catalogItemId": "demo-catalog-10"
       },
       {
@@ -232,8 +219,7 @@
         "description": "Deck repair labour",
         "quantity": 4,
         "unitPrice": 60,
-        "lineTotal": 240,
-        "sortOrder": 3
+        "lineTotal": 240
       },
       {
         "id": "demo-li-15",
@@ -241,8 +227,7 @@
         "description": "Sanding and staining labour",
         "quantity": 8,
         "unitPrice": 55,
-        "lineTotal": 440,
-        "sortOrder": 4
+        "lineTotal": 440
       }
     ],
     "invoices": []
