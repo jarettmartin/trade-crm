@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -6,7 +7,13 @@ import { createDatabaseIfNotExists } from './config/create-database';
 
 async function bootstrap() {
   await createDatabaseIfNotExists();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Behind Caddy (the single reverse-proxy hop) in production: trust it so
+  // `request.ip` is the real client address. Email rate limiting keys the
+  // public contact form on the client IP, so without this every visitor would
+  // share Caddy's address and the daily limit would be exhausted instantly.
+  app.set('trust proxy', 1);
 
   const corsOrigin = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
