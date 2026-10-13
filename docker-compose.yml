@@ -81,6 +81,9 @@ services:
       - ./web-trade-crm/src:/app/src
       - ./web-trade-crm/index.html:/app/index.html
       - ./web-trade-crm/vite.config.ts:/app/vite.config.ts
+      # Static assets served as-is (logo, demo PDFs, landing screenshots).
+      # Mounted so new/changed files are picked up without rebuilding the image.
+      - ./web-trade-crm/public:/app/public
     depends_on:
       - api
 
