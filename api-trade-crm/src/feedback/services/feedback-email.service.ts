@@ -16,12 +16,16 @@ const STALE_PENDING_AGE_MS = 30 * 60 * 1000;
  */
 const FEEDBACK_EMAIL_TEMPLATE = 'feedback-email';
 
-/** Human-readable type labels — same copy as the web FeedbackPage. */
-const TYPE_LABELS: Record<FeedbackType, string> = {
+/**
+ * Human-readable type labels — same copy as the web FeedbackPage. Exported so
+ * the public contact-form notification reuses the exact same labels.
+ */
+export const FEEDBACK_TYPE_LABELS: Record<FeedbackType, string> = {
   [FeedbackType.FEEDBACK]: 'Feedback',
   [FeedbackType.BUG]: 'Bug',
   [FeedbackType.FEATURE_REQUEST]: 'Feature request',
   [FeedbackType.CONTACT]: 'Contact',
+  [FeedbackType.EARLY_ACCESS]: 'Early Access',
 };
 
 /**
@@ -141,7 +145,7 @@ export class FeedbackEmailService implements OnModuleInit {
           submitterEmail: feedback.userEmail || 'unknown',
           submitterUserId: feedback.userId || '(none)',
           feedbackId: feedback.id,
-          typeLabel: TYPE_LABELS[feedback.type] ?? feedback.type,
+          typeLabel: FEEDBACK_TYPE_LABELS[feedback.type] ?? feedback.type,
           subjectLine: subject || '(no subject)',
           // Pre-formatted so the template stays logic-free (the same trick the
           // invoice template uses for its optional payment note).

@@ -25,6 +25,8 @@ import type {
   CreateFeedbackPayload,
   CatalogItemResult,
   FeedbackResult,
+  CreateContactSubmissionPayload,
+  ContactSubmissionResult,
 } from "../services/api";
 
 // ---------------------------------------------------------------------------
@@ -385,6 +387,25 @@ export const demoService = {
     };
     feedbackSubmissions.unshift(submission);
     return { ...submission };
+  },
+
+  /**
+   * Mirrors `POST /contact`. Nothing is stored: the public contact form is only
+   * reachable when the app is *not* in demo mode (demo mode is an authenticated
+   * session), so this exists purely to keep the api client's demo branch
+   * honest.
+   */
+  submitContact(
+    payload: CreateContactSubmissionPayload,
+  ): ContactSubmissionResult {
+    return {
+      id: `demo-contact-${Date.now()}`,
+      type: payload.type,
+      email: payload.email.trim(),
+      subject: payload.subject?.trim() || undefined,
+      message: payload.message.trim(),
+      createdAt: new Date().toISOString(),
+    };
   },
 
   // ---- Jobs ----

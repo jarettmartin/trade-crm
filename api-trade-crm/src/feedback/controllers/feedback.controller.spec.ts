@@ -17,6 +17,7 @@ import { TenantGuard } from '../../common/guards/tenant.guard';
 import { Feedback } from '../entities/feedback.entity';
 import { FeedbackType } from '../../common/enums/feedback-type.enum';
 import { FeedbackEmailStatus } from '../../common/enums/feedback-email-status.enum';
+import { EmailThrottlerGuard } from '../../email/guards/email-throttler.guard';
 
 // TenantGuard imports jwks-rsa → jose, which ships ESM only and cannot be
 // parsed by this Jest setup. A factory mock (rather than the automatic one)
@@ -146,6 +147,10 @@ describe('FeedbackController (serialization)', () => {
           return true;
         },
       })
+      // The throttler has its own integration spec; here it only needs to let
+      // requests through so the serialization assertions can run.
+      .overrideGuard(EmailThrottlerGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = moduleFixture.createNestApplication();

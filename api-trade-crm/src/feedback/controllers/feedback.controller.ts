@@ -8,12 +8,18 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { FeedbackService } from '../services/feedback.service';
 import { CreateFeedbackDto } from '../dto/create-feedback.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
+import { EmailThrottlerGuard } from '../../email/guards/email-throttler.guard';
+import {
+  EMAIL_RATE_LIMITS,
+  EMAIL_RATE_WINDOW_MS,
+} from '../../email/email-throttle.config';
 
 /**
  * Applies `@Exclude()` on the entity to every response from this controller:
@@ -26,8 +32,19 @@ import type { CurrentUserType } from '../../common/decorators/current-user.decor
 export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
 
+  /**
+   * Records a submission and fires the internal notification email.
+   *
+   * Rate limited per tenant, per day (`EMAIL_RATE_LIMITS.feedbackPerTenantPerDay`).
+   */
   @Post()
-  @UseGuards(TenantGuard)
+  @UseGuards(TenantGuard, EmailThrottlerGuard)
+  @Throttle({
+    default: {
+      limit: EMAIL_RATE_LIMITS.feedbackPerTenantPerDay,
+      ttl: EMAIL_RATE_WINDOW_MS,
+    },
+  })
   async create(
     @Body() dto: CreateFeedbackDto,
     @CurrentUser() user: CurrentUserType,

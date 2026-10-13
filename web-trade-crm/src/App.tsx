@@ -10,8 +10,11 @@ import { IonReactRouter } from "@ionic/react-router";
 import { Redirect, Route, Switch } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Menu from "./components/Menu";
+import PublicMenu from "./components/PublicMenu";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
+import BetaProgramPage from "./pages/BetaProgramPage";
+import ContactPage from "./pages/ContactPage";
 import Home from "./pages/Home";
 import CreateTenantPage from "./pages/CreateTenantPage";
 import CreateJobPage from "./pages/CreateJobPage";
@@ -133,17 +136,28 @@ const AppContent: React.FC = () => {
             </Route>
           </Switch>
         ) : (
-          <Switch>
-            <Route path="/" exact={true}>
-              <LandingPage />
-            </Route>
-            <Route path="/sign-in" exact={true}>
-              <AuthPage />
-            </Route>
-            <Route>
-              <Redirect to="/" />
-            </Route>
-          </Switch>
+          <IonSplitPane contentId="public-main" when={false}>
+            <PublicMenu />
+            {/* animated={false}: the public space is a simple header menu, so the
+                iOS page-slide transition just looks out of place on desktop. */}
+            <IonRouterOutlet id="public-main" animated={false}>
+              <Route path="/" exact={true}>
+                <LandingPage />
+              </Route>
+              <Route path="/beta-program" exact={true}>
+                <BetaProgramPage />
+              </Route>
+              <Route path="/contact" exact={true}>
+                <ContactPage />
+              </Route>
+              <Route path="/sign-in" exact={true}>
+                <AuthPage />
+              </Route>
+              <Route>
+                <Redirect to="/" />
+              </Route>
+            </IonRouterOutlet>
+          </IonSplitPane>
         )}
       </IonReactRouter>
     </IonApp>

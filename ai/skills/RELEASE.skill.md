@@ -18,8 +18,66 @@ Related docs: `docs/GITFLOW.md` (branch model + tagging), `docs/CONTRIBUTING.md`
   - Web (`web-trade-crm/`): `npm run test.unit`, `npm run build`
 - Clean working tree. The scripts below fetch and reset the base branch
   themselves — don't hand-roll those git steps.
-- **Agents never push or merge.** Prepare everything, verify it, then hand the
-  user the exact commands to push, open PRs, and merge.
+- **The release only contains what is on `origin/develop`.** `release:start`
+  resets `develop` to `origin/develop`, so unpushed commits there — and work
+  sitting on unmerged local branches — are silently left out of the release.
+  Push and merge first.
+- **The agent executes this flow on the user's behalf — but every
+  outward-facing or production step is permission-gated.** Prepare and verify
+  freely; before each push, merge, tag-push, or deploy, stop and get explicit
+  confirmation (see **Execution & confirmation model** below). The user should
+  never have to type these commands themselves.
+
+## Execution & confirmation model
+
+The agent runs the commands in this skill for the user: the user approves, the
+agent executes and reports. Nothing outward-facing happens without an explicit
+go-ahead, and the user does not hand-type the commands.
+
+**Two tiers:**
+
+| Tier | Examples | Behaviour |
+| --- | --- | --- |
+| **Local / reversible** | reading versions, `npm run release:start`, `npm run release:tag -- --dry-run`, local checks | Run it, then report what changed. No gate. |
+| **Outward-facing / irreversible** | pushing a branch or tags, merging PRs, `./scripts/deploy.sh`, `./scripts/deploy-frontend.sh` | **Stop and ask.** Do not run until the user confirms. |
+
+**The gates** — each needs its own confirmation; approving one never approves the
+next:
+
+| Gate | Step | Command(s) the agent runs once approved |
+| --- | --- | --- |
+| **G1 — publish branch** | 3 | `git push -u origin release/vX.Y.Z` |
+| **G2 — merge PRs** | 3 | the user merges `→ main`, then `→ develop`, in GitHub (or the agent runs `gh pr merge …` if the user asks it to) |
+| **G3 — push tags** | 4 | `npm run release:tag` then `git push origin api-vX.Y.Z web-vX.Y.Z` |
+| **G4 — deploy** | 5 | `SSH_KEY=… ./scripts/deploy.sh` and/or `./scripts/deploy-frontend.sh` |
+
+**How to ask** — before any gated command, post a short block and wait:
+
+```
+Next (gate G<T>): <one-line effect>
+I'll run:
+  <exact command(s)>
+Say the word and I'll execute it.
+```
+
+**Rules:**
+
+- **Explicit consent only.** A green test run, a "looks good", or a question is
+  not authorization to push or deploy — require a clear instruction ("push it",
+  "deploy", "go ahead with the tag").
+- **Never self-authorize and never chain gates.** G2's approval does not cover G3
+  or G4. A blanket "run the whole release end-to-end" is enough to proceed
+  through **G1–G3**, but **G4 (deploy) still needs its own explicit go-ahead**
+  unless the user separately and unambiguously authorized the deploy.
+- **Deploy means production.** Once G4 is approved, treat it as prod: confirm
+  `.env.production` and the SSH key exist *before* running, run it, then verify
+  (step 5).
+- **Report every gated action** after it runs: the command, the outcome, and the
+  verification. If a gate fails, stop and surface the error — don't advance.
+- Prefer `--dry-run` where the script offers it, and show the user the result
+  before the real run.
+- This is the flow where the agent pushes on the user's behalf; outside a release,
+  the default no-push rule (`../agents/TASK.agent.md`) still stands.
 
 ## 1. Decide the version
 
@@ -55,31 +113,58 @@ It syncs `develop` with origin, creates `release/vX.Y.Z`, bumps the version(s) i
 code (`package.json` + `package-lock.json`), and commits
 `chore(release): bump versions to X.Y.Z`.
 
+This step is local and reversible, so it isn't gated — but **say which version you
+picked (and why)** before running it, so the user can correct the choice first.
+
 **The bump commit is exactly what the release tags will point at** — don't
-amend, rebase, or squash it away. If the release needs stabilising (final docs,
-release-blocking fixes), add those commits to the release branch before opening
-the PRs.
+amend, rebase, or squash it away.
 
-## 3. Get it merged (two PRs)
+- **Stabilising the release?** Add those commits (final docs, release-blocking
+  fixes) before opening the PRs — but be aware they land *after* the bump, so the
+  tagged commit is no longer the tip of `main`. That's accepted here (the tag
+  anchors the version, and `release:tag` only ever tags the bump commit); if a
+  post-bump fix genuinely must be covered by the tag, create it by hand instead
+  (step 4).
+- **Wrong version?** The script refuses to reuse an existing `release/vX.Y.Z`
+  branch. Delete it — `git checkout develop && git branch -D release/vX.Y.Z`
+  (plus the remote branch, if you already pushed it) — and run `release:start`
+  again.
 
-Hand the user:
+## 3. Publish the branch & merge the PRs (gates G1, G2)
+
+**G1 — ask, then push the release branch.** State what you'll run and wait for
+the go-ahead:
 
 ```bash
 git push -u origin release/vX.Y.Z
 ```
 
-- **PR 1** — `release/vX.Y.Z → main` (use `.github/PULL_REQUEST_TEMPLATE.md`).
+Then line up the two PRs (use `.github/PULL_REQUEST_TEMPLATE.md`):
+
+- **PR 1** — `release/vX.Y.Z → main`.
 - **PR 2** — `release/vX.Y.Z → develop`, so the version bump stays on `develop`.
   Skip it and the next release starts from a stale version.
 
-## 4. Tag the release
+**G2 — the PRs get merged.** Drive it however the user prefers: they merge in
+GitHub, or — if they authorize it and `gh` is available — the agent runs
+`gh pr merge` for each. Either way, **wait for the user to confirm both PRs are
+merged** before tagging; don't infer "merged" from a green CI run.
 
-After PR 1 merges to `main`:
+## 4. Tag the release (gate G3)
+
+After the user confirms PR 1 merged to `main`:
+
+**No gate — preview first.** Run the safe dry run and show the user the output:
 
 ```bash
-npm run release:tag -- --dry-run         # show what would be tagged (safe)
-npm run release:tag                      # tags the bump commit on main
-git push origin api-vX.Y.Z web-vX.Y.Z    # the script prints the exact command
+npm run release:tag -- --dry-run         # shows what would be tagged, changes nothing
+```
+
+**G3 — ask, then tag and push.** Once approved:
+
+```bash
+npm run release:tag                      # tags the bump commit on main (local)
+git push origin api-vX.Y.Z web-vX.Y.Z    # the script prints the exact tag names
 ```
 
 - The script syncs `main`, finds the latest `chore(release): bump` commit, and
@@ -94,14 +179,25 @@ git tag -a api-vX.Y.Z <sha> -m "API vX.Y.Z"
 git tag -a web-vX.Y.Z <sha> -m "Web vX.Y.Z"
 ```
 
-## 5. Deploy (optional)
+Pushing hand-made tags is still **G3** — ask before `git push origin …`.
+
+## 5. Deploy (optional, gate G4 — production)
 
 Skipping the deploy is fine — but then don't tag the release as shipped.
+
+**G4 — production, so it needs its own explicit go-ahead** (a general "go ahead
+with the release" does not cover it). Pre-flight before running anything, and tell
+the user:
+
+- `.env.production` exists — first time only:
+  `cp .env.production.example .env.production`, then fill in real secrets (never
+  commit it).
+- the SSH key is present (`SSH_KEY=~/.ssh/id_ed25519`, or the default agent key).
+- which targets you'll deploy (API, web, or both) and the exact commands.
 
 **API (Lightsail):**
 
 ```bash
-cp .env.production.example .env.production   # first time only — fill in secrets
 SSH_KEY=~/.ssh/id_ed25519 ./scripts/deploy.sh
 ```
 
@@ -118,11 +214,12 @@ image, running `migration:run`, seeding, and starting the stack.
 Builds the SPA (reads `VITE_API_BASE` from `web-trade-crm/.env.production`),
 syncs `dist/` to the `sprout-crm-web` bucket, and invalidates CloudFront.
 
-**Verify after deploying:**
+**Verify after deploying** — the agent runs these checks and reports, and asks
+the user to exercise any changed flow it can't reach:
 
 - https://sprout-crm.com and https://api.sprout-crm.com/api/docs both load.
-- Sign in and exercise the flow this release changed.
 - The instance reports no pending migrations (`migration:run` at container start).
+- The user signs in and exercises the flow this release changed.
 
 ## Migrations on a release
 
@@ -187,10 +284,23 @@ installed with `scripts/install-backup-cron.sh`), landing in
 - **Tagging a release you didn't ship** (or shipping one you didn't tag) —
   decide, then keep the tag list honest.
 - **Re-timestamping an applied migration** — it re-runs or gets skipped.
+- **Running a gate without explicit confirmation** — a green build or a "looks
+  good" is not authorization to push, tag-push, or deploy; G4 (production) always
+  needs its own go-ahead.
+- **Assuming the deploy worked** — run the post-deploy checks and report them
+  before calling the release shipped.
 
-## Handing off
+## Handing off & reporting
 
-Report: the version(s), the bump commit, the release branch, the two PRs to open,
-the tag command, and whether a deploy is intended. The user pushes, merges, tags,
-and deploys — the agent prepares and verifies. Confirm current state from the
-repo (`git tag -l`, each `package.json`) rather than trusting the examples above.
+The agent drives the flow and executes each gated command once the user approves;
+the user approves and merges, and does not have to type the commands. Keep them
+informed at each gate:
+
+- **After prep** — the version(s), the bump commit, the release branch, and the
+  two PRs to open.
+- **Before each gate** — the exact command(s) and their effect, then wait (see
+  **Execution & confirmation model**).
+- **After each gate** — what ran, the outcome, and any verification.
+
+Confirm current state from the repo (`git tag -l`, each `package.json`) rather
+than trusting the examples above.
