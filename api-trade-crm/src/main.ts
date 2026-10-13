@@ -51,8 +51,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Trade CRM API')
-    .setDescription('Multi-tenant trade business CRM')
+    .setTitle('Sprout CRM API')
+    .setDescription('Multi-tenant service-business CRM')
     .setVersion(readPackageVersion())
     .addBearerAuth()
     .build();
