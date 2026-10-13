@@ -262,3 +262,85 @@ ion-textarea.control-bordered {
     background: var(--ion-color-light);
   }
 }
+
+/* ===== LANDING PAGE (public home) =====
+ * The landing page uses the same 1200px frame as the public header for the
+ * feature grid (wider than the reading-capped pages), while the intro card and
+ * the CTA cards use the app-wide `.capped-container` (600px). The feature
+ * highlights go 2-up on desktop and 1-up below 992px (matching the header's
+ * mobile/desktop breakpoint); the CTA cards always stack. */
+.landing-container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-hero {
+  margin: 32px 0 40px;
+  text-align: center;
+}
+
+.landing-hero__logo {
+  max-width: 280px;
+  height: auto;
+}
+
+.landing-intro {
+  margin-bottom: 40px;
+}
+
+/* Feature highlights - 1-up on mobile, 2-up from 992px. */
+.landing-features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* Screenshot frame: a fixed 16:10 box keeps mixed source sizes even, and
+   `object-fit: contain` letterboxes rather than cropping a UI capture. */
+.landing-feature__media {
+  aspect-ratio: 16 / 10;
+  background: var(--ion-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-feature__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Bold lead sentence under a feature title. iOS renders card headers
+   column-reversed, so it sits below IonCardTitle in the DOM (see the page). */
+.landing-feature__subtitle {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+/* Calls to action - always stacked (demo above early access), independent of
+   the feature grid. */
+.landing-ctas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+/* Grid children space themselves via `gap`, so drop the default card margin. */
+.landing-intro ion-card,
+.landing-features ion-card,
+.landing-ctas ion-card {
+  margin: 0;
+}
+
+@media (min-width: 992px) {
+  .landing-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
