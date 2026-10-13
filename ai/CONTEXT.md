@@ -287,6 +287,19 @@ Runs daily at 1am Eastern via cron on the instance
 - **Other email types reuse this plumbing**: feedback submissions email an internal notification through the same `EmailService` (`feedback-email.hbs`, no attachment) — see `### Feedback`. That is the reference pattern for a new template-based email.
 - **Node runtime note**: AWS SDK v3 will require Node >= 22 starting 2027; the API image currently uses `node:20-alpine`. Non-blocking; bump `api-trade-crm/Dockerfile` in a future change.
 
+### Email rate limiting
+
+- Every email-sending endpoint is rate limited with `@nestjs/throttler` through a project-owned `EmailThrottlerGuard` (`src/email/guards/`). It is bound **per route**, never as a global `APP_GUARD`, so no other endpoint is throttled.
+- One throttler set (a 1-day window, named `default` so responses carry standard, unsuffixed `Retry-After` / `X-RateLimit-*` headers) is configured in `EmailModule`; each route sets its own budget with `@Throttle(...)` using the `EMAIL_RATE_LIMITS` constants + `EMAIL_RATE_WINDOW_MS` from `src/email/email-throttle.config.ts`:
+  - `POST /invoices/:invoiceId/email` — **20/day per tenant**
+  - `POST /feedback` — **10/day per tenant**
+  - `POST /contact` (public) — **3/day per client IP**
+- The bucket is chosen by `resolveEmailThrottleTracker`: the tenant id when the request is authenticated (`tenant:<id>`), otherwise the client IP (`ip:<addr>`) — the prefixes keep the two scopes from ever sharing a counter. `TenantGuard` must therefore run first, so it is declared **before** `EmailThrottlerGuard` in `@UseGuards(...)`. The throttler's default `generateKey` already folds in the controller + handler + set name, so each route keeps its own budget.
+- **`trust proxy` is set in `main.ts`** (`app.getHttpAdapter().getInstance().set('trust proxy', 1)`) because Caddy is the single reverse-proxy hop — without it `request.ip` would be Caddy's address and the public form's IP budget would collapse onto one bucket. Throttler's `ipv6SubnetPrefix` (default 64) additionally groups IPv6 subnets so a client cannot dodge the limit by rotating addresses.
+- Over-limit requests get a **429** whose `message` is friendly copy ("Daily email limit reached. Please try again tomorrow."). The web client already shows `data.message` verbatim, so no API-client change was needed.
+- **In-memory counters** (the throttler default): they reset when the API restarts/redeploys and are per-container. Acceptable on the single Lightsail instance; a Postgres-backed `ThrottlerStorage` is the follow-up if that ever matters.
+- Deliberately **not mirrored in demo mode**: demo is an authenticated sandbox that neither sends real email nor faces abuse, so `demoService` has no throttle mirror (a documented gap).
+
 ### Authentication (AWS Cognito)
 
 - All Cognito API calls are handled server-side by the Node.js backend using `@aws-sdk/client-cognito-identity-provider`
@@ -385,6 +398,8 @@ src/
 ├── email/                            # AWS SES integration (email sending via Handlebars templates)
 │   ├── services/email.service.ts     # SESv2 SendEmail (raw MIME + attachment) + template renderer
 │   ├── email-templates.ts            # .hbs loader/compiler (subject + body per file)
+│   ├── email-throttle.config.ts      # per-day email rate-limit budgets + tenant/IP tracker
+│   ├── guards/                       # EmailThrottlerGuard (per-route, tenant/IP buckets)
 │   ├── templates/                    # Handlebars email templates (invoice-email.hbs, feedback-email.hbs)
 │   └── mime.ts                       # Dependency-free RFC 5322 MIME builder
 ├── invoices/                        # Invoice creation, PDF generation, emailing
@@ -464,7 +479,7 @@ src/
 - `POST /feedback` (TenantGuard) records a submission — `tenantId`, `userId`, and `userEmail` always come from the verified token, never the body
 - `GET /feedback` (TenantGuard) lists the tenant's submissions newest-first (`createdAt DESC`, paginated)
 - **Deliberately has no relations/foreign keys** to `tenants` or `users` (plain scalar `tenantId`/`userId` columns) so feedback history survives a user or tenant being changed/deleted; `tenantId` still scopes every query
-- **Every submission also emails an internal notification** to the support inbox in `FEEDBACK_NOTIFY_EMAIL` (env-only: unset or empty → notifications disabled, and submissions are recorded as `SKIPPED`; no address is hardcoded in the repo, so the value lives in the gitignored `api-trade-crm/.env` locally and `.env.production` when deployed). Strictly outside the user's world: the submission is saved first, the send is fire-and-forget via `FeedbackEmailService` (template `src/email/templates/feedback-email.hbs`, From `SES_FROM_EMAIL`, Reply-To the submitter), and a failure can never slow down or fail the user's request.
+- **Every submission also emails an internal notification** to the support inbox in `FEEDBACK_NOTIFY_EMAIL` (env-only: unset or empty → notifications disabled, and submissions are recorded as `SKIPPED`; no address is hardcoded in the repo, so the value lives in the gitignored `api-trade-crm/.env` locally and `.env.production` when deployed). Strictly outside the user's world: the submission is saved first, the send is fire-and-forget via `FeedbackEmailService` (template `src/email/templates/feedback-email.hbs`, From `SES_FROM_EMAIL`, Reply-To the submitter), and a failure can never slow down or fail the user's request. `POST /feedback` is also rate limited to **10/day per tenant** — see `### Email rate limiting`.
 - The notification outcome is tracked on the row itself (`emailStatus` PENDING/SENT/FAILED/SKIPPED + `emailRecipient`, `emailMessageId`, `emailErrorMessage`, `emailSentAt`) but **never reaches a client**: the five columns are `@Exclude()`d on the entity and `FeedbackController` registers `ClassSerializerInterceptor`, so serialization strips them for every response shape (bare entity, array, and the paginated `{ data, meta }` wrapper). That is the canonical Nest pattern for hiding entity fields — the alternative (a response DTO + mapper) has to be remembered at every call site, which is exactly the leak this replaces. Caveat: `@Exclude()` only applies to class instances, which TypeORM returns; a plain object would pass through untouched. Recovery note: those columns are nullable and nothing is written to them by the demo seed, so pre-existing/demo-seeded rows read NULL ("not tracked") rather than a fabricated PENDING; stale PENDING rows older than 30 min are flagged FAILED on startup like `InvoiceEmailService`.
 - UI: `/feedback` (sidemenu link) — submit form + the tenant's own submission history
 
@@ -472,7 +487,7 @@ src/
 
 - Submissions from the **public** (unauthenticated) contact form. Because a visitor with no account has no tenant, this table is deliberately **not** tenant-scoped: `ContactSubmission` extends `BaseEntity` and has no `tenantId` column at all (nothing tenant-scoped ever reads it, so multi-tenancy stays strict)
 - `type` (CONTACT/EARLY_ACCESS), `email` (required — support needs a way to reply), `subject` (nullable, ≤255), `message` (≤1000). Otherwise it mirrors `Feedback`: the same internal-notification columns (`emailStatus` PENDING/SENT/FAILED/SKIPPED + `emailRecipient`, `emailMessageId`, `emailErrorMessage`, `emailSentAt`), all `@Exclude()`d and stripped by `ClassSerializerInterceptor` on the controller, with the same stale-PENDING recovery on startup
-- `POST /contact` is **unguarded** (visitors have no token) and accepts only the contact subject types — an in-app-only type such as `BUG` is rejected. Nothing identity-related is accepted from the body
+- `POST /contact` is **unguarded** (visitors have no token) and accepts only the contact subject types — an in-app-only type such as `BUG` is rejected. Nothing identity-related is accepted from the body. It is rate limited to **3/day per client IP** — see `### Email rate limiting`.
 - `FeedbackType` is shared by both submission tables (and the same Postgres `feedback_type_enum`), so the values and their labels stay in one place. `EARLY_ACCESS` was added for the contact form; the in-app `CreateFeedbackDto` deliberately does *not* accept it
 - Notifications reuse the same `EmailService` + PENDING/SENT/FAILED bookkeeping but render `src/email/templates/contact-email.hbs` (the feedback template's "Business"/"Tenant ID" lines don't apply to a tenant-free submission). Destination is the same env-driven `FEEDBACK_NOTIFY_EMAIL`
 - UI: `/contact` — reached from the public nav and from the Early Access page's "Request Early Access" CTA, which pre-selects the type via `/contact?type=EARLY_ACCESS`. An unknown/missing `?type=` falls back to CONTACT

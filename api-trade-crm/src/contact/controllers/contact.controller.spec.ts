@@ -16,6 +16,7 @@ import { CreateContactSubmissionDto } from '../dto/create-contact-submission.dto
 import { ContactSubmission } from '../entities/contact-submission.entity';
 import { FeedbackType } from '../../common/enums/feedback-type.enum';
 import { FeedbackEmailStatus } from '../../common/enums/feedback-email-status.enum';
+import { EmailThrottlerGuard } from '../../email/guards/email-throttler.guard';
 
 /**
  * The five notification columns the visitor must never see. Asserted as a list
@@ -71,7 +72,12 @@ describe('ContactController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ContactController],
       providers: [{ provide: ContactService, useValue: contactService }],
-    }).compile();
+    })
+      // The throttler has its own integration spec; here it only needs to let
+      // requests through so the serialization assertions can run.
+      .overrideGuard(EmailThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     app = module.createNestApplication();
     app.useGlobalPipes(
