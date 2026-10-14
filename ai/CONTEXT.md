@@ -256,7 +256,7 @@ Runs daily at 1am Eastern via cron on the instance
 
 ### Backend (NestJS)
 
-- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `feedback`, `jobs`, `invoices`, `users`
+- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `feedback`, `contact`, `jobs`, `invoices`, `email`, `ai`, `users`
 - Common module (`common/`) for shared guards, decorators, DTOs, entities, and enums
 - Repository pattern used exclusively — no raw queries
 - Constructor injection for all dependencies
@@ -332,6 +332,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `CustomerSearch` — Debounced search with dropdown results + "Create New Customer" button
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
   - `CatalogItemSearch` — Catalog picker for the job detail page: tenant catalog is fetched up-front (`api.fetchAllCatalogItems()`, pages the endpoint at limit 100), then filtered **locally** on every keystroke across description/type/unit price. Refetched on `useIonViewWillEnter` so catalog edits/deletes land when a job page is revisited. Includes the "Add Custom Line Item" button that switches to the manual form.
+  - `ServiceEstimatorModal` — the "AI service estimator" modal opened from the job detail page. Takes a free-text description, shows the returned suggestions as editable line items (type/description/quantity/unit price) with per-row remove, and only calls back to create line items when the user presses "Add N line items" (Cancel saves nothing). In demo mode it offers hardcoded example prompts (see AI service estimator above).
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
   - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings, Feedback) + logout
   - `PublicHeader` + `PublicMenu` — the unauthenticated-space nav, sharing the item list in `publicNav.ts`: a custom horizontal top bar on desktop (`>= 992px`) and a hamburger that opens the Ionic `IonMenu` drawer below that. Ionic has no horizontal menu component, so the bar is hand-rolled. Reused by every public page; it highlights the current page in the brand green and does **not** animate page transitions (`IonRouterOutlet animated={false}`), which looked out of place on desktop
@@ -385,6 +386,13 @@ src/
 │   ├── dto/
 │   ├── entities/
 │   └── services/
+├── ai/                              # AI service estimator (natural-language catalog matching via Anthropic tool use)
+│   ├── controllers/                  # ai-estimator.controller
+│   ├── dto/
+│   ├── entities/                     # AiEstimationRequest (per-user budget ledger)
+│   ├── services/                     # ai-estimator (orchestration), catalog-matcher (tool loop), catalog-tool (tenant-scoped search), ai-usage (3/hour)
+│   ├── anthropic.client.ts          # server-side Anthropic SDK wrapper (env-driven, optional)
+│   └── ai-estimator.config.ts       # named constants: rate limit, caps, default model
 ├── feedback/                        # In-app feedback/bug/feature-request/contact submissions
 │   ├── controllers/
 │   ├── dto/
@@ -464,7 +472,7 @@ src/
 - Job: `title`, `description`, `status` (DRAFT/ASSIGNED/IN_PROGRESS/COMPLETED/CANCELLED), `customerId`, `customerAddressId`, `assignedUserId`, `scheduledStart/End`, `completedAt`
 - Note: `userId`, `note` (cumulative, non-editable)
 - `PATCH /jobs/:id` accepts job fields only — notes and line items have their own endpoints (`POST /jobs/:id/notes`, `POST /jobs/:id/line-items`, `DELETE /jobs/:id/line-items/:lineItemId`), so a child row is inserted or removed individually and existing rows keep their `id` and `createdAt`. Both child lists are returned in the order they were added (`createdAt` ASC, server-derived) — no client sends or tracks an ordering value
-- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`)
+- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`). When a `catalogItemId` is supplied, `createLineItem` verifies it belongs to the caller's tenant before saving (this is also the re-validation step for confirmed AI suggestions)
 
 ### CatalogItem
 
@@ -472,6 +480,18 @@ src/
 - `JobLineItem.catalogItemId` is an **optional reference only** — every display value is always snapshotted onto the `job_line_items` row at add time, so editing or deleting a catalog item never changes existing line items (deleting a catalog item just clears the reference via `ON DELETE SET NULL`)
 - Catalog search on the Create/Job detail page loads the tenant's items up-front and filters **locally** (description/type/unit price); pick an item to prefill the normal manual line item form (editable before applying), or use the "Add Custom Line Item" button for a blank entry
 - Management UI: `/manage-catalog` (paginated table + free-text search across description/type/price + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation)
+
+### AI service estimator
+
+- Natural-language line-item suggestions on the job detail page: describe the work, Claude searches the caller's **own** catalog via a server-side tool-use flow, and the UI shows editable suggestions. **No line items are created until the user explicitly confirms** — the AI endpoints only read.
+- Module `src/ai/`: `AiEstimatorController` (`POST /ai/catalog-matches`, `GET /ai/catalog-matches/usage`, both `TenantGuard`), `AiEstimatorService` (budget + orchestration + safe error mapping), `CatalogMatcherService` (the bounded Anthropic tool-use loop), `CatalogToolService` (tenant-scoped catalog read), `AiUsageService` (the per-user budget), `AnthropicClient` (SDK wrapper).
+- **Tool use, not guessing**: the only tool is `search_catalog` (a short free-text `query`), executed locally by reusing `CatalogService.findAll` — one search implementation, always scoped to the caller's `tenantId`, capped at 10 rows, returning only `{ id, type, description, unitPrice }`. No SQL/URL/write tools; the model can never create or update jobs or line items.
+- **Output is untrusted**: the model returns only `catalogItemId` + `quantity` + `matchReason`. Every id is checked against the rows *this request's* tool calls returned (invented/foreign/duplicate ids are dropped), and `type`/`description`/`unitPrice` are re-attached server-side from the catalog rows — the model can never invent a name or a price. Malformed output yields an empty result with a friendly message.
+- Bounded everywhere: description ≤ 1000 chars (DTO), ≤ 5 tool iterations, ≤ 10 tool results, ≤ 1024 output tokens, ≤ 10 suggestions, 30 s provider timeout, 1 SDK retry. Only the description and those minimal catalog fields are sent to the provider — never customer names, addresses or notes; logs carry operational metadata (status, latency, counts) only.
+- **Rate limit: 3 requests per rolling hour per authenticated user**, enforced *before* the provider call so provider failures still count. It is persistent (a small `ai_estimation_requests` ledger table + composite index) and atomic (count-then-insert inside a transaction guarded by a per-user `pg_advisory_xact_lock`), keyed by the local user id from the verified token. This is deliberately **not** the `@nestjs/throttler` email limiter (that one is in-memory). Over-limit returns 429 with a friendly message and a `retryAfterSeconds` hint; the response also carries `usage { limit, used, remaining, resetAt }`.
+- **Config**: `ANTHROPIC_API_KEY` (server-side only; unset ⇒ the endpoints return a graceful 503 and nothing else breaks) and optional `ANTHROPIC_MODEL` (default `claude-haiku-5-5`, the cheapest current model). Never commit the key.
+- **Confirmation reuses the normal endpoint**: the UI posts the edited selections to `POST /jobs/:id/line-items`, and `JobService.createLineItem` now validates that a supplied `catalogItemId` belongs to the caller's tenant (previously a foreign UUID could be referenced).
+- Demo mode: the modal offers three hardcoded example prompts that map to a **defined** catalog output built from the fixtures — neither the backend nor Anthropic is called, and unexpected input returns a friendly no-match message. The demo also mirrors the 3/hour budget (in-memory, resets on reload).
 
 ### Feedback
 
