@@ -9,18 +9,14 @@ import {
   IonContent,
   IonTextarea,
   IonText,
-  IonItem,
-  IonLabel,
-  IonInput,
-  IonSelect,
-  IonSelectOption,
   IonSpinner,
   IonIcon,
 } from "@ionic/react";
 import { closeOutline, sparklesOutline, trashOutline } from "ionicons/icons";
+import LineItemFields from "./LineItemFields";
+import type { LineItemFieldName } from "./LineItemFields";
 import { api, AiEstimatorUsage } from "../services/api";
 
-const LINE_ITEM_TYPES = ["SERVICE", "MATERIAL", "FEE"] as const;
 const DESCRIPTION_MAX_LENGTH = 1000;
 
 /** A suggestion while it is being edited in the modal (numbers kept as text). */
@@ -137,7 +133,7 @@ const ServiceEstimatorModal: React.FC<ServiceEstimatorModalProps> = ({
 
   const updateField = (
     key: string,
-    field: "type" | "description" | "unitPrice" | "quantity",
+    field: LineItemFieldName,
     value: string,
   ) => {
     setSuggestions((prev) =>
@@ -316,58 +312,18 @@ const ServiceEstimatorModal: React.FC<ServiceEstimatorModalProps> = ({
               </IonButton>
             </div>
 
-            <IonItem style={{ "--padding-start": "0" }} lines="none">
-              <IonLabel position="stacked">Type</IonLabel>
-              <IonSelect
-                value={s.type}
-                interface="popover"
+            <div style={{ marginTop: "4px" }}>
+              <LineItemFields
+                values={{
+                  type: s.type,
+                  description: s.description,
+                  quantity: s.quantity,
+                  unitPrice: s.unitPrice,
+                }}
                 disabled={busy}
-                onIonChange={(e) =>
-                  updateField(s.key, "type", String(e.detail.value))
-                }
-              >
-                {LINE_ITEM_TYPES.map((type) => (
-                  <IonSelectOption key={type} value={type}>
-                    {type.charAt(0) + type.slice(1).toLowerCase()}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </IonItem>
-
-            <IonItem style={{ "--padding-start": "0" }} lines="none">
-              <IonLabel position="stacked">Description</IonLabel>
-              <IonInput
-                value={s.description}
-                disabled={busy}
-                onIonInput={(e) =>
-                  updateField(s.key, "description", e.detail.value || "")
-                }
+                onChange={(field, value) => updateField(s.key, field, value)}
+                testIdPrefix="estimator"
               />
-            </IonItem>
-
-            <div style={{ display: "flex", gap: "8px" }}>
-              <IonItem style={{ "--padding-start": "0", flex: 1 }} lines="none">
-                <IonLabel position="stacked">Quantity</IonLabel>
-                <IonInput
-                  type="number"
-                  value={s.quantity}
-                  disabled={busy}
-                  onIonInput={(e) =>
-                    updateField(s.key, "quantity", e.detail.value || "")
-                  }
-                />
-              </IonItem>
-              <IonItem style={{ "--padding-start": "0", flex: 1 }} lines="none">
-                <IonLabel position="stacked">Unit price</IonLabel>
-                <IonInput
-                  type="number"
-                  value={s.unitPrice}
-                  disabled={busy}
-                  onIonInput={(e) =>
-                    updateField(s.key, "unitPrice", e.detail.value || "")
-                  }
-                />
-              </IonItem>
             </div>
 
             <IonText color="medium">
