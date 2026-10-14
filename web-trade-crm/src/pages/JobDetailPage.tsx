@@ -24,7 +24,7 @@ import {
   IonActionSheet,
   useIonViewWillEnter,
 } from "@ionic/react";
-import { trashOutline, downloadOutline, eyeOutline, mailOutline } from "ionicons/icons";
+import { trashOutline, downloadOutline, eyeOutline, mailOutline, sparklesOutline } from "ionicons/icons";
 import { useParams } from "react-router-dom";
 import {
   api,
@@ -34,6 +34,8 @@ import {
   CreateJobLineItemPayload,
 } from "../services/api";
 import CatalogItemSearch from "../components/CatalogItemSearch";
+import ServiceEstimatorModal from "../components/ServiceEstimatorModal";
+import type { EstimatorLineItemDraft } from "../components/ServiceEstimatorModal";
 import { useAuth } from "../contexts/AuthContext";
 import { formatInvoiceNumber } from "../services/format";
 import { downloadPdf, clearPdfCache } from "../services/pdfCache";
@@ -83,6 +85,9 @@ const JobDetailPage: React.FC = () => {
     "catalog",
   );
   const [liCatalogItemId, setLiCatalogItemId] = useState<string | null>(null);
+
+  // AI service estimator modal
+  const [estimatorOpen, setEstimatorOpen] = useState(false);
 
   // Tax
   const [taxPercent, setTaxPercent] = useState(0);
@@ -246,6 +251,39 @@ const JobDetailPage: React.FC = () => {
     } catch (err) {
       showToastMsg(
         err instanceof Error ? err.message : "Failed to add line item",
+      );
+    }
+  };
+
+  /**
+   * Writes the user-confirmed AI suggestions. Only called after the user
+   * presses "Add line items" in the estimator modal, and it goes through the
+   * normal job line-item endpoint (so tenant/field validation happens on the
+   * server). Cancel saves nothing.
+   */
+  const handleEstimatorConfirm = async (items: EstimatorLineItemDraft[]) => {
+    try {
+      for (const item of items) {
+        await api.createJobLineItem(id, {
+          type: item.type,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+          catalogItemId: item.catalogItemId,
+        });
+      }
+      setEstimatorOpen(false);
+      await loadJob();
+      showToastMsg(
+        `Added ${items.length} line item${items.length === 1 ? "" : "s"} from the AI estimator`,
+        false,
+      );
+    } catch (err) {
+      showToastMsg(
+        err instanceof Error
+          ? err.message
+          : "Failed to add the suggested line items",
       );
     }
   };
@@ -595,6 +633,17 @@ const JobDetailPage: React.FC = () => {
               Line Items
             </h3>
           </IonText>
+
+          <IonButton
+            expand="block"
+            fill="outline"
+            onClick={() => setEstimatorOpen(true)}
+            style={{ marginBottom: "12px" }}
+            data-testid="open-ai-estimator"
+          >
+            <IonIcon slot="start" icon={sparklesOutline} />
+            AI service estimator
+          </IonButton>
 
           {(["SERVICE", "MATERIAL", "FEE"] as const).map((type) => {
             const items = lineItemsByType(type);
@@ -1201,6 +1250,13 @@ const JobDetailPage: React.FC = () => {
             ]}
           />
         </div>
+
+        <ServiceEstimatorModal
+          isOpen={estimatorOpen}
+          jobTitle={job.title}
+          onDismiss={() => setEstimatorOpen(false)}
+          onConfirm={handleEstimatorConfirm}
+        />
 
         <IonToast
           isOpen={showToast}

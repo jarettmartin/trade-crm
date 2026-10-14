@@ -218,6 +218,41 @@ export interface CreateCatalogItemPayload {
   unitPrice: number;
 }
 
+/**
+ * One AI-estimated line item. `type`, `description` and `unitPrice` are the
+ * trusted catalog values the backend re-attached after validating the id — the
+ * model only chose `catalogItemId`, `quantity` and `matchReason`.
+ */
+export interface CatalogMatchSuggestion {
+  catalogItemId: string;
+  type: string;
+  description: string;
+  unitPrice: number;
+  quantity: number;
+  matchReason?: string;
+}
+
+/** The caller's AI estimator budget (mirrors the backend response). */
+export interface AiEstimatorUsage {
+  limit: number;
+  used: number;
+  remaining: number;
+  resetAt: string;
+}
+
+export interface CatalogMatchResponse {
+  suggestions: CatalogMatchSuggestion[];
+  followUpQuestions: string[];
+  message?: string;
+  usage: AiEstimatorUsage;
+}
+
+/** A preset prompt. Demo mode only — it maps to a defined catalog output. */
+export interface AiEstimatorExample {
+  label: string;
+  description: string;
+}
+
 export interface FeedbackResult {
   id: string;
   type: string;
@@ -548,6 +583,41 @@ class ApiService {
     return this.request<{ success: boolean }>(`/catalog-items/${id}`, {
       method: "DELETE",
     });
+  }
+
+  // ---- AI service estimator ----
+  /**
+   * Ask the backend to suggest catalog line items for a free-text description.
+   * The endpoint only *suggests* — nothing is written until the user confirms
+   * and the caller creates the line items through the normal job endpoint.
+   */
+  async estimateCatalogMatches(
+    description: string,
+  ): Promise<CatalogMatchResponse> {
+    if (this.demoMode) {
+      return demoService.matchCatalog(description);
+    }
+    return this.request<CatalogMatchResponse>("/ai/catalog-matches", {
+      method: "POST",
+      body: JSON.stringify({ description }),
+    });
+  }
+
+  /** The caller's remaining AI requests for the current rolling hour. */
+  async fetchAiEstimatorUsage(): Promise<AiEstimatorUsage> {
+    if (this.demoMode) {
+      return demoService.fetchAiEstimatorUsage();
+    }
+    return this.request<AiEstimatorUsage>("/ai/catalog-matches/usage");
+  }
+
+  /**
+   * Preset prompts offered as shortcuts. They exist only in demo mode, where a
+   * hardcoded description→catalog map stands in for the provider; the real
+   * estimator accepts any free text.
+   */
+  getEstimatorExamples(): AiEstimatorExample[] {
+    return this.demoMode ? demoService.getEstimatorExamples() : [];
   }
 
   // ---- Feedback ----

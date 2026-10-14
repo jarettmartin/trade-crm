@@ -293,4 +293,72 @@ describe("demoService job line items", () => {
     ).toThrow();
     expect(() => demoService.deleteJobLineItem("demo-job-1", "nope")).toThrow();
   });
+
+describe("demoService AI service estimator", () => {
+  it("offers the hardcoded example prompts", () => {
+    const examples = demoService.getEstimatorExamples();
+
+    expect(examples.map((e) => e.label)).toEqual([
+      "Outdoor lighting",
+      "Winter service",
+      "Interior painting",
+    ]);
+    expect(examples.every((e) => e.description.length > 0)).toBe(true);
+  });
+
+  it("returns a defined catalog output for an example, with no job writes", () => {
+    const before = demoService.fetchJob("demo-job-1").lineItems.length;
+    // getEstimatorExamples order is stable: [Outdoor lighting, …].
+    const example = demoService.getEstimatorExamples()[0];
+    expect(example.label).toBe("Outdoor lighting");
+
+    const res = demoService.matchCatalog(example.description);
+
+    expect(res.suggestions.map((s) => s.catalogItemId)).toEqual([
+      "demo-catalog-13",
+      "demo-catalog-14",
+      "demo-catalog-15",
+    ]);
+    // Values come from the demo catalog, not invented.
+    expect(res.suggestions[0]).toMatchObject({
+      type: "SERVICE",
+      description: "Replace outdoor light fixture",
+      unitPrice: 120,
+      quantity: 2,
+    });
+    expect(res.usage.remaining).toBeGreaterThanOrEqual(0);
+
+    // Suggesting never writes to the job.
+    expect(demoService.fetchJob("demo-job-1").lineItems).toHaveLength(before);
+  });
+
+  it("matches a prompt despite punctuation/whitespace differences", () => {
+    const res = demoService.matchCatalog(
+      "  plow the PARKING LOT and salt the walkways!!  ",
+    );
+
+    expect(res.suggestions.map((s) => s.catalogItemId)).toContain(
+      "demo-catalog-5",
+    );
+  });
+
+  it("returns no suggestions and a message for an unrecognised description", () => {
+    const res = demoService.matchCatalog("Rebuild the entire roof");
+
+    expect(res.suggestions).toEqual([]);
+    expect(res.message).toContain("example prompts");
+  });
+
+  it("mirrors the 3-per-hour limit", () => {
+    // Consume whatever the earlier tests left, then the next call is refused.
+    let usage = demoService.fetchAiEstimatorUsage();
+    while (usage.remaining > 0) {
+      demoService.matchCatalog("anything");
+      usage = demoService.fetchAiEstimatorUsage();
+    }
+
+    expect(() => demoService.matchCatalog("anything")).toThrow(/limit reached/i);
+  });
+});
+
 });
