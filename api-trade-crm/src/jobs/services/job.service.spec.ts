@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { NotFoundException, ValidationPipe } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { JobService } from './job.service';
@@ -19,13 +20,15 @@ import { UpdateJobDto } from '../dto/update-job.dto';
  */
 function createMockRepository() {
   return {
-    findOne: jest.fn<Promise<unknown>, unknown[]>(),
-    find: jest.fn<Promise<unknown[]>, unknown[]>().mockResolvedValue([]),
+    findOne: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
+    find: jest
+      .fn<(...args: unknown[]) => Promise<unknown[]>>()
+      .mockResolvedValue([]),
     create: jest.fn((entity: unknown) => entity),
-    save: jest.fn<Promise<unknown>, [entity: unknown]>((entity) =>
+    save: jest.fn<(...args: unknown[]) => Promise<unknown>>((entity) =>
       Promise.resolve(entity),
     ),
-    delete: jest.fn<Promise<{ affected?: number }>, unknown[]>(),
+    delete: jest.fn<(...args: unknown[]) => Promise<{ affected?: number }>>(),
   };
 }
 
