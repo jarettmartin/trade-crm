@@ -14,10 +14,19 @@ function createMockRepository() {
   };
 }
 
+function createMockCatalogService() {
+  return {
+    findById: jest.fn((id: string, _tenantId: string) =>
+      Promise.resolve({ id, tenantId: _tenantId }),
+    ),
+  };
+}
+
 function createService() {
   const jobRepository = createMockRepository();
   const noteRepository = createMockRepository();
   const lineItemRepository = createMockRepository();
+  const catalogService = createMockCatalogService();
 
   jobRepository.findOne.mockResolvedValue({
     id: 'job-1',
@@ -28,7 +37,13 @@ function createService() {
     jobRepository,
     noteRepository,
     lineItemRepository,
-    service: new JobService(jobRepository, noteRepository, lineItemRepository),
+    catalogService,
+    service: new JobService(
+      jobRepository,
+      noteRepository,
+      lineItemRepository,
+      catalogService,
+    ),
   };
 }
 
@@ -120,10 +135,12 @@ describe('JobService.createNote', () => {
 describe('JobService.createLineItem', () => {
   let jobRepository: ReturnType<typeof createMockRepository>;
   let lineItemRepository: ReturnType<typeof createMockRepository>;
+  let catalogService: ReturnType<typeof createMockCatalogService>;
   let service: JobService;
 
   beforeEach(() => {
-    ({ jobRepository, lineItemRepository, service } = createService());
+    ({ jobRepository, lineItemRepository, catalogService, service } =
+      createService());
   });
 
   it('inserts one line item for the job in the caller tenant', async () => {
@@ -150,6 +167,42 @@ describe('JobService.createLineItem', () => {
 
     expect(lineItemRepository.delete).not.toHaveBeenCalled();
     expect(lineItemRepository.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('validates a supplied catalogItemId against the caller tenant', async () => {
+    await service.createLineItem(
+      'job-1',
+      { ...lineItem, catalogItemId: 'catalog-1' },
+      'tenant-1',
+    );
+
+    expect(catalogService.findById).toHaveBeenCalledWith(
+      'catalog-1',
+      'tenant-1',
+    );
+  });
+
+  it('rejects a catalog item that is not in the caller tenant', async () => {
+    catalogService.findById.mockRejectedValue(
+      new NotFoundException('Catalog item not found'),
+    );
+
+    await expect(
+      service.createLineItem(
+        'job-1',
+        { ...lineItem, catalogItemId: 'someone-elses-catalog' },
+        'tenant-1',
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(lineItemRepository.create).not.toHaveBeenCalled();
+    expect(lineItemRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('skips the catalog lookup when no catalogItemId is supplied', async () => {
+    await service.createLineItem('job-1', lineItem, 'tenant-1');
+
+    expect(catalogService.findById).not.toHaveBeenCalled();
   });
 
   it('rejects a job outside the tenant without inserting anything', async () => {
