@@ -1,16 +1,31 @@
 import { NotFoundException, ValidationPipe } from '@nestjs/common';
+import { Repository } from 'typeorm';
 import { JobService } from './job.service';
+import { Job } from '../entities/job.entity';
+import { JobNote } from '../entities/job-note.entity';
+import { JobLineItem } from '../entities/job-line-item.entity';
+import { CatalogService } from '../../catalog/services/catalog.service';
 import { JobLineItemType } from '../../common/enums/job-line-item-type.enum';
 import { JobStatus } from '../../common/enums/job-status.enum';
 import { UpdateJobDto } from '../dto/update-job.dto';
 
+/**
+ * Minimal repository stand-in. The functions are given explicit signatures so
+ * `mockResolvedValue(...)` accepts real values instead of widening to `never`,
+ * and the whole object is cast to `Repository<…>` where it is injected (below) —
+ * otherwise tsc/VS Code reports TS2345 naming `jest.Mock` (see CONTEXT.md →
+ * "Type-checking spec files"). ts-jest transpiles per-file (`isolatedModules`),
+ * so it never surfaces these errors; only the IDE does.
+ */
 function createMockRepository() {
   return {
-    findOne: jest.fn(),
-    find: jest.fn().mockResolvedValue([]),
+    findOne: jest.fn<Promise<unknown>, unknown[]>(),
+    find: jest.fn<Promise<unknown[]>, unknown[]>().mockResolvedValue([]),
     create: jest.fn((entity: unknown) => entity),
-    save: jest.fn((entity: unknown) => entity),
-    delete: jest.fn(),
+    save: jest.fn<Promise<unknown>, [entity: unknown]>((entity) =>
+      Promise.resolve(entity),
+    ),
+    delete: jest.fn<Promise<{ affected?: number }>, unknown[]>(),
   };
 }
 
@@ -39,10 +54,10 @@ function createService() {
     lineItemRepository,
     catalogService,
     service: new JobService(
-      jobRepository,
-      noteRepository,
-      lineItemRepository,
-      catalogService,
+      jobRepository as unknown as Repository<Job>,
+      noteRepository as unknown as Repository<JobNote>,
+      lineItemRepository as unknown as Repository<JobLineItem>,
+      catalogService as unknown as CatalogService,
     ),
   };
 }
