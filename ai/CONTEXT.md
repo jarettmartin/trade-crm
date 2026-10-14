@@ -332,7 +332,8 @@ Runs daily at 1am Eastern via cron on the instance
   - `CustomerSearch` — Debounced search with dropdown results + "Create New Customer" button
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
   - `CatalogItemSearch` — Catalog picker for the job detail page: tenant catalog is fetched up-front (`api.fetchAllCatalogItems()`, pages the endpoint at limit 100), then filtered **locally** on every keystroke across description/type/unit price. Refetched on `useIonViewWillEnter` so catalog edits/deletes land when a job page is revisited. Includes the "Add Custom Line Item" button that switches to the manual form.
-  - `ServiceEstimatorModal` — the "AI service estimator" modal opened from the job detail page. Takes a free-text description, shows the returned suggestions as editable line items (type/description/quantity/unit price) with per-row remove, and only calls back to create line items when the user presses "Add N line items" (Cancel saves nothing). In demo mode the input is pre-filled with one fixed, read-only example prompt (see AI service estimator above).
+  - `LineItemFields` — the Type / Description / Quantity / Unit price field set, shared by the manual "Add Line Item" form (`JobDetailPage`) and each AI estimator suggestion card (`ServiceEstimatorModal`) so both look identical. Controlled (`values` + `onChange`); it deliberately uses Ionic's own `ion-item` defaults (16px inset, stacked label, bottom hairline) so it matches the other forms, with `.line-item-fields__row` in `variables.css` splitting Quantity + Unit price with a vertical rule.
+  - `ServiceEstimatorModal` — the "AI service estimator" modal opened from the job detail page. Takes a free-text description, shows the returned suggestions as editable line items (via `LineItemFields`) with per-row remove, and only calls back to create line items when the user presses "Add N line items" (Cancel saves nothing). In demo mode the input is pre-filled with one fixed, read-only example prompt (see AI service estimator above).
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
   - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings, Feedback) + logout
   - `PublicHeader` + `PublicMenu` — the unauthenticated-space nav, sharing the item list in `publicNav.ts`: a custom horizontal top bar on desktop (`>= 992px`) and a hamburger that opens the Ionic `IonMenu` drawer below that. Ionic has no horizontal menu component, so the bar is hand-rolled. Reused by every public page; it highlights the current page in the brand green and does **not** animate page transitions (`IonRouterOutlet animated={false}`), which looked out of place on desktop
@@ -603,6 +604,16 @@ arguments to `never`, so `.mockResolvedValue({ … })` reports
   `repo as unknown as Repository<Job>`, `service as unknown as CatalogService` —
   which keeps the object typed as mocks so `.mockResolvedValue(...)` /
   `expect(...)` still work.
+
+**Import the Jest globals — never rely on the ambient ones.** `@types/jest` is
+installed only under `api-trade-crm/node_modules` and declares *global* types, so
+a spec that uses the bare `jest` / `describe` / `it` / `expect` (rather than
+importing them) is what shows `Cannot find name 'jest'` in the IDE even though
+`tsc -p tsconfig.json` resolves it. Every spec imports them from `@jest/globals`
+(e.g. `import { describe, expect, it, jest } from '@jest/globals'`); do the same
+and that error cannot appear. Note the two definitions differ: `@jest/globals`'
+`jest.fn` takes **one** function-type argument (`jest.fn<() => Promise<unknown>>()`),
+whereas the ambient `@types/jest` one takes two (`jest.fn<Promise<unknown>, unknown[]>()`).
 
 The `src/ai/**` specs and `src/jobs/services/job.service.spec.ts` are the
 reference examples. Since only the IDE surfaces these, run
