@@ -247,12 +247,6 @@ export interface CatalogMatchResponse {
   usage: AiEstimatorUsage;
 }
 
-/** A preset prompt. Demo mode only — it maps to a defined catalog output. */
-export interface AiEstimatorExample {
-  label: string;
-  description: string;
-}
-
 export interface FeedbackResult {
   id: string;
   type: string;
@@ -612,12 +606,12 @@ class ApiService {
   }
 
   /**
-   * Preset prompts offered as shortcuts. They exist only in demo mode, where a
-   * hardcoded description→catalog map stands in for the provider; the real
-   * estimator accepts any free text.
+   * The fixed example prompt demo mode pre-fills (read-only). Returns `null`
+   * outside demo mode, where the estimator accepts any free text. Demo mode's
+   * hardcoded prompt stands in for the provider, so the result is deterministic.
    */
-  getEstimatorExamples(): AiEstimatorExample[] {
-    return this.demoMode ? demoService.getEstimatorExamples() : [];
+  getEstimatorDemoPrompt(): string | null {
+    return this.demoMode ? demoService.getEstimatorDemoPrompt() : null;
   }
 
   // ---- Feedback ----

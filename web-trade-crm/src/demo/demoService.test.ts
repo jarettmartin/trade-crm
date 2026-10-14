@@ -293,26 +293,21 @@ describe("demoService job line items", () => {
     ).toThrow();
     expect(() => demoService.deleteJobLineItem("demo-job-1", "nope")).toThrow();
   });
+});
 
 describe("demoService AI service estimator", () => {
-  it("offers the hardcoded example prompts", () => {
-    const examples = demoService.getEstimatorExamples();
+  it("pre-fills a single fixed demo prompt", () => {
+    const prompt = demoService.getEstimatorDemoPrompt();
 
-    expect(examples.map((e) => e.label)).toEqual([
-      "Outdoor lighting",
-      "Winter service",
-      "Interior painting",
-    ]);
-    expect(examples.every((e) => e.description.length > 0)).toBe(true);
+    expect(prompt).toBeTruthy();
+    expect(prompt).toContain("outdoor light fixtures");
   });
 
-  it("returns a defined catalog output for an example, with no job writes", () => {
+  it("returns the defined catalog output for that prompt, with no job writes", () => {
     const before = demoService.fetchJob("demo-job-1").lineItems.length;
-    // getEstimatorExamples order is stable: [Outdoor lighting, …].
-    const example = demoService.getEstimatorExamples()[0];
-    expect(example.label).toBe("Outdoor lighting");
+    const prompt = demoService.getEstimatorDemoPrompt() ?? "";
 
-    const res = demoService.matchCatalog(example.description);
+    const res = demoService.matchCatalog(prompt);
 
     expect(res.suggestions.map((s) => s.catalogItemId)).toEqual([
       "demo-catalog-13",
@@ -332,21 +327,18 @@ describe("demoService AI service estimator", () => {
     expect(demoService.fetchJob("demo-job-1").lineItems).toHaveLength(before);
   });
 
-  it("matches a prompt despite punctuation/whitespace differences", () => {
-    const res = demoService.matchCatalog(
-      "  plow the PARKING LOT and salt the walkways!!  ",
-    );
+  it("tolerates case/whitespace differences in the prompt", () => {
+    const prompt = demoService.getEstimatorDemoPrompt() ?? "";
+    const res = demoService.matchCatalog(`  ${prompt.toUpperCase()}  `);
 
-    expect(res.suggestions.map((s) => s.catalogItemId)).toContain(
-      "demo-catalog-5",
-    );
+    expect(res.suggestions).toHaveLength(3);
   });
 
-  it("returns no suggestions and a message for an unrecognised description", () => {
+  it("returns no suggestions and a message for anything else", () => {
     const res = demoService.matchCatalog("Rebuild the entire roof");
 
     expect(res.suggestions).toEqual([]);
-    expect(res.message).toContain("example prompts");
+    expect(res.message).toContain("only recognises");
   });
 
   it("mirrors the 3-per-hour limit", () => {
@@ -359,6 +351,4 @@ describe("demoService AI service estimator", () => {
 
     expect(() => demoService.matchCatalog("anything")).toThrow(/limit reached/i);
   });
-});
-
 });

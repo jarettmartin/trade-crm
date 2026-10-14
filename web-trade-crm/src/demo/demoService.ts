@@ -29,7 +29,6 @@ import type {
   ContactSubmissionResult,
   CatalogMatchResponse,
   CatalogMatchSuggestion,
-  AiEstimatorExample,
   AiEstimatorUsage,
 } from "../services/api";
 
@@ -169,10 +168,10 @@ function buildInvoicePdfUrl(invoiceId: string): string | undefined {
 // ---------------------------------------------------------------------------
 //
 // Demo mode never calls the backend or Anthropic. Instead the estimator is
-// backed by a hardcoded set of example prompts, each mapped to a *defined*
-// catalog output built from the demo catalog fixtures. The user enters one of
-// the promoted prompts; anything else returns a friendly no-match message so
-// the demo stays offline, deterministic and free while still mirroring the
+// backed by a single hardcoded example prompt that maps to a *defined* catalog
+// output built from the demo catalog fixtures. The prompt is pre-filled into
+// the (read-only) input, and anything else returns a friendly no-match message,
+// so the demo stays offline, deterministic and free while still mirroring the
 // real endpoint's response shape.
 
 interface DemoEstimatorMatch {
@@ -181,71 +180,26 @@ interface DemoEstimatorMatch {
   matchReason: string;
 }
 
-interface DemoEstimatorExample {
-  label: string;
-  description: string;
-  matches: DemoEstimatorMatch[];
-}
+/** The one prompt the demo recognises; shown pre-filled and read-only. */
+const DEMO_ESTIMATOR_PROMPT =
+  "Replace two outdoor light fixtures, inspect the existing wiring, and supply weatherproof fittings.";
 
-const DEMO_ESTIMATOR_EXAMPLES: DemoEstimatorExample[] = [
+/** The defined catalog output that prompt maps to. */
+const DEMO_ESTIMATOR_MATCHES: DemoEstimatorMatch[] = [
   {
-    label: "Outdoor lighting",
-    description:
-      "Replace two outdoor light fixtures, inspect the existing wiring, and supply weatherproof fittings.",
-    matches: [
-      {
-        catalogItemId: "demo-catalog-13",
-        quantity: 2,
-        matchReason: "Replaces the two light fixtures",
-      },
-      {
-        catalogItemId: "demo-catalog-14",
-        quantity: 1,
-        matchReason: "Covers the wiring inspection",
-      },
-      {
-        catalogItemId: "demo-catalog-15",
-        quantity: 1,
-        matchReason: "Supplies the weatherproof fittings",
-      },
-    ],
+    catalogItemId: "demo-catalog-13",
+    quantity: 2,
+    matchReason: "Replaces the two light fixtures",
   },
   {
-    label: "Winter service",
-    description: "Plow the parking lot and salt the walkways.",
-    matches: [
-      {
-        catalogItemId: "demo-catalog-5",
-        quantity: 1,
-        matchReason: "Plows the parking lot",
-      },
-      {
-        catalogItemId: "demo-catalog-6",
-        quantity: 1,
-        matchReason: "Clears and salts the walkways",
-      },
-      {
-        catalogItemId: "demo-catalog-7",
-        quantity: 2,
-        matchReason: "Provides the rock salt",
-      },
-    ],
+    catalogItemId: "demo-catalog-14",
+    quantity: 1,
+    matchReason: "Covers the wiring inspection",
   },
   {
-    label: "Interior painting",
-    description: "Paint the interior walls with two coats.",
-    matches: [
-      {
-        catalogItemId: "demo-catalog-8",
-        quantity: 1,
-        matchReason: "Covers the two-coat interior paint",
-      },
-      {
-        catalogItemId: "demo-catalog-9",
-        quantity: 1,
-        matchReason: "Provides the paint and supplies",
-      },
-    ],
+    catalogItemId: "demo-catalog-15",
+    quantity: 1,
+    matchReason: "Supplies the weatherproof fittings",
   },
 ];
 
@@ -277,12 +231,12 @@ function normalizeDescription(value: string): string {
     .trim();
 }
 
-/** Build the defined output for an example from the demo catalog fixtures. */
+/** Build the defined output from the demo catalog fixtures. */
 function buildDemoSuggestions(
-  example: DemoEstimatorExample,
+  matches: DemoEstimatorMatch[],
 ): CatalogMatchSuggestion[] {
   const suggestions: CatalogMatchSuggestion[] = [];
-  for (const match of example.matches) {
+  for (const match of matches) {
     const item = catalogItems.find((c) => c.id === match.catalogItemId);
     if (!item) continue; // Fixture missing — omit rather than invent one.
     suggestions.push({
@@ -776,13 +730,10 @@ export const demoService = {
     return res.blob();
   },
 
-  // ---- AI service estimator (demo: hardcoded prompts, no provider call) ----
-  /** The preset prompts the demo recognises (see DEMO_ESTIMATOR_EXAMPLES). */
-  getEstimatorExamples(): AiEstimatorExample[] {
-    return DEMO_ESTIMATOR_EXAMPLES.map((example) => ({
-      label: example.label,
-      description: example.description,
-    }));
+  // ---- AI service estimator (demo: one fixed prompt, no provider call) ----
+  /** The fixed prompt the demo pre-fills; the caller gates this on demo mode. */
+  getEstimatorDemoPrompt(): string | null {
+    return DEMO_ESTIMATOR_PROMPT;
   },
 
   fetchAiEstimatorUsage(): AiEstimatorUsage {
@@ -790,9 +741,9 @@ export const demoService = {
   },
 
   /**
-   * Mirrors POST /ai/catalog-matches without any network/provider call: an
-   * accepted description is matched against the hardcoded examples and returns
-   * a defined set of suggestions built from the demo catalog.
+   * Mirrors POST /ai/catalog-matches without any network/provider call: the
+   * description is compared with the one fixed demo prompt and, when it
+   * matches, returns a defined set of suggestions built from the demo catalog.
    */
   matchCatalog(description: string): CatalogMatchResponse {
     const usage = demoAiUsage();
@@ -802,28 +753,28 @@ export const demoService = {
       );
     }
 
-    const normalized = normalizeDescription(description);
-    const example = DEMO_ESTIMATOR_EXAMPLES.find(
-      (candidate) =>
-        normalizeDescription(candidate.description) === normalized,
-    );
+    const matches =
+      normalizeDescription(description) ===
+      normalizeDescription(DEMO_ESTIMATOR_PROMPT)
+        ? DEMO_ESTIMATOR_MATCHES
+        : null;
 
     // Count accepted submissions, like the real endpoint (which consumes the
     // budget before the provider call).
     demoAiUsed += 1;
 
-    if (!example) {
+    if (!matches) {
       return {
         suggestions: [],
         followUpQuestions: [],
         message:
-          "Demo mode only recognises the example prompts shown above. Pick one to see a defined catalog result.",
+          "Demo mode only recognises its one example prompt. Use the pre-filled example to see a defined catalog result.",
         usage: demoAiUsage(),
       };
     }
 
     return {
-      suggestions: buildDemoSuggestions(example),
+      suggestions: buildDemoSuggestions(matches),
       followUpQuestions: [],
       usage: demoAiUsage(),
     };

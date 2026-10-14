@@ -18,11 +18,7 @@ import {
   IonIcon,
 } from "@ionic/react";
 import { closeOutline, sparklesOutline, trashOutline } from "ionicons/icons";
-import {
-  api,
-  AiEstimatorExample,
-  AiEstimatorUsage,
-} from "../services/api";
+import { api, AiEstimatorUsage } from "../services/api";
 
 const LINE_ITEM_TYPES = ["SERVICE", "MATERIAL", "FEE"] as const;
 const DESCRIPTION_MAX_LENGTH = 1000;
@@ -83,7 +79,8 @@ const ServiceEstimatorModal: React.FC<ServiceEstimatorModalProps> = ({
   onConfirm,
 }) => {
   const [description, setDescription] = useState("");
-  const [examples, setExamples] = useState<AiEstimatorExample[]>([]);
+  // Demo mode supplies one fixed, read-only prompt (api.getEstimatorDemoPrompt).
+  const [demoPrompt, setDemoPrompt] = useState<string | null>(null);
   const [usage, setUsage] = useState<AiEstimatorUsage | null>(null);
   const [suggestions, setSuggestions] = useState<EditableSuggestion[]>([]);
   const [message, setMessage] = useState("");
@@ -91,29 +88,23 @@ const ServiceEstimatorModal: React.FC<ServiceEstimatorModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  // Reset and load the (demo-only) example prompts + remaining budget each
-  // time the modal opens.
+  // Reset and load the (demo-only) fixed prompt + remaining budget each time
+  // the modal opens.
   useEffect(() => {
     if (!isOpen) return;
-    setDescription("");
+    const prompt = api.getEstimatorDemoPrompt();
+    setDemoPrompt(prompt);
+    setDescription(prompt ?? "");
     setSuggestions([]);
     setMessage("");
     setError("");
     setLoading(false);
     setConfirming(false);
-    setExamples(api.getEstimatorExamples());
     api
       .fetchAiEstimatorUsage()
       .then(setUsage)
       .catch(() => setUsage(null));
   }, [isOpen]);
-
-  const applyExample = (example: AiEstimatorExample) => {
-    setDescription(example.description);
-    setSuggestions([]);
-    setMessage("");
-    setError("");
-  };
 
   const submit = async () => {
     if (!description.trim() || loading) return;
@@ -221,39 +212,13 @@ const ServiceEstimatorModal: React.FC<ServiceEstimatorModalProps> = ({
       <>
         <IonText color="medium">
           <p style={{ marginTop: 0 }}>
-            Describe the work and we&rsquo;ll suggest line items from your
-            catalog{jobTitle ? ` for “${jobTitle}”` : ""}. Nothing is added until
-            you confirm.
+            {demoPrompt
+              ? "This demo runs one fixed example through the estimator"
+              : "Describe the work and we'll suggest line items"}{" "}
+            from your catalog{jobTitle ? ` for “${jobTitle}”` : ""}. Nothing is
+            added until you confirm.
           </p>
         </IonText>
-
-        {examples.length > 0 && (
-          <div style={{ marginBottom: "12px" }}>
-            <IonText color="medium">
-              <small>Try an example:</small>
-            </IonText>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-                marginTop: "6px",
-              }}
-            >
-              {examples.map((example) => (
-                <IonButton
-                  key={example.label}
-                  size="small"
-                  fill="outline"
-                  disabled={busy}
-                  onClick={() => applyExample(example)}
-                >
-                  {example.label}
-                </IonButton>
-              ))}
-            </div>
-          </div>
-        )}
 
         <IonTextarea
           rows={4}
@@ -263,6 +228,7 @@ const ServiceEstimatorModal: React.FC<ServiceEstimatorModalProps> = ({
           className="control-bordered"
           maxlength={DESCRIPTION_MAX_LENGTH}
           counter
+          readonly={Boolean(demoPrompt)}
           disabled={busy}
         />
 
