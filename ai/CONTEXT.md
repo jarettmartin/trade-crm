@@ -332,7 +332,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `CustomerSearch` — Debounced search with dropdown results + "Create New Customer" button
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
   - `CatalogItemSearch` — Catalog picker for the job detail page: tenant catalog is fetched up-front (`api.fetchAllCatalogItems()`, pages the endpoint at limit 100), then filtered **locally** on every keystroke across description/type/unit price. Refetched on `useIonViewWillEnter` so catalog edits/deletes land when a job page is revisited. Includes the "Add Custom Line Item" button that switches to the manual form.
-  - `ServiceEstimatorModal` — the "AI service estimator" modal opened from the job detail page. Takes a free-text description, shows the returned suggestions as editable line items (type/description/quantity/unit price) with per-row remove, and only calls back to create line items when the user presses "Add N line items" (Cancel saves nothing). In demo mode it offers hardcoded example prompts (see AI service estimator above).
+  - `ServiceEstimatorModal` — the "AI service estimator" modal opened from the job detail page. Takes a free-text description, shows the returned suggestions as editable line items (type/description/quantity/unit price) with per-row remove, and only calls back to create line items when the user presses "Add N line items" (Cancel saves nothing). In demo mode the input is pre-filled with one fixed, read-only example prompt (see AI service estimator above).
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
   - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings, Feedback) + logout
   - `PublicHeader` + `PublicMenu` — the unauthenticated-space nav, sharing the item list in `publicNav.ts`: a custom horizontal top bar on desktop (`>= 992px`) and a hamburger that opens the Ionic `IonMenu` drawer below that. Ionic has no horizontal menu component, so the bar is hand-rolled. Reused by every public page; it highlights the current page in the brand green and does **not** animate page transitions (`IonRouterOutlet animated={false}`), which looked out of place on desktop
@@ -491,7 +491,7 @@ src/
 - **Rate limit: 3 requests per rolling hour per authenticated user**, enforced *before* the provider call so provider failures still count. It is persistent (a small `ai_estimation_requests` ledger table + composite index) and atomic (count-then-insert inside a transaction guarded by a per-user `pg_advisory_xact_lock`), keyed by the local user id from the verified token. This is deliberately **not** the `@nestjs/throttler` email limiter (that one is in-memory). Over-limit returns 429 with a friendly message and a `retryAfterSeconds` hint; the response also carries `usage { limit, used, remaining, resetAt }`.
 - **Config**: `ANTHROPIC_API_KEY` (server-side only; unset ⇒ the endpoints return a graceful 503 and nothing else breaks) and optional `ANTHROPIC_MODEL` (default `claude-haiku-5-5`, the cheapest current model). Never commit the key.
 - **Confirmation reuses the normal endpoint**: the UI posts the edited selections to `POST /jobs/:id/line-items`, and `JobService.createLineItem` now validates that a supplied `catalogItemId` belongs to the caller's tenant (previously a foreign UUID could be referenced).
-- Demo mode: the modal offers three hardcoded example prompts that map to a **defined** catalog output built from the fixtures — neither the backend nor Anthropic is called, and unexpected input returns a friendly no-match message. The demo also mirrors the 3/hour budget (in-memory, resets on reload).
+- Demo mode: the modal pre-fills one fixed, read-only example prompt that maps to a **defined** catalog output built from the fixtures — neither the backend nor Anthropic is called, and unexpected input returns a friendly no-match message. The demo also mirrors the 3/hour budget (in-memory, resets on reload).
 
 ### Feedback
 
@@ -569,6 +569,44 @@ source of truth**:
 - Error toasts are dismiss-only (never auto-hide)
 - Invoice numbers formatted as `8888 0001` via shared `formatInvoiceNumber()` utility
 - Phone inputs use `inputMode="numeric"` + `stripPhone()` + immediate `e.target.value` override
+
+### Testing & type-checking spec files
+
+Different tools type-check the backend, and they disagree by design — that is
+why a spec can pass `npm test` yet show errors in VS Code:
+
+- **`npm run build`** (`nest build`) compiles via `tsconfig.build.json`, which
+  **excludes `**/*spec.ts` and `test/`** — specs are never compiled, so the build
+  never reports spec errors.
+- **`npm test`** (ts-jest) honours `isolatedModules: true`, which is set in
+  `api-trade-crm/tsconfig.json`. Under `isolatedModules`, ts-jest **transpiles
+  each file in isolation without type-checking**, so semantic errors in specs
+  never fail the run.
+- **VS Code / `npx tsc --noEmit -p api-trade-crm/tsconfig.json`** type-checks
+  every file under `api-trade-crm/` (specs included) with `tsconfig.json`. This
+  is the **only** one that surfaces spec type errors — so an error that appears
+  only in the IDE is real, not a tooling quirk.
+
+**The recurring error** is a mock that doesn't structurally satisfy the type it
+is injected as. A `jest.fn()`-built object has none of a TypeORM `Repository<T>`'s
+members (`target`, `manager`, `metadata`, …), so `new Service(mockRepo …)` reports
+`TS2345` whose message names `jest.Mock`. A bare `jest.fn()` also widens its
+arguments to `never`, so `.mockResolvedValue({ … })` reports
+`TS2345 … not assignable to parameter of type 'never'`.
+
+**How to keep specs clean:**
+
+- Give mock functions explicit types using `jest.fn`'s two-type-argument form —
+  `jest.fn<Promise<unknown>, unknown[]>()` — so `mockResolvedValue(...)` accepts
+  real values instead of `never`.
+- Cast the whole mock to the real type **at the injection site** —
+  `repo as unknown as Repository<Job>`, `service as unknown as CatalogService` —
+  which keeps the object typed as mocks so `.mockResolvedValue(...)` /
+  `expect(...)` still work.
+
+The `src/ai/**` specs and `src/jobs/services/job.service.spec.ts` are the
+reference examples. Since only the IDE surfaces these, run
+`npx tsc --noEmit -p api-trade-crm/tsconfig.json` to catch them before a commit.
 
 ### PDF Generation
 
