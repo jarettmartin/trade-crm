@@ -1,6 +1,6 @@
 # Sprout — Terms of Service
 
-**Effective date:** October 12, 2026
+**Effective date:** October 13, 2026
 
 ## 1. About Sprout
 
@@ -44,6 +44,8 @@ You are responsible for ensuring that you have the necessary rights and legal au
 
 Sprout is a management tool, not an accounting, tax, legal, or financial adviser. You are responsible for reviewing invoices and other generated documents before relying on or sending them.
 
+AI-assisted suggestions (such as the catalog line items produced by the AI service estimator) are provided only as suggestions. They are not guaranteed to be accurate, complete, or suitable. Nothing is added to a job until you review and confirm it, and you are responsible for reviewing any AI-assisted content before relying on it.
+
 ## 6. Data backups and potential data loss
 
 Sprout performs nightly data backups and retains backups for seven days. Backups are intended to assist with recovery but do not guarantee that all data can be recovered.
@@ -63,6 +65,8 @@ Account deletion may permanently remove your data. You should export or retain a
 ## 8. Third-party services
 
 Sprout relies on third-party infrastructure and services, including Amazon Web Services (AWS). These services may be subject to their own terms, policies, and availability limitations. The operator is not responsible for disruptions caused by third-party providers, although the operator will take reasonable steps to maintain the service.
+
+Artificial-intelligence features are powered by Anthropic, the provider of the Claude models. When you use the AI service estimator, the description you enter and a limited set of fields from your catalog are sent to Anthropic to generate suggestions, as described in the Privacy Policy. These features are optional and may be unavailable at times.
 
 ## 9. Feedback
 

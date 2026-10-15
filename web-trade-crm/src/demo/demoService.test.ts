@@ -294,3 +294,61 @@ describe("demoService job line items", () => {
     expect(() => demoService.deleteJobLineItem("demo-job-1", "nope")).toThrow();
   });
 });
+
+describe("demoService AI service estimator", () => {
+  it("pre-fills a single fixed demo prompt", () => {
+    const prompt = demoService.getEstimatorDemoPrompt();
+
+    expect(prompt).toBeTruthy();
+    expect(prompt).toContain("outdoor light fixtures");
+  });
+
+  it("returns the defined catalog output for that prompt, with no job writes", () => {
+    const before = demoService.fetchJob("demo-job-1").lineItems.length;
+    const prompt = demoService.getEstimatorDemoPrompt() ?? "";
+
+    const res = demoService.matchCatalog(prompt);
+
+    expect(res.suggestions.map((s) => s.catalogItemId)).toEqual([
+      "demo-catalog-13",
+      "demo-catalog-14",
+      "demo-catalog-15",
+    ]);
+    // Values come from the demo catalog, not invented.
+    expect(res.suggestions[0]).toMatchObject({
+      type: "SERVICE",
+      description: "Replace outdoor light fixture",
+      unitPrice: 120,
+      quantity: 2,
+    });
+    expect(res.usage.remaining).toBeGreaterThanOrEqual(0);
+
+    // Suggesting never writes to the job.
+    expect(demoService.fetchJob("demo-job-1").lineItems).toHaveLength(before);
+  });
+
+  it("tolerates case/whitespace differences in the prompt", () => {
+    const prompt = demoService.getEstimatorDemoPrompt() ?? "";
+    const res = demoService.matchCatalog(`  ${prompt.toUpperCase()}  `);
+
+    expect(res.suggestions).toHaveLength(3);
+  });
+
+  it("returns no suggestions and a message for anything else", () => {
+    const res = demoService.matchCatalog("Rebuild the entire roof");
+
+    expect(res.suggestions).toEqual([]);
+    expect(res.message).toContain("only recognises");
+  });
+
+  it("mirrors the 3-per-hour limit", () => {
+    // Consume whatever the earlier tests left, then the next call is refused.
+    let usage = demoService.fetchAiEstimatorUsage();
+    while (usage.remaining > 0) {
+      demoService.matchCatalog("anything");
+      usage = demoService.fetchAiEstimatorUsage();
+    }
+
+    expect(() => demoService.matchCatalog("anything")).toThrow(/limit reached/i);
+  });
+});

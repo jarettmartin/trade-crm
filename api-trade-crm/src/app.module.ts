@@ -12,6 +12,7 @@ import { ContactModule } from './contact/contact.module';
 import { JobModule } from './jobs/job.module';
 import { InvoiceModule } from './invoices/invoice.module';
 import { EmailModule } from './email/email.module';
+import { AiModule } from './ai/ai.module';
 import { CommonModule } from './common/common.module';
 import typeOrmConfig from './config/typeorm.config';
 
@@ -29,6 +30,7 @@ import typeOrmConfig from './config/typeorm.config';
     JobModule,
     InvoiceModule,
     EmailModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

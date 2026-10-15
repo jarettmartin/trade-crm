@@ -152,6 +152,46 @@ ion-textarea.control-bordered {
   margin-bottom: 12px;
 }
 
+/* The Type / Description / Quantity / Unit price field set shared by the manual
+   line-item form and the AI estimator's suggestion cards (see LineItemFields).
+   Deliberately no padding/shape overrides: the 16px inset, the stacked-label look
+   and the bottom hairline all come from Ionic's own `ion-item` defaults, so these
+   fields match every other form in the app. The only addition is the vertical
+   rule between the two half-width Quantity / Unit price controls. */
+.line-item-fields__row {
+  display: flex;
+}
+.line-item-fields__row > ion-item {
+  flex: 1;
+  min-width: 0;
+}
+.line-item-fields__row > ion-item:first-child {
+  border-inline-end: 1px solid
+    var(--ion-item-border-color, var(--ion-border-color, #c8c7cc));
+}
+
+/* The results / loading / empty panel that drops below a searchbar
+   (CatalogItemSearch). One class so all three states share the same bordered,
+   elevated box instead of repeating the styling inline. */
+.catalog-search-dropdown {
+  position: absolute;
+  top: 56px;
+  left: 16px;
+  right: 16px;
+  z-index: 100;
+  background: var(--ion-background-color);
+  border: 1px solid var(--ion-color-light-shade);
+  border-radius: 8px;
+}
+.catalog-search-dropdown--list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.catalog-search-dropdown--message {
+  padding: 16px;
+  text-align: center;
+}
+
 /* ===== SHARED PAGE LAYOUT =====
  * Every page wraps its IonContent children in a layout container so widths
  * stay consistent across the app. Let IonContent's `ion-padding` provide the

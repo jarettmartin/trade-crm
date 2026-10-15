@@ -27,6 +27,9 @@ import type {
   FeedbackResult,
   CreateContactSubmissionPayload,
   ContactSubmissionResult,
+  CatalogMatchResponse,
+  CatalogMatchSuggestion,
+  AiEstimatorUsage,
 } from "../services/api";
 
 // ---------------------------------------------------------------------------
@@ -158,6 +161,94 @@ function buildInvoicePdfUrl(invoiceId: string): string | undefined {
   const invoiceNumber = findInvoiceNumber(invoiceId);
   if (!invoiceNumber) return undefined;
   return `/demo/invoice-pdfs/${tenant.id}-${invoiceNumber}-invoice.pdf`;
+}
+
+// ---------------------------------------------------------------------------
+// AI service estimator (demo mode)
+// ---------------------------------------------------------------------------
+//
+// Demo mode never calls the backend or Anthropic. Instead the estimator is
+// backed by a single hardcoded example prompt that maps to a *defined* catalog
+// output built from the demo catalog fixtures. The prompt is pre-filled into
+// the (read-only) input, and anything else returns a friendly no-match message,
+// so the demo stays offline, deterministic and free while still mirroring the
+// real endpoint's response shape.
+
+interface DemoEstimatorMatch {
+  catalogItemId: string;
+  quantity: number;
+  matchReason: string;
+}
+
+/** The one prompt the demo recognises; shown pre-filled and read-only. */
+const DEMO_ESTIMATOR_PROMPT =
+  "Replace two outdoor light fixtures, inspect the existing wiring, and supply weatherproof fittings.";
+
+/** The defined catalog output that prompt maps to. */
+const DEMO_ESTIMATOR_MATCHES: DemoEstimatorMatch[] = [
+  {
+    catalogItemId: "demo-catalog-13",
+    quantity: 2,
+    matchReason: "Replaces the two light fixtures",
+  },
+  {
+    catalogItemId: "demo-catalog-14",
+    quantity: 1,
+    matchReason: "Covers the wiring inspection",
+  },
+  {
+    catalogItemId: "demo-catalog-15",
+    quantity: 1,
+    matchReason: "Supplies the weatherproof fittings",
+  },
+];
+
+/** Demo-only budget mirror; resets on page reload (the real one is per hour). */
+const DEMO_AI_LIMIT = 3;
+const DEMO_AI_WINDOW_MS = 60 * 60 * 1000;
+let demoAiUsed = 0;
+let demoAiWindowStart = Date.now();
+
+function demoAiUsage(): AiEstimatorUsage {
+  const now = Date.now();
+  if (now - demoAiWindowStart >= DEMO_AI_WINDOW_MS) {
+    demoAiWindowStart = now;
+    demoAiUsed = 0;
+  }
+  return {
+    limit: DEMO_AI_LIMIT,
+    used: demoAiUsed,
+    remaining: Math.max(0, DEMO_AI_LIMIT - demoAiUsed),
+    resetAt: new Date(demoAiWindowStart + DEMO_AI_WINDOW_MS).toISOString(),
+  };
+}
+
+/** Punctuation/whitespace-insensitive, so users needn't match exactly. */
+function normalizeDescription(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** Build the defined output from the demo catalog fixtures. */
+function buildDemoSuggestions(
+  matches: DemoEstimatorMatch[],
+): CatalogMatchSuggestion[] {
+  const suggestions: CatalogMatchSuggestion[] = [];
+  for (const match of matches) {
+    const item = catalogItems.find((c) => c.id === match.catalogItemId);
+    if (!item) continue; // Fixture missing — omit rather than invent one.
+    suggestions.push({
+      catalogItemId: item.id,
+      type: item.type,
+      description: item.description,
+      unitPrice: Number(item.unitPrice),
+      quantity: match.quantity,
+      matchReason: match.matchReason,
+    });
+  }
+  return suggestions;
 }
 
 // ---------------------------------------------------------------------------
@@ -637,5 +728,55 @@ export const demoService = {
       );
     }
     return res.blob();
+  },
+
+  // ---- AI service estimator (demo: one fixed prompt, no provider call) ----
+  /** The fixed prompt the demo pre-fills; the caller gates this on demo mode. */
+  getEstimatorDemoPrompt(): string | null {
+    return DEMO_ESTIMATOR_PROMPT;
+  },
+
+  fetchAiEstimatorUsage(): AiEstimatorUsage {
+    return demoAiUsage();
+  },
+
+  /**
+   * Mirrors POST /ai/catalog-matches without any network/provider call: the
+   * description is compared with the one fixed demo prompt and, when it
+   * matches, returns a defined set of suggestions built from the demo catalog.
+   */
+  matchCatalog(description: string): CatalogMatchResponse {
+    const usage = demoAiUsage();
+    if (usage.remaining <= 0) {
+      throw new Error(
+        "Demo limit reached — the estimator allows 3 requests per hour. Reload the page to reset the demo.",
+      );
+    }
+
+    const matches =
+      normalizeDescription(description) ===
+      normalizeDescription(DEMO_ESTIMATOR_PROMPT)
+        ? DEMO_ESTIMATOR_MATCHES
+        : null;
+
+    // Count accepted submissions, like the real endpoint (which consumes the
+    // budget before the provider call).
+    demoAiUsed += 1;
+
+    if (!matches) {
+      return {
+        suggestions: [],
+        followUpQuestions: [],
+        message:
+          "Demo mode only recognises its one example prompt. Use the pre-filled example to see a defined catalog result.",
+        usage: demoAiUsage(),
+      };
+    }
+
+    return {
+      suggestions: buildDemoSuggestions(matches),
+      followUpQuestions: [],
+      usage: demoAiUsage(),
+    };
   },
 };
