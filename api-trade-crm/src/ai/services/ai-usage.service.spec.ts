@@ -8,49 +8,93 @@ import {
 
 interface FakeRow {
   userId: string;
+  tenantId: string;
   createdAt: Date;
 }
 
+/** Mirrors the `MoreThan(...)` condition the service builds for its window. */
+interface FakeWhere {
+  userId: string;
+  createdAt: { value: Date };
+}
+
+interface FakeFindOptions {
+  where: FakeWhere;
+  order?: { createdAt: 'ASC' | 'DESC' };
+  select?: { createdAt: true };
+}
+
 /**
- * Minimal stand-in for Postgres: enough to exercise the count / insert /
- * advisory-lock statements the service issues, including rows that fall
- * outside the rolling window.
+ * Minimal stand-in for the slice of `EntityManager` the service uses, plus the
+ * one raw statement it is allowed to issue (the per-user advisory lock). Any
+ * other raw SQL throws, so a regression back to hand-written queries fails the
+ * suite instead of passing silently.
  */
+class FakeEntityManager {
+  /** Raw SQL the service actually issued — asserted to be the lock only. */
+  readonly rawQueries: string[] = [];
+
+  constructor(private readonly rows: FakeRow[]) {}
+
+  query(sql: string): unknown[] {
+    if (!sql.includes('pg_advisory_xact_lock')) {
+      throw new Error(`Unexpected raw query in AiUsageService: ${sql}`);
+    }
+    this.rawQueries.push(sql);
+    return [];
+  }
+
+  count(_entity: unknown, options: FakeFindOptions): number {
+    return this.matching(options.where).length;
+  }
+
+  findOne(_entity: unknown, options: FakeFindOptions): FakeRow | null {
+    const oldest = this.matching(options.where).sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+    )[0];
+
+    return oldest ?? null;
+  }
+
+  create(
+    _entity: unknown,
+    values: { userId: string; tenantId: string },
+  ): FakeRow {
+    return { ...values, createdAt: new Date() };
+  }
+
+  save(_entity: unknown, row: FakeRow): FakeRow {
+    this.rows.push(row);
+    return row;
+  }
+
+  private matching(where: FakeWhere): FakeRow[] {
+    return this.rows.filter(
+      (row) =>
+        row.userId === where.userId &&
+        row.createdAt.getTime() > where.createdAt.value.getTime(),
+    );
+  }
+}
+
+/** A stand-in `DataSource`/transaction host over the same `rows` array. */
 class FakeDataSource {
-  rows: FakeRow[] = [];
+  readonly rows: FakeRow[] = [];
+  readonly manager = new FakeEntityManager(this.rows);
 
   /** Pre-seed a request at a given age (ms before now). */
   seed(userId: string, ageMs: number): void {
-    this.rows.push({ userId, createdAt: new Date(Date.now() - ageMs) });
-  }
-
-  /** Runs the handful of statements the service issues against `rows`. */
-  query(sql: string, params: unknown[] = []): unknown {
-    if (sql.includes('pg_advisory_xact_lock')) {
-      return [];
-    }
-    if (sql.trimStart().toUpperCase().startsWith('INSERT')) {
-      this.rows.push({ userId: String(params[0]), createdAt: new Date() });
-      return [];
-    }
-
-    const [userId, since] = params as [string, Date];
-    const matching = this.rows.filter(
-      (row) =>
-        row.userId === userId && row.createdAt.getTime() > since.getTime(),
-    );
-    const used = matching.length;
-    const oldest = used
-      ? new Date(Math.min(...matching.map((row) => row.createdAt.getTime())))
-      : null;
-
-    return [{ used, oldest }];
+    this.rows.push({
+      userId,
+      tenantId: 'tenant-1',
+      createdAt: new Date(Date.now() - ageMs),
+    });
   }
 
   transaction<T>(
-    callback: (manager: FakeDataSource) => Promise<T>,
+    callback: (manager: FakeEntityManager) => Promise<T>,
   ): Promise<T> {
-    return callback(this);
+    return callback(this.manager);
   }
 }
 
@@ -93,6 +137,17 @@ describe('AiUsageService.consume', () => {
 
     const otherUser = await service.consume('user-2', 'tenant-1');
     expect(otherUser.allowed).toBe(true);
+  });
+
+  it('issues no raw SQL other than the per-user advisory lock', async () => {
+    await service.consume('user-1', 'tenant-1');
+    await service.getUsage('user-1');
+
+    // Every read/write goes through the repository API; the lock is the one
+    // statement that has no ORM equivalent.
+    expect(dataSource.manager.rawQueries).toEqual([
+      'SELECT pg_advisory_xact_lock(hashtext($1))',
+    ]);
   });
 
   it('ignores requests older than the rolling window', async () => {

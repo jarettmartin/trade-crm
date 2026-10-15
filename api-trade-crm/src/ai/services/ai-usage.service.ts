@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager, MoreThan } from 'typeorm';
+import { AiEstimationRequest } from '../entities/ai-estimation-request.entity';
 import {
   AI_RATE_LIMIT_PER_USER_PER_HOUR,
   AI_RATE_WINDOW_MS,
@@ -22,7 +23,8 @@ export interface AiUsageDecision extends AiUsage {
   allowed: boolean;
 }
 
-interface UsageRow {
+/** One read of the rolling window: how many requests, and the oldest one. */
+interface WindowRead {
   used: number;
   oldest: Date | null;
 }
@@ -39,7 +41,11 @@ interface UsageRow {
  *
  * Concurrency: the count-then-insert runs inside a transaction guarded by a
  * per-user `pg_advisory_xact_lock`, so two simultaneous requests for the same
- * user can never both read "2 used" and both slip past the cap.
+ * user can never both read "2 used" and both slip past the cap. That lock is the
+ * only raw SQL in this service — a Postgres advisory lock has no ORM equivalent.
+ * Every read and write goes through the repository API (same style as
+ * `CustomerService`), so the entity owns the column names and `createdAt` is
+ * stamped by `@CreateDateColumn`.
  */
 @Injectable()
 export class AiUsageService {
@@ -49,14 +55,12 @@ export class AiUsageService {
 
   /** Current usage for a user, without consuming anything. */
   async getUsage(userId: string): Promise<AiUsage> {
-    const rows = await this.dataSource.query<UsageRow[]>(
-      `SELECT COUNT(*)::int AS used, MIN("createdAt") AS oldest
-         FROM ai_estimation_requests
-        WHERE "userId" = $1 AND "createdAt" > $2`,
-      [userId, this.windowStart()],
+    const { used, oldest } = await this.readWindow(
+      this.dataSource.manager,
+      userId,
     );
 
-    return this.toUsage(rows[0]?.used ?? 0, rows[0]?.oldest ?? null);
+    return this.toUsage(used, oldest);
   }
 
   /**
@@ -66,34 +70,51 @@ export class AiUsageService {
   async consume(userId: string, tenantId: string): Promise<AiUsageDecision> {
     return this.dataSource.transaction(async (manager) => {
       // Serialize all budget checks for this user for the rest of the txn.
+      // Raw SQL on purpose: a Postgres advisory lock has no ORM equivalent.
       await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
         userId,
       ]);
 
-      const rows = await manager.query<UsageRow[]>(
-        `SELECT COUNT(*)::int AS used, MIN("createdAt") AS oldest
-           FROM ai_estimation_requests
-          WHERE "userId" = $1 AND "createdAt" > $2`,
-        [userId, this.windowStart()],
-      );
-
-      const used = rows[0]?.used ?? 0;
-      const oldest = rows[0]?.oldest ?? null;
+      const { used, oldest } = await this.readWindow(manager, userId);
 
       if (used >= AI_RATE_LIMIT_PER_USER_PER_HOUR) {
         return { allowed: false, ...this.toUsage(used, oldest) };
       }
 
-      await manager.query(
-        `INSERT INTO ai_estimation_requests ("userId", "tenantId") VALUES ($1, $2)`,
-        [userId, tenantId],
-      );
+      const request = manager.create(AiEstimationRequest, {
+        userId,
+        tenantId,
+      });
+      await manager.save(AiEstimationRequest, request);
 
       this.logger.log(`AI estimation request accepted for user ${userId}`);
 
       // `used + 1`: this request is now recorded, so it counts as consumed.
       return { allowed: true, ...this.toUsage(used + 1, oldest) };
     });
+  }
+
+  /**
+   * Reads the caller's rolling window: how many requests fall inside it, and
+   * when the oldest of those was made (used to report when a slot frees up).
+   */
+  private async readWindow(
+    manager: EntityManager,
+    userId: string,
+  ): Promise<WindowRead> {
+    const where = {
+      userId,
+      createdAt: MoreThan(this.windowStart()),
+    };
+
+    const used = await manager.count(AiEstimationRequest, { where });
+    const oldestRow = await manager.findOne(AiEstimationRequest, {
+      where,
+      order: { createdAt: 'ASC' },
+      select: { createdAt: true },
+    });
+
+    return { used, oldest: oldestRow?.createdAt ?? null };
   }
 
   private windowStart(): Date {
