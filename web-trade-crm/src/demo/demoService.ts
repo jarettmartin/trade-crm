@@ -32,6 +32,9 @@ import type {
   AiEstimatorUsage,
 } from "../services/api";
 
+/** Mirrors the API's catalog search token cap (`CatalogService.MAX_SEARCH_TOKENS`). */
+const DEMO_CATALOG_SEARCH_TOKEN_LIMIT = 12;
+
 // ---------------------------------------------------------------------------
 // In-memory store – re-initialized from seed on every page load
 // ---------------------------------------------------------------------------
@@ -374,24 +377,31 @@ export const demoService = {
     types?: string[],
     q?: string,
   ): PaginatedCatalogItemsResponse {
-    const trimmedQ = q?.trim().toLowerCase();
+    // Token search mirroring the API's CatalogService.findAll: every
+    // whitespace-separated token must appear in at least one field (AND across
+    // tokens, OR across fields), so word order and which field matched don't
+    // matter. Kept in sync with the server on purpose — see demo mode parity.
+    const tokens = (q ?? "")
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((token) => token.length > 0)
+      .slice(0, DEMO_CATALOG_SEARCH_TOKEN_LIMIT);
     const filtered = catalogItems.filter((item) => {
       if (types && types.length > 0 && !types.includes(item.type)) {
         return false;
       }
-      if (trimmedQ) {
-        const haystack = [
-          item.description,
-          item.type,
-          String(item.unitPrice),
-        ]
-          .join(" ")
-          .toLowerCase();
-        if (!haystack.includes(trimmedQ)) {
-          return false;
-        }
+      if (tokens.length === 0) {
+        return true;
       }
-      return true;
+      const haystacks = [
+        item.description,
+        item.type,
+        String(item.unitPrice),
+      ].map((field) => field.toLowerCase());
+      return tokens.every((token) =>
+        haystacks.some((field) => field.includes(token)),
+      );
     });
     filtered.sort(
       (a, b) =>

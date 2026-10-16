@@ -114,6 +114,37 @@ describe("demoService catalog items", () => {
     ).toBe(true);
   });
 
+  it("requires every search token, in any order or field (mirrors the API)", () => {
+    // Words reversed vs. the stored description: a whole-string match missed it.
+    const reversed = demoService.fetchCatalogItems(
+      1,
+      100,
+      undefined,
+      "pruning tree",
+    );
+    expect(reversed.data.map((i) => i.description)).toContain("Tree pruning");
+
+    // Tokens may live in different fields (description + type).
+    const acrossFields = demoService.fetchCatalogItems(
+      1,
+      100,
+      undefined,
+      "leaf service",
+    );
+    expect(acrossFields.meta.total).toBeGreaterThan(0);
+    expect(
+      acrossFields.data.every(
+        (i) =>
+          i.type === "SERVICE" && i.description.toLowerCase().includes("leaf"),
+      ),
+    ).toBe(true);
+
+    // Every token must match something, otherwise there are no results.
+    expect(
+      demoService.fetchCatalogItems(1, 100, undefined, "leaf zzzz").meta.total,
+    ).toBe(0);
+  });
+
   it("keeps seeded job line items linked to catalog items", () => {
     const job = demoService.fetchJob("demo-job-1");
     const linked = job.lineItems.filter((li) => li.catalogItemId);

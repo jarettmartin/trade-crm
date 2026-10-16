@@ -480,7 +480,7 @@ src/
 - Tenant preset line items so adding bills/line items is faster. `type` (SERVICE/MATERIAL/FEE), `description`, `unitPrice`
 - `JobLineItem.catalogItemId` is an **optional reference only** — every display value is always snapshotted onto the `job_line_items` row at add time, so editing or deleting a catalog item never changes existing line items (deleting a catalog item just clears the reference via `ON DELETE SET NULL`)
 - Catalog search on the Create/Job detail page loads the tenant's items up-front and filters **locally** (description/type/unit price); pick an item to prefill the normal manual line item form (editable before applying), or use the "Add Custom Line Item" button for a blank entry
-- Management UI: `/manage-catalog` (paginated table + free-text search across description/type/price + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation)
+- Management UI: `/manage-catalog` (paginated table + free-text search + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation). `?q=` is whitespace-tokenized: every token must match at least one of description / type / unit price (AND across tokens, OR across fields — the same shape as customer search), capped at 12 tokens and always bound as parameters. The AI estimator's `search_catalog` tool reuses this exact search
 
 ### AI service estimator
 
