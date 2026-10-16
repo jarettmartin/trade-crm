@@ -553,6 +553,7 @@ source of truth**:
 - `@Type(() => Number)` from `class-transformer` on numeric DTO fields (for string→number conversion)
 - `ValidationPipe` with `transform: true`, `whitelist: true`, `forbidNonWhitelisted: true`
 - Transactions via `DataSource.transaction()` for multi-table atomic operations
+- **Raw SQL fragments in a `createQueryBuilder` do not get TypeORM's property→column mapping** — and the mapping is also skipped when an `alias.property` is immediately followed by a `::` cast (e.g. `LOWER(item.unitPrice::text)` is passed through verbatim, then Postgres folds it to `unitprice` and the query fails with `column item.unitprice does not exist`). Write physical column names quoted (`item."unitPrice"`) in those fragments, or prefer the repository API / `ILike()` which map for you. See `catalog.service.ts` → `findAll` for the fixed pattern.
 - Explicit `relations` in all `findOne`/`find` queries — no eager loading
 - Pagination on list endpoints with `PaginationDto` (page, limit)
 - All list queries use `tenantId` filter + `order` for consistent results

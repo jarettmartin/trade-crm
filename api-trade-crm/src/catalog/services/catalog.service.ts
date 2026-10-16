@@ -51,13 +51,18 @@ export class CatalogService {
       const like = `%${trimmed}%`;
       query.andWhere(
         new Brackets((qb) => {
-          qb.where('LOWER(item.description) LIKE LOWER(:search)', {
+          // Columns are written in their physical, quoted form on purpose: raw
+          // SQL fragments bypass TypeORM's property→column mapping, and the
+          // mapping is also skipped for `alias.property` when a `::text` cast
+          // follows it. Unquoted, Postgres folds `unitPrice` to `unitprice` and
+          // the query fails with "column item.unitprice does not exist".
+          qb.where('LOWER(item."description") LIKE LOWER(:search)', {
             search: like,
           })
-            .orWhere('LOWER(item.type::text) LIKE LOWER(:search)', {
+            .orWhere('LOWER(item."type"::text) LIKE LOWER(:search)', {
               search: like,
             })
-            .orWhere('LOWER(item.unitPrice::text) LIKE LOWER(:search)', {
+            .orWhere('LOWER(item."unitPrice"::text) LIKE LOWER(:search)', {
               search: like,
             });
         }),
