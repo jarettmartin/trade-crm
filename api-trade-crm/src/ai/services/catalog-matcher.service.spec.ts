@@ -1,24 +1,19 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import type Anthropic from '@anthropic-ai/sdk';
 import {
-  buildSystemPrompt,
   CATALOG_SEARCH_TOOL,
   CatalogMatcherService,
   extractJsonObject,
   normalizeQuantity,
   parseCatalogMatchResult,
+  SYSTEM_PROMPT,
 } from './catalog-matcher.service';
 import type {
-  CatalogSnapshot,
   CatalogToolItem,
   CatalogToolService,
 } from './catalog-tool.service';
 import type { AnthropicClient } from '../anthropic.client';
-import {
-  AI_INLINE_MAX_CHARS,
-  AI_INLINE_MAX_ITEMS,
-  AI_MAX_TOOL_ITERATIONS,
-} from '../ai-estimator.config';
+import { AI_MAX_TOOL_ITERATIONS } from '../ai-estimator.config';
 
 const leaf: CatalogToolItem = {
   id: 'cat-leaf',
@@ -202,21 +197,16 @@ describe('CATALOG_SEARCH_TOOL', () => {
   });
 });
 
-describe('buildSystemPrompt', () => {
-  it('tells the tool path to search short, distinctive keywords', () => {
-    const prompt = buildSystemPrompt(false);
-
-    expect(prompt).toContain('search_catalog');
-    expect(prompt).toContain('1-3 distinctive keywords');
-    expect(prompt).toContain('catalogItemRef');
+describe('SYSTEM_PROMPT', () => {
+  it('requires a catalog search and short, distinctive keywords', () => {
+    expect(SYSTEM_PROMPT).toContain('MUST call search_catalog');
+    expect(SYSTEM_PROMPT).toContain('1-3 distinctive keywords');
+    expect(SYSTEM_PROMPT).toContain('drop filler words');
   });
 
-  it('tells the inline path that the catalog is already provided', () => {
-    const prompt = buildSystemPrompt(true);
-
-    expect(prompt).toContain('complete catalog is provided');
-    expect(prompt).not.toContain('You MUST call search_catalog');
-    expect(prompt).toContain('catalogItemRef');
+  it('documents the empty-query escape hatch and the ref contract', () => {
+    expect(SYSTEM_PROMPT).toContain('empty query');
+    expect(SYSTEM_PROMPT).toContain('catalogItemRef');
   });
 });
 
@@ -234,44 +224,30 @@ function createMessageMock(): CreateMessageMock {
   >();
 }
 
-function snapshotMock(items: CatalogToolItem[], total = items.length) {
-  return jest
-    .fn<(tenantId: string, limit: number) => Promise<CatalogSnapshot>>()
-    .mockResolvedValue({ items, total });
-}
-
 function searchMock(items: CatalogToolItem[]) {
   return jest
     .fn<(tenantId: string, query: string) => Promise<CatalogToolItem[]>>()
     .mockResolvedValue(items);
 }
 
-type SnapshotMock = ReturnType<typeof snapshotMock>;
 type SearchMock = ReturnType<typeof searchMock>;
 
 function createMatcher(
   createMessage: CreateMessageMock,
-  options: { snapshot?: SnapshotMock; search?: SearchMock } = {},
+  search: SearchMock = searchMock([]),
 ) {
-  const snapshot = options.snapshot ?? snapshotMock([leaf]);
-  const search = options.search ?? searchMock([]);
-
   const anthropic = {
     createMessage,
     configured: true,
     modelId: 'claude-haiku-5-5',
   } as unknown as AnthropicClient;
-  const catalogTool = { snapshot, search } as unknown as CatalogToolService;
+  const catalogTool = { search } as unknown as CatalogToolService;
 
   return {
     matcher: new CatalogMatcherService(anthropic, catalogTool),
-    snapshot,
     search,
   };
 }
-
-/** A catalog that is too big to inline, which forces the tool path. */
-const largeCatalog = () => snapshotMock([leaf], AI_INLINE_MAX_ITEMS + 1);
 
 const toolUseMessage = () =>
   message(
@@ -289,65 +265,8 @@ const toolUseMessage = () =>
 const textSuggestions = (payload: unknown) =>
   textMessage(JSON.stringify(payload));
 
-/** The user-turn text of a request (the inline path sends a string). */
-function userText(params: Anthropic.MessageCreateParamsNonStreaming): string {
-  const content = params.messages[0].content;
-  return typeof content === 'string' ? content : JSON.stringify(content);
-}
-
-describe('CatalogMatcherService — inline path (small catalog)', () => {
-  it('sends the whole catalog in one call, with refs and no tool', async () => {
-    const createMessage = createMessageMock().mockResolvedValue(
-      textSuggestions({
-        suggestions: [{ catalogItemRef: '1', quantity: 2 }],
-      }),
-    );
-    const { matcher, snapshot, search } = createMatcher(createMessage);
-
-    const result = await matcher.match('tenant-1', 'clear the leaves');
-
-    expect(snapshot).toHaveBeenCalledWith('tenant-1', AI_INLINE_MAX_ITEMS);
-    expect(search).not.toHaveBeenCalled();
-    expect(createMessage).toHaveBeenCalledTimes(1);
-
-    const params = createMessage.mock.calls[0][0];
-    expect(params.tools).toBeUndefined();
-
-    const content = userText(params);
-    expect(content).toContain('Complete catalog');
-    expect(content).toContain('"ref":"1"');
-    expect(content).toContain('Leaf removal and disposal');
-    // The UUID never goes over the wire — that's the token/reliability win.
-    expect(content).not.toContain('cat-leaf');
-
-    expect(result.suggestions[0]).toMatchObject({
-      catalogItemId: 'cat-leaf',
-      description: 'Leaf removal and disposal',
-      quantity: 2,
-    });
-  });
-
-  it('falls back to the tool when the catalog is too big to inline by size', async () => {
-    const huge: CatalogToolItem = {
-      ...leaf,
-      description: 'x'.repeat(AI_INLINE_MAX_CHARS),
-    };
-    const createMessage = createMessageMock().mockResolvedValue(
-      textSuggestions({ suggestions: [] }),
-    );
-    const { matcher } = createMatcher(createMessage, {
-      snapshot: snapshotMock([huge], 1),
-      search: searchMock([]),
-    });
-
-    await matcher.match('tenant-1', 'anything');
-
-    expect(createMessage.mock.calls[0][0].tools).toHaveLength(1);
-  });
-});
-
-describe('CatalogMatcherService — tool path (large catalog)', () => {
-  it('keeps the catalog out of the prompt, searches, and maps refs back', async () => {
+describe('CatalogMatcherService — tool use', () => {
+  it('offers the tool, forces a catalog read first, and maps refs back', async () => {
     const createMessage = createMessageMock()
       .mockResolvedValueOnce(toolUseMessage())
       .mockResolvedValueOnce(
@@ -356,10 +275,7 @@ describe('CatalogMatcherService — tool path (large catalog)', () => {
         }),
       );
     const search = searchMock([leaf]);
-    const { matcher } = createMatcher(createMessage, {
-      snapshot: largeCatalog(),
-      search,
-    });
+    const { matcher } = createMatcher(createMessage, search);
 
     const result = await matcher.match('tenant-1', 'clear the leaves');
 
@@ -367,15 +283,23 @@ describe('CatalogMatcherService — tool path (large catalog)', () => {
 
     const first = createMessage.mock.calls[0][0];
     expect(first.tools).toHaveLength(1);
-    const firstContent = userText(first);
-    expect(firstContent).not.toContain('Leaf removal and disposal');
-    expect(firstContent).not.toContain('"ref"');
+    // Turn 1 must consult the catalog; later turns may answer directly.
+    expect(first.tool_choice).toEqual({
+      type: 'tool',
+      name: 'search_catalog',
+    });
+    // The catalog is not inlined into the prompt (the messages array is mutated
+    // as the loop appends tool results, so check the first user turn itself).
+    expect(JSON.stringify(first.messages[0])).not.toContain(
+      'Leaf removal and disposal',
+    );
+
+    const second = createMessage.mock.calls[1][0];
+    expect(second.tool_choice).toBeUndefined();
 
     expect(search).toHaveBeenCalledWith('tenant-1', 'leaf');
 
-    const toolResult = JSON.stringify(
-      createMessage.mock.calls[1][0].messages.at(-1),
-    );
+    const toolResult = JSON.stringify(second.messages.at(-1));
     expect(toolResult).toContain('tool_result');
     expect(toolResult).toContain('\\"ref\\":\\"1\\"');
     expect(toolResult).not.toContain('cat-leaf');
@@ -386,18 +310,52 @@ describe('CatalogMatcherService — tool path (large catalog)', () => {
     });
   });
 
-  it('never resolves a ref from the snapshot the model was not given', async () => {
-    // Large catalog → the snapshot is never sent, so a suggestion returned on
-    // the first turn (without a search) must be rejected.
+  it('can return the whole catalog in one tool result (empty query)', async () => {
+    const many = Array.from({ length: 16 }, (_, index) => ({
+      ...leaf,
+      id: `cat-${index}`,
+      description: `Item ${index}`,
+    }));
+    const createMessage = createMessageMock()
+      .mockResolvedValueOnce(
+        message(
+          [
+            {
+              type: 'tool_use',
+              id: 'tool-1',
+              name: 'search_catalog',
+              input: { query: '' },
+            },
+          ],
+          'tool_use',
+        ),
+      )
+      .mockResolvedValueOnce(
+        textSuggestions({ suggestions: [{ catalogItemRef: '16' }] }),
+      );
+    const search = searchMock(many);
+    const { matcher } = createMatcher(createMessage, search);
+
+    const result = await matcher.match('tenant-1', 'anything');
+
+    expect(search).toHaveBeenCalledWith('tenant-1', '');
+    const toolResult = JSON.stringify(
+      createMessage.mock.calls[1][0].messages.at(-1),
+    );
+    expect(toolResult).toContain('\\"ref\\":\\"1\\"');
+    expect(toolResult).toContain('\\"ref\\":\\"16\\"');
+    expect(result.suggestions[0].catalogItemId).toBe('cat-15');
+  });
+
+  it('rejects a suggestion before any catalog row was sent', async () => {
+    // Defensive: if the model answers without a successful search, the registry
+    // is empty, so every ref is unknown and nothing is suggested.
     const createMessage = createMessageMock().mockResolvedValue(
       textSuggestions({
         suggestions: [{ catalogItemRef: '1', quantity: 1 }],
       }),
     );
-    const { matcher } = createMatcher(createMessage, {
-      snapshot: largeCatalog(),
-      search: searchMock([]),
-    });
+    const { matcher } = createMatcher(createMessage);
 
     const result = await matcher.match('tenant-1', 'anything');
 
@@ -411,10 +369,7 @@ describe('CatalogMatcherService — tool path (large catalog)', () => {
       .mockResolvedValueOnce(
         textSuggestions({ suggestions: [{ catalogItemRef: '1' }] }),
       );
-    const { matcher } = createMatcher(createMessage, {
-      snapshot: largeCatalog(),
-      search: searchMock([leaf]),
-    });
+    const { matcher } = createMatcher(createMessage, searchMock([leaf]));
 
     const result = await matcher.match('tenant-1', 'leaves');
 
@@ -440,10 +395,7 @@ describe('CatalogMatcherService — tool path (large catalog)', () => {
       )
       .mockResolvedValueOnce(textSuggestions({ suggestions: [] }));
     const search = searchMock([]);
-    const { matcher } = createMatcher(createMessage, {
-      snapshot: largeCatalog(),
-      search,
-    });
+    const { matcher } = createMatcher(createMessage, search);
 
     const result = await matcher.match('tenant-1', 'anything');
 
@@ -456,10 +408,7 @@ describe('CatalogMatcherService — tool path (large catalog)', () => {
   it('stops after the hard tool-iteration cap', async () => {
     const createMessage =
       createMessageMock().mockResolvedValue(toolUseMessage());
-    const { matcher } = createMatcher(createMessage, {
-      snapshot: largeCatalog(),
-      search: searchMock([leaf]),
-    });
+    const { matcher } = createMatcher(createMessage, searchMock([leaf]));
 
     const result = await matcher.match('tenant-1', 'loop forever');
 

@@ -77,22 +77,3 @@ describe('CatalogToolService.search', () => {
     );
   });
 });
-
-describe('CatalogToolService.snapshot', () => {
-  it('returns the rows plus the untruncated total for the inline decision', async () => {
-    const { findAll, service } = createService();
-    findAll.mockResolvedValue({
-      data: [
-        catalogItem(),
-        catalogItem({ id: 'cat-2', description: 'Garden soil and mulch' }),
-      ],
-      meta: { page: 1, limit: 2, total: 16, totalPages: 8 },
-    });
-
-    const snapshot = await service.snapshot('tenant-1', 2);
-
-    expect(findAll).toHaveBeenCalledWith('tenant-1', 1, 2);
-    expect(snapshot.total).toBe(16);
-    expect(snapshot.items.map((item) => item.id)).toEqual(['cat-1', 'cat-2']);
-  });
-});

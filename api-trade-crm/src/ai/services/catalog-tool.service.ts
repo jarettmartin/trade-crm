@@ -15,16 +15,9 @@ export interface CatalogToolItem {
   unitPrice: number;
 }
 
-/** A bounded read of the tenant's catalog, plus the untruncated row count. */
-export interface CatalogSnapshot {
-  items: CatalogToolItem[];
-  total: number;
-}
-
 /**
- * The tenant-scoped catalog reads the model is allowed to perform: the
- * `search_catalog` tool (large catalogs) and the inline snapshot (the default
- * fast path).
+ * The tenant-scoped catalog read the model performs through the
+ * `search_catalog` tool.
  *
  * It deliberately reuses the existing catalog search (`CatalogService.findAll`,
  * the same query the Manage Catalog page uses) so there is one search
@@ -36,9 +29,12 @@ export class CatalogToolService {
   constructor(private readonly catalogService: CatalogService) {}
 
   /**
-   * Search the caller's catalog and return a compact, capped result set.
-   * An empty/blank query returns the most recent items (still capped) rather
-   * than dumping the whole catalog into the prompt.
+   * Search the caller's catalog and return a compact result set.
+   *
+   * A blank query means "no filter", which returns the caller's whole catalog
+   * (newest first, capped at AI_MAX_TOOL_RESULTS) — that is how the model asks
+   * to see everything when the catalog is small. A non-blank query is the
+   * existing token search (AND across tokens, OR across fields).
    */
   async search(tenantId: string, query: string): Promise<CatalogToolItem[]> {
     const { data } = await this.catalogService.findAll(
@@ -50,24 +46,6 @@ export class CatalogToolService {
     );
 
     return data.map((item) => this.toToolItem(item));
-  }
-
-  /**
-   * A bounded snapshot of the caller's catalog for the inline fast path.
-   * `total` is the full row count, so the caller can tell whether the snapshot
-   * is complete (inline) or truncated (fall back to the search tool).
-   */
-  async snapshot(tenantId: string, limit: number): Promise<CatalogSnapshot> {
-    const { data, meta } = await this.catalogService.findAll(
-      tenantId,
-      1,
-      limit,
-    );
-
-    return {
-      items: data.map((item) => this.toToolItem(item)),
-      total: meta.total,
-    };
   }
 
   private toToolItem(item: CatalogItem): CatalogToolItem {
