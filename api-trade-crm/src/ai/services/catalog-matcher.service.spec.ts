@@ -186,26 +186,29 @@ describe('parseCatalogMatchResult', () => {
 });
 
 describe('CATALOG_SEARCH_TOOL', () => {
-  it('exposes only a short keyword query and never a write', () => {
+  it('exposes only an optional short keyword query and never a write', () => {
     expect(CATALOG_SEARCH_TOOL.name).toBe('search_catalog');
-    expect(CATALOG_SEARCH_TOOL.input_schema.required).toEqual(['query']);
+    // Optional, so the model can simply omit it to list the whole catalog.
+    expect(CATALOG_SEARCH_TOOL.input_schema.required).toBeUndefined();
     expect(
       Object.keys(CATALOG_SEARCH_TOOL.input_schema.properties ?? {}),
     ).toEqual(['query']);
-    // The model is steered toward short keyword queries.
+    expect(CATALOG_SEARCH_TOOL.description).toContain('empty query');
     expect(CATALOG_SEARCH_TOOL.description).toContain('1-3');
   });
 });
 
 describe('SYSTEM_PROMPT', () => {
-  it('requires a catalog search and short, distinctive keywords', () => {
+  it('starts from the whole catalog and requires a search', () => {
     expect(SYSTEM_PROMPT).toContain('MUST call search_catalog');
-    expect(SYSTEM_PROMPT).toContain('1-3 distinctive keywords');
-    expect(SYSTEM_PROMPT).toContain('drop filler words');
+    expect(SYSTEM_PROMPT).toContain('Start by calling search_catalog');
+    expect(SYSTEM_PROMPT).toContain('empty query');
+    expect(SYSTEM_PROMPT).toContain('whole catalog');
   });
 
-  it('documents the empty-query escape hatch and the ref contract', () => {
-    expect(SYSTEM_PROMPT).toContain('empty query');
+  it('steers keyword searches and the ref contract', () => {
+    expect(SYSTEM_PROMPT).toContain('1-3 distinctive keywords');
+    expect(SYSTEM_PROMPT).toContain('drop filler words');
     expect(SYSTEM_PROMPT).toContain('catalogItemRef');
   });
 });

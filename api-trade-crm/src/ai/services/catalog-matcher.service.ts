@@ -78,20 +78,20 @@ export const CATALOG_SEARCH_TOOL: Anthropic.Tool = {
   name: 'search_catalog',
   description:
     "Search the current business's saved catalog items (reusable services, " +
-    'materials and fees). Returns matching items, each with a short "ref" plus ' +
-    'its type, description and unit price. Search with 1-3 distinctive ' +
-    'keywords — not the whole description — and call it as many times as ' +
-    'needed; then answer using only the items it returned.',
+    'materials and fees). Returns items, each with a short "ref" plus its type, ' +
+    'description and unit price. Call it with an empty query to list the whole ' +
+    'catalog; otherwise search with 1-3 distinctive keywords and call it as ' +
+    'many times as needed. Answer using only the items it returned.',
   input_schema: {
     type: 'object',
     properties: {
       query: {
         type: 'string',
         description:
-          'Short search keywords, 1-3 words, e.g. "light fixture" or "wiring".',
+          'Short search keywords, 1-3 words (e.g. "light fixture" or "wiring"). ' +
+          'Omit or leave empty to list the whole catalog.',
       },
     },
-    required: ['query'],
   },
 };
 
@@ -105,10 +105,11 @@ line items chosen from their own saved catalog.
 Rules:
 - You MUST call search_catalog before answering, and you may only suggest items
   that a search_catalog result in this conversation returned.
-- To see the whole catalog, call search_catalog with an empty query. Otherwise
-  search with 1-3 distinctive keywords (e.g. "wiring", "light fixture") instead
-  of pasting the whole description, and drop filler words such as "existing",
-  "the" or "two" — they rarely appear in catalog names.
+- Start by calling search_catalog with an empty query to see the whole catalog
+  (it is normally small, and the result is capped). Use 1-3 distinctive keywords
+  (e.g. "wiring", "light fixture") only to narrow a large catalog — never paste
+  the whole description as a query, and drop filler words such as "existing",
+  "the" or "two", which rarely appear in catalog names.
 - Never invent an item, a ref, a name or a price.
 - Every catalog item carries a short "ref" that is valid only for this request.
   Return the item's "catalogItemRef" — never its name or a database id.

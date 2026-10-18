@@ -38,7 +38,7 @@ export const AI_MAX_TOOL_ITERATIONS = 5;
  * "list the whole catalog": an empty query returns up to this many rows, which
  * covers any realistic trade catalog while keeping the payload finite.
  */
-export const AI_MAX_TOOL_RESULTS = 200;
+export const AI_MAX_TOOL_RESULTS = 100;
 
 /** Cap on the model's output tokens. */
 export const AI_MAX_OUTPUT_TOKENS = 1024;
