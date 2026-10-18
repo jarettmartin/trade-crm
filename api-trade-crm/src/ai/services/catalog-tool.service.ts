@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { CatalogItem } from '../../catalog/entities/catalog-item.entity';
 import { CatalogService } from '../../catalog/services/catalog.service';
 import { AI_MAX_TOOL_RESULTS } from '../ai-estimator.config';
 
@@ -14,9 +15,16 @@ export interface CatalogToolItem {
   unitPrice: number;
 }
 
+/** A bounded read of the tenant's catalog, plus the untruncated row count. */
+export interface CatalogSnapshot {
+  items: CatalogToolItem[];
+  total: number;
+}
+
 /**
- * The tenant-scoped read the model is allowed to perform through the
- * `search_catalog` tool.
+ * The tenant-scoped catalog reads the model is allowed to perform: the
+ * `search_catalog` tool (large catalogs) and the inline snapshot (the default
+ * fast path).
  *
  * It deliberately reuses the existing catalog search (`CatalogService.findAll`,
  * the same query the Manage Catalog page uses) so there is one search
@@ -41,11 +49,33 @@ export class CatalogToolService {
       query.trim() || undefined,
     );
 
-    return data.map((item) => ({
+    return data.map((item) => this.toToolItem(item));
+  }
+
+  /**
+   * A bounded snapshot of the caller's catalog for the inline fast path.
+   * `total` is the full row count, so the caller can tell whether the snapshot
+   * is complete (inline) or truncated (fall back to the search tool).
+   */
+  async snapshot(tenantId: string, limit: number): Promise<CatalogSnapshot> {
+    const { data, meta } = await this.catalogService.findAll(
+      tenantId,
+      1,
+      limit,
+    );
+
+    return {
+      items: data.map((item) => this.toToolItem(item)),
+      total: meta.total,
+    };
+  }
+
+  private toToolItem(item: CatalogItem): CatalogToolItem {
+    return {
       id: item.id,
       type: item.type,
       description: item.description,
       unitPrice: Number(item.unitPrice),
-    }));
+    };
   }
 }

@@ -36,6 +36,17 @@ export const AI_MAX_TOOL_ITERATIONS = 5;
 /** Catalog rows handed back to the model per search (keeps prompts small). */
 export const AI_MAX_TOOL_RESULTS = 10;
 
+/**
+ * The estimator inlines the WHOLE catalog in the first message when it is small
+ * enough: one provider call instead of a tool-use round trip, and no chance of
+ * a phrasing miss. Above either bound it falls back to the bounded
+ * `search_catalog` tool. Both limits are deliberately generous — a trade
+ * catalog is normally tens of items, not thousands.
+ */
+export const AI_INLINE_MAX_ITEMS = 100;
+/** Serialized-size guard for the inline path (roughly 5-6k tokens). */
+export const AI_INLINE_MAX_CHARS = 20_000;
+
 /** Cap on the model's output tokens. */
 export const AI_MAX_OUTPUT_TOKENS = 1024;
 
