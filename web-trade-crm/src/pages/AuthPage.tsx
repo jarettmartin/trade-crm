@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import {
   IonButton,
   IonCheckbox,
@@ -19,6 +19,7 @@ import { isValidEmail } from "../services/validation";
 import PublicHeader from "../components/PublicHeader";
 import PrivacyPolicy from "../legal/PrivacyPolicy";
 import TermsOfService from "../legal/TermsOfService";
+import AppFooter from "../components/AppFooter";
 
 /**
  * A consent row for the signup form: a checkbox plus a button that opens the
@@ -72,6 +73,7 @@ const AuthPage: React.FC = () => {
     document.title = "Sprout CRM - Sign In";
   }, []);
   const history = useHistory();
+  const location = useLocation();
   const { login } = useAuth();
   const [mode, setMode] = useState<
     "login" | "register" | "reset" | "reset-confirm"
@@ -82,7 +84,13 @@ const AuthPage: React.FC = () => {
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  // AuthProvider sends expired sessions to /sign-in?reason=session-expired so
+  // the user learns why they were bounced instead of getting a silent reload.
+  const [error, setError] = useState(() =>
+    new URLSearchParams(location.search).get("reason") === "session-expired"
+      ? "Your session has expired. Please sign in again."
+      : "",
+  );
   const [toast, setToast] = useState("");
   // Signup consent: each document opens in a modal from its consent row.
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
@@ -111,8 +119,8 @@ const AuthPage: React.FC = () => {
     setError("");
     try {
       await login(email, password);
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -147,8 +155,8 @@ const AuthPage: React.FC = () => {
       setMode("login");
       setInviteCode("");
       setPassword("");
-    } catch (err: any) {
-      setError(err.message || "Registration failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -169,8 +177,10 @@ const AuthPage: React.FC = () => {
       await api.sendPasswordResetEmail(email);
       setToast("Password reset code sent! Check your inbox.");
       setMode("reset-confirm");
-    } catch (err: any) {
-      setError(err.message || "Failed to send password reset");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to send password reset",
+      );
     } finally {
       setLoading(false);
     }
@@ -194,8 +204,8 @@ const AuthPage: React.FC = () => {
       setResetCode("");
       setNewPassword("");
       setPassword("");
-    } catch (err: any) {
-      setError(err.message || "Failed to reset password");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reset password");
     } finally {
       setLoading(false);
     }
@@ -247,6 +257,7 @@ const AuthPage: React.FC = () => {
               value={email}
               onIonInput={(e) => setEmail(e.detail.value!)}
               placeholder="you@example.com"
+              data-testid="auth-email"
             />
           </IonItem>
 
@@ -258,6 +269,7 @@ const AuthPage: React.FC = () => {
                 value={password}
                 onIonInput={(e) => setPassword(e.detail.value!)}
                 placeholder="••••••••"
+                data-testid="auth-password"
               />
             </IonItem>
           )}
@@ -400,6 +412,8 @@ const AuthPage: React.FC = () => {
           color="success"
         />
       </IonContent>
+
+      <AppFooter />
 
       {/* The legal documents, opened from the signup consent rows. */}
       <IonModal

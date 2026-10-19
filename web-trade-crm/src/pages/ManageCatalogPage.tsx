@@ -17,6 +17,7 @@ import {
 import { useHistory } from "react-router-dom";
 import { api, CatalogItemResult } from "../services/api";
 import PaginatedTable from "../components/PaginatedTable";
+import AppFooter from "../components/AppFooter";
 
 const PAGE_SIZE = 10;
 
@@ -217,6 +218,7 @@ const ManageCatalogPage: React.FC = () => {
           />
         </div>
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

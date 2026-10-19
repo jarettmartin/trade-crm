@@ -5,6 +5,12 @@ import { CatalogItem } from '../entities/catalog-item.entity';
 import { CreateCatalogItemDto } from '../dto/create-catalog-item.dto';
 import { UpdateCatalogItemDto } from '../dto/update-catalog-item.dto';
 
+/**
+ * Cap on free-text search tokens. Bounds the work a pathological `q` (a
+ * thousands-of-words string) can create; far above any realistic search.
+ */
+const MAX_SEARCH_TOKENS = 12;
+
 @Injectable()
 export class CatalogService {
   private readonly logger = new Logger(CatalogService.name);
@@ -46,23 +52,42 @@ export class CatalogService {
       }
     }
 
-    const trimmed = q?.trim();
-    if (trimmed) {
-      const like = `%${trimmed}%`;
+    // Free-text search: every whitespace-separated token must match at least one
+    // field — AND across tokens, OR across fields — the same shape as
+    // CustomerService.search. So "snow plow" finds "Snow plowing — parking lot"
+    // and the words may appear in any order or in different fields (previously
+    // the whole string had to appear verbatim in a single field). Tokens are
+    // always bound as parameters, never interpolated into the SQL.
+    const tokens = (q ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter((token) => token.length > 0)
+      .slice(0, MAX_SEARCH_TOKENS);
+
+    tokens.forEach((token, index) => {
+      const param = `token_${index}`;
+      const like = `%${token}%`;
+
       query.andWhere(
         new Brackets((qb) => {
-          qb.where('LOWER(item.description) LIKE LOWER(:search)', {
-            search: like,
+          // Columns are written in their physical, quoted form on purpose: raw
+          // SQL fragments bypass TypeORM's property→column mapping, and the
+          // mapping is also skipped when an `alias.property` is immediately
+          // followed by a `::` cast. Unquoted, Postgres folds `unitPrice` to
+          // `unitprice` and the query fails with "column item.unitprice does
+          // not exist".
+          qb.where(`LOWER(item."description") LIKE LOWER(:${param})`, {
+            [param]: like,
           })
-            .orWhere('LOWER(item.type::text) LIKE LOWER(:search)', {
-              search: like,
+            .orWhere(`LOWER(item."type"::text) LIKE LOWER(:${param})`, {
+              [param]: like,
             })
-            .orWhere('LOWER(item.unitPrice::text) LIKE LOWER(:search)', {
-              search: like,
+            .orWhere(`LOWER(item."unitPrice"::text) LIKE LOWER(:${param})`, {
+              [param]: like,
             });
         }),
       );
-    }
+    });
 
     query.orderBy('item.createdAt', 'DESC').skip(skip).take(limit);
 

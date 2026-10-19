@@ -94,14 +94,15 @@ src/
 - **Invoicing**: Create invoices with snapshots, PDF generation, status management
 - **PDF Preview**: Full-page iframe preview with download
 - **Token Refresh**: Automatic transparent token refresh via backend
-- **Global Auth**: Auto-logout on 401 responses
+- **Global Auth**: Auto-logout on 401 from authenticated requests (credential endpoints keep the form and show the error)
 
 ## Architecture Notes
 
 - Singleton `api.ts` class handles all HTTP — never use raw `fetch` outside of it
-- Every request sends `Authorization: Bearer <idToken>` and `x-refresh-token` headers
+- Every authenticated request sends `Authorization: Bearer <idToken>` and `x-refresh-token` headers
 - Token refresh is transparent: the backend returns `x-new-id-token` on refresh
-- On 401 response, tokens are cleared and user is redirected to login
+- On a 401 from an authenticated request, tokens are cleared and the user is redirected to `/sign-in?reason=session-expired`, which the sign-in page explains
+- Sign-in, registration, and password-reset requests are sent without a cached token; their 401s are bad credentials or a Cognito lockout, so the form stays put and shows the message
 - Pages use Ionic lifecycle hooks (`useIonViewWillEnter`) for data loading
 - Error toasts require manual dismiss (never auto-hide)
 - Phone inputs use `inputMode="numeric"` with live formatting

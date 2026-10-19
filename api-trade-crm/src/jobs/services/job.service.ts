@@ -9,6 +9,7 @@ import { CreateJobDto } from '../dto/create-job.dto';
 import { CreateJobLineItemDto } from '../dto/create-job-line-item.dto';
 import { CreateJobNoteDto } from '../dto/create-job-note.dto';
 import { UpdateJobDto } from '../dto/update-job.dto';
+import { CatalogService } from '../../catalog/services/catalog.service';
 
 @Injectable()
 export class JobService {
@@ -21,6 +22,7 @@ export class JobService {
     private readonly noteRepository: Repository<JobNote>,
     @InjectRepository(JobLineItem)
     private readonly lineItemRepository: Repository<JobLineItem>,
+    private readonly catalogService: CatalogService,
   ) {}
 
   async findAll(
@@ -145,6 +147,11 @@ export class JobService {
   /**
    * Line items are added and removed one at a time, like notes, so an update
    * never rewrites rows that are already attached to the job.
+   *
+   * When a `catalogItemId` is supplied it must belong to the caller's tenant:
+   * the column is a plain FK, so without this check a caller could reference
+   * (and thereby leak the existence of) another tenant's catalog item. This is
+   * also the re-validation step for confirmed AI suggestions.
    */
   async createLineItem(
     jobId: string,
@@ -157,6 +164,11 @@ export class JobService {
 
     if (!job) {
       throw new NotFoundException('Job not found');
+    }
+
+    if (dto.catalogItemId) {
+      // Throws NotFoundException when the item is missing or foreign.
+      await this.catalogService.findById(dto.catalogItemId, tenantId);
     }
 
     return this.lineItemRepository.save(

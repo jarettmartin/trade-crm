@@ -13,6 +13,7 @@ import {
 } from "@ionic/react";
 import { useParams } from "react-router-dom";
 import { getPdfBlob } from "../services/pdfCache";
+import AppFooter from "../components/AppFooter";
 
 const InvoicePreviewPage: React.FC = () => {
   useEffect(() => {
@@ -83,6 +84,7 @@ const InvoicePreviewPage: React.FC = () => {
           )}
         </div>
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

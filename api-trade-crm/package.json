@@ -1,6 +1,6 @@
 {
   "name": "api-trade-crm",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "",
   "author": "",
   "private": true,
@@ -28,6 +28,7 @@
     "db:reset": "tsx src/config/reset-database.ts && npm run migration:run && npm run db:seed"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.1094.0",
     "@aws-sdk/client-sesv2": "^3.1129.0",
     "@nestjs/common": "^11.0.1",

@@ -12,8 +12,6 @@ import {
   IonToast,
   IonSelect,
   IonSelectOption,
-  IonItem,
-  IonLabel,
   IonInput,
   IonTextarea,
   IonButton,
@@ -24,7 +22,7 @@ import {
   IonActionSheet,
   useIonViewWillEnter,
 } from "@ionic/react";
-import { trashOutline, downloadOutline, eyeOutline, mailOutline } from "ionicons/icons";
+import { trashOutline, downloadOutline, eyeOutline, mailOutline, sparklesOutline } from "ionicons/icons";
 import { useParams } from "react-router-dom";
 import {
   api,
@@ -34,10 +32,15 @@ import {
   CreateJobLineItemPayload,
 } from "../services/api";
 import CatalogItemSearch from "../components/CatalogItemSearch";
+import LineItemFields from "../components/LineItemFields";
+import type { LineItemFieldName } from "../components/LineItemFields";
+import ServiceEstimatorModal from "../components/ServiceEstimatorModal";
+import type { EstimatorLineItemDraft } from "../components/ServiceEstimatorModal";
 import { useAuth } from "../contexts/AuthContext";
 import { formatInvoiceNumber } from "../services/format";
 import { downloadPdf, clearPdfCache } from "../services/pdfCache";
 import { isValidEmail } from "../services/validation";
+import AppFooter from "../components/AppFooter";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Draft",
@@ -83,6 +86,9 @@ const JobDetailPage: React.FC = () => {
     "catalog",
   );
   const [liCatalogItemId, setLiCatalogItemId] = useState<string | null>(null);
+
+  // AI service estimator modal
+  const [estimatorOpen, setEstimatorOpen] = useState(false);
 
   // Tax
   const [taxPercent, setTaxPercent] = useState(0);
@@ -218,6 +224,20 @@ const JobDetailPage: React.FC = () => {
     setLiEntryMode("catalog");
   };
 
+  /**
+   * Adapts the shared LineItemFields controls onto the manual form's state, so
+   * the manual form and the AI estimator drive the same component.
+   */
+  const handleLineItemFieldChange = (
+    field: LineItemFieldName,
+    value: string,
+  ) => {
+    if (field === "type") setLiType(value as LineItemType);
+    else if (field === "description") setLiDesc(value);
+    else if (field === "quantity") setLiQty(value);
+    else setLiPrice(value);
+  };
+
   const addLineItem = async () => {
     if (!liDesc.trim() || !liQty || !liPrice || !job) return;
     const qty = parseFloat(liQty);
@@ -246,6 +266,39 @@ const JobDetailPage: React.FC = () => {
     } catch (err) {
       showToastMsg(
         err instanceof Error ? err.message : "Failed to add line item",
+      );
+    }
+  };
+
+  /**
+   * Writes the user-confirmed AI suggestions. Only called after the user
+   * presses "Add line items" in the estimator modal, and it goes through the
+   * normal job line-item endpoint (so tenant/field validation happens on the
+   * server). Cancel saves nothing.
+   */
+  const handleEstimatorConfirm = async (items: EstimatorLineItemDraft[]) => {
+    try {
+      for (const item of items) {
+        await api.createJobLineItem(id, {
+          type: item.type,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+          catalogItemId: item.catalogItemId,
+        });
+      }
+      setEstimatorOpen(false);
+      await loadJob();
+      showToastMsg(
+        `Added ${items.length} line item${items.length === 1 ? "" : "s"} from the AI estimator`,
+        false,
+      );
+    } catch (err) {
+      showToastMsg(
+        err instanceof Error
+          ? err.message
+          : "Failed to add the suggested line items",
       );
     }
   };
@@ -435,6 +488,7 @@ const JobDetailPage: React.FC = () => {
             <IonSpinner />
           </div>
         </IonContent>
+        <AppFooter />
       </IonPage>
     );
   }
@@ -453,6 +507,7 @@ const JobDetailPage: React.FC = () => {
         <IonContent className="ion-padding">
           <IonText color="danger">Job not found</IonText>
         </IonContent>
+        <AppFooter />
       </IonPage>
     );
   }
@@ -596,6 +651,17 @@ const JobDetailPage: React.FC = () => {
             </h3>
           </IonText>
 
+          <IonButton
+            expand="block"
+            fill="outline"
+            onClick={() => setEstimatorOpen(true)}
+            style={{ marginBottom: "12px" }}
+            data-testid="open-ai-estimator"
+          >
+            <IonIcon slot="start" icon={sparklesOutline} />
+            AI service estimator
+          </IonButton>
+
           {(["SERVICE", "MATERIAL", "FEE"] as const).map((type) => {
             const items = lineItemsByType(type);
             const typeLabel = {
@@ -680,13 +746,8 @@ const JobDetailPage: React.FC = () => {
 
           {/* === ADD LINE ITEM === */}
           <div
-            className="capped-container capped-container--left"
-            style={{
-              border: "1px solid var(--ion-color-light-shade)",
-              borderRadius: "8px",
-              padding: "12px",
-              marginTop: "8px",
-            }}
+            className="form-card capped-container capped-container--left"
+            style={{ marginTop: "8px" }}
           >
             <IonText>
               <strong>Add Line Item</strong>
@@ -720,48 +781,17 @@ const JobDetailPage: React.FC = () => {
                   </IonChip>
                 )}
 
-                <IonItem
-                  style={{ "--padding-start": "16px", marginTop: "8px" }}
-                >
-                  <IonLabel>Type</IonLabel>
-                  <IonSelect
-                    value={liType}
-                    onIonChange={(e) => setLiType(e.detail.value)}
-                    interface="popover"
-                  >
-                    <IonSelectOption value="SERVICE">Service</IonSelectOption>
-                    <IonSelectOption value="MATERIAL">Material</IonSelectOption>
-                    <IonSelectOption value="FEE">Fee</IonSelectOption>
-                  </IonSelect>
-                </IonItem>
-
-                <IonItem style={{ "--padding-start": "16px" }}>
-                  <IonLabel position="stacked">Description</IonLabel>
-                  <IonInput
-                    value={liDesc}
-                    onIonInput={(e) => setLiDesc(e.detail.value || "")}
+                <div style={{ marginTop: "8px" }}>
+                  <LineItemFields
+                    values={{
+                      type: liType,
+                      description: liDesc,
+                      quantity: liQty,
+                      unitPrice: liPrice,
+                    }}
+                    onChange={handleLineItemFieldChange}
+                    testIdPrefix="line-item"
                   />
-                </IonItem>
-
-                <div
-                  style={{ display: "flex", gap: "8px", marginTop: "8px" }}
-                >
-                  <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
-                    <IonLabel position="stacked">Quantity</IonLabel>
-                    <IonInput
-                      type="number"
-                      value={liQty}
-                      onIonInput={(e) => setLiQty(e.detail.value || "")}
-                    />
-                  </IonItem>
-                  <IonItem style={{ "--padding-start": "16px", flex: 1 }}>
-                    <IonLabel position="stacked">Unit Price</IonLabel>
-                    <IonInput
-                      type="number"
-                      value={liPrice}
-                      onIonInput={(e) => setLiPrice(e.detail.value || "")}
-                    />
-                  </IonItem>
                 </div>
 
                 <IonButton
@@ -791,14 +821,7 @@ const JobDetailPage: React.FC = () => {
             <h3 style={{ marginTop: "24px", marginBottom: "8px" }}>Costing</h3>
           </IonText>
 
-          <div
-            className="capped-container capped-container--left"
-            style={{
-              border: "1px solid var(--ion-color-light-shade)",
-              borderRadius: "8px",
-              padding: "12px",
-            }}
-          >
+          <div className="form-card capped-container capped-container--left">
             <div
               style={{
                 display: "flex",
@@ -1202,6 +1225,13 @@ const JobDetailPage: React.FC = () => {
           />
         </div>
 
+        <ServiceEstimatorModal
+          isOpen={estimatorOpen}
+          jobTitle={job.title}
+          onDismiss={() => setEstimatorOpen(false)}
+          onConfirm={handleEstimatorConfirm}
+        />
+
         <IonToast
           isOpen={showToast}
           message={toastMessage}
@@ -1215,6 +1245,7 @@ const JobDetailPage: React.FC = () => {
           onDidDismiss={() => setShowToast(false)}
         />
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

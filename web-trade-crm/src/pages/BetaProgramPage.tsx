@@ -12,6 +12,7 @@ import {
   IonText,
 } from "@ionic/react";
 import PublicHeader from "../components/PublicHeader";
+import AppFooter from "../components/AppFooter";
 
 /** A bullet in a program card; `label` renders bold ahead of the text. */
 interface ProgramBullet {
@@ -96,13 +97,7 @@ const BetaProgramPage: React.FC = () => {
     <IonPage>
       <PublicHeader />
       <IonContent className="ion-padding">
-        <div className="capped-container" style={{ marginTop: 32 }}>
-          <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
-              Founding Customer Program
-            </h1>
-          </div>
-
+        <div className="capped-container beta-program">
           {programCards.map((card) => (
             <IonCard key={card.title} style={{ marginBottom: 24 }}>
               <IonCardHeader>
@@ -110,33 +105,18 @@ const BetaProgramPage: React.FC = () => {
                     (flex-direction: column-reverse), so the subtitle is written
                     first here in order to render *under* the title. */}
                 {card.subtitle && (
-                  <IonCardSubtitle
-                    style={{
-                      textTransform: "none",
-                      letterSpacing: "normal",
-                      fontWeight: 500,
-                      color: "var(--ion-color-primary)",
-                    }}
-                  >
-                    {card.subtitle}
-                  </IonCardSubtitle>
+                  <IonCardSubtitle>{card.subtitle}</IonCardSubtitle>
                 )}
                 <IonCardTitle>{card.title}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
                 {card.body && (
-                  <IonText color="medium">
+                  <IonText>
                     <p style={{ marginTop: 0 }}>{card.body}</p>
                   </IonText>
                 )}
                 {card.bullets && (
-                  <ul
-                    style={{
-                      margin: 0,
-                      paddingLeft: 20,
-                      color: "var(--ion-color-medium)",
-                    }}
-                  >
+                  <ul style={{ margin: 0, paddingLeft: 20 }}>
                     {card.bullets.map((bullet) => (
                       <li key={bullet.text} style={{ marginBottom: 8 }}>
                         {bullet.label && <strong>{bullet.label}: </strong>}
@@ -159,6 +139,7 @@ const BetaProgramPage: React.FC = () => {
           ))}
         </div>
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

@@ -7,6 +7,7 @@ import {
   IonToolbar,
 } from "@ionic/react";
 import MarkdownContent from "../components/MarkdownContent";
+import LegalPage, { LegalPageChrome } from "./LegalPage";
 import termsOfService from "./terms-of-service.md?raw";
 
 /**
@@ -35,6 +36,17 @@ const TermsOfService: React.FC<{ onClose?: () => void }> = ({ onClose }) => (
       </div>
     </IonContent>
   </>
+);
+
+/**
+ * The Terms of Service on their own route (`/terms`), linked from the app
+ * footer. `chrome` picks the surrounding header for the public or signed-in
+ * space; the document itself is the same one the signup modal shows.
+ */
+export const TermsOfServicePage: React.FC<{ chrome?: LegalPageChrome }> = ({
+  chrome,
+}) => (
+  <LegalPage title="Terms of Service" source={termsOfService} chrome={chrome} />
 );
 
 export default TermsOfService;

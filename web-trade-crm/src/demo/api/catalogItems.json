@@ -94,5 +94,29 @@
     "unitPrice": 50,
     "createdAt": "2026-06-18T16:00:00.000Z",
     "updatedAt": "2026-06-18T16:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-13",
+    "type": "SERVICE",
+    "description": "Replace outdoor light fixture",
+    "unitPrice": 120,
+    "createdAt": "2026-07-02T09:00:00.000Z",
+    "updatedAt": "2026-07-02T09:00:00.000Z"
+  },
+  {
+    "id": "demo-catalog-14",
+    "type": "SERVICE",
+    "description": "Electrical wiring inspection",
+    "unitPrice": 95,
+    "createdAt": "2026-07-02T09:05:00.000Z",
+    "updatedAt": "2026-07-02T09:05:00.000Z"
+  },
+  {
+    "id": "demo-catalog-15",
+    "type": "MATERIAL",
+    "description": "Weatherproof fittings and gaskets",
+    "unitPrice": 35,
+    "createdAt": "2026-07-02T09:10:00.000Z",
+    "updatedAt": "2026-07-02T09:10:00.000Z"
   }
 ]

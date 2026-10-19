@@ -20,6 +20,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../services/api";
 import { formatPhone, stripPhone } from "../services/format";
+import AppFooter from "../components/AppFooter";
 
 const ManageBusinessPage: React.FC = () => {
   useEffect(() => {
@@ -216,6 +217,7 @@ const ManageBusinessPage: React.FC = () => {
           onDidDismiss={() => setShowToast(false)}
         />
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

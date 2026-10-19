@@ -4,7 +4,6 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useRef,
 } from "react";
 import { api, LoginResponse } from "../services/api";
 import { clearAllPdfCache } from "../services/pdfCache";
@@ -65,8 +64,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   });
 
-  // Keep a stable reference to logout so the effect doesn't re-run
-  const logoutRef = useRef<() => void>(() => {});
+  // Drop every trace of the session. Shared by an explicit sign-out and the
+  // global 401 handler so both clear the same state.
+  const clearSession = useCallback(() => {
+    api.clearTokens();
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    clearAllPdfCache();
+    setState({
+      user: null,
+      idToken: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+  }, []);
 
   useEffect(() => {
     // If already initialized (e.g. demo mode), skip localStorage restore
@@ -89,19 +100,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           isLoading: false,
         });
       } catch {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+        // Half-written/corrupt session: drop every piece of it so a stale token
+        // cannot leak into public requests and trigger a spurious 401 redirect.
+        api.clearTokens();
         setState((s) => ({ ...s, isLoading: false }));
       }
     } else {
+      // A token without a matching user record is unusable; clearing it keeps
+      // unauthenticated public pages from sending it and getting a 401.
+      api.clearTokens();
       setState((s) => ({ ...s, isLoading: false }));
     }
   }, [state.isLoading]);
 
-  // Register the global unauthorized handler once
+  // Register the global unauthorized handler once. A 401 from an authenticated
+  // request means the session is gone: clear it and land on sign-in with a
+  // reason, so the form can explain what happened instead of silently
+  // dropping the user back on the marketing page.
   useEffect(() => {
-    api.onUnauthorized(() => logoutRef.current());
-  }, []);
+    api.onUnauthorized(() => {
+      clearSession();
+      window.location.href = "/sign-in?reason=session-expired";
+    });
+  }, [clearSession]);
 
   const updateUser = useCallback((partial: Partial<LoginResponse["user"]>) => {
     setState((prev) => {
@@ -131,25 +152,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const logout = useCallback(() => {
-    api.clearTokens();
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    clearAllPdfCache();
-    setState({
-      user: null,
-      idToken: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
+    clearSession();
     // Hard redirect to the public home page. Swapping the authenticated outlet
     // for the public one leaves Ionic's router stack stale (the URL stays on an
     // authenticated-only path and nothing renders), so mirror `login()` and do a
     // full page navigation to reset it.
     window.location.href = "/";
-  }, []);
-
-  // Keep the ref in sync so the api callback always calls the latest logout
-  logoutRef.current = logout;
+  }, [clearSession]);
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>

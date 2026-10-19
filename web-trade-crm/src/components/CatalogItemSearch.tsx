@@ -133,39 +133,13 @@ const CatalogItemSearch: React.FC<CatalogItemSearchProps> = ({
         )}
 
         {loading && (
-          <div
-            style={{
-              position: "absolute",
-              top: "56px",
-              left: "16px",
-              right: "16px",
-              background: "var(--ion-background-color)",
-              border: "1px solid var(--ion-color-light-shade)",
-              borderRadius: "8px",
-              zIndex: 100,
-              padding: "16px",
-              textAlign: "center",
-            }}
-          >
+          <div className="catalog-search-dropdown catalog-search-dropdown--message">
             <IonSpinner />
           </div>
         )}
 
         {showDropdown && results.length > 0 && (
-          <IonList
-            style={{
-              position: "absolute",
-              top: "56px",
-              left: "16px",
-              right: "16px",
-              background: "var(--ion-background-color)",
-              border: "1px solid var(--ion-color-light-shade)",
-              borderRadius: "8px",
-              zIndex: 100,
-              maxHeight: "240px",
-              overflowY: "auto",
-            }}
-          >
+          <IonList className="catalog-search-dropdown catalog-search-dropdown--list">
             {results.map((item) => (
               <IonItem key={item.id} button onClick={() => handleSelect(item)}>
                 <IonLabel>
@@ -181,20 +155,7 @@ const CatalogItemSearch: React.FC<CatalogItemSearchProps> = ({
         )}
 
         {showDropdown && results.length === 0 && !loading && (
-          <div
-            style={{
-              position: "absolute",
-              top: "56px",
-              left: "16px",
-              right: "16px",
-              background: "var(--ion-background-color)",
-              border: "1px solid var(--ion-color-light-shade)",
-              borderRadius: "8px",
-              zIndex: 100,
-              padding: "16px",
-              textAlign: "center",
-            }}
-          >
+          <div className="catalog-search-dropdown catalog-search-dropdown--message">
             <IonText color="medium">
               <p>No catalog items found</p>
             </IonText>

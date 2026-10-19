@@ -154,11 +154,18 @@ export class AuthService {
       },
     );
 
-    const data = await response.json();
+    const data = (await response.json()) as {
+      __type?: string;
+      message?: string;
+      AuthenticationResult?: {
+        IdToken?: string;
+        RefreshToken?: string;
+        ExpiresIn?: number;
+      };
+    };
 
     if (!response.ok) {
-      const message = data.message || data.__type || 'Invalid credentials';
-      throw new UnauthorizedException(message);
+      throw new UnauthorizedException(this.mapLoginError(data));
     }
 
     const idToken = data.AuthenticationResult?.IdToken;
@@ -399,6 +406,42 @@ export class AuthService {
       email: user.email,
       status: user.status,
     };
+  }
+
+  /**
+   * Translate Cognito's raw InitiateAuth errors into actionable copy.
+   *
+   * Cognito locks an account after five failed password attempts. The first
+   * lockout lasts one second and doubles with each further failure, up to about
+   * 15 minutes; "Password attempts exceeded" is the locked-out signal. The
+   * counter resets after a successful sign-in or 15 minutes without any attempt,
+   * which is why the message asks the user to wait 15 minutes (or reset).
+   */
+  private mapLoginError(data: { __type?: string; message?: string }): string {
+    const type = data.__type ?? '';
+    const message = data.message ?? '';
+
+    if (
+      type.includes('TooManyFailedAttempts') ||
+      type.includes('TooManyRequests') ||
+      /password attempts exceeded/i.test(message)
+    ) {
+      return 'Too many failed sign-in attempts. Please wait 15 minutes and try again, or reset your password.';
+    }
+
+    if (type.includes('UserNotConfirmed')) {
+      return 'Please verify your email before signing in';
+    }
+
+    if (type.includes('PasswordResetRequired')) {
+      return 'Your password needs to be reset. Use "Forgot Password?" to continue.';
+    }
+
+    if (type.includes('UserNotFound') || type.includes('NotAuthorized')) {
+      return 'Incorrect email or password';
+    }
+
+    return message || 'Invalid credentials';
   }
 
   private computeSecretHash(
