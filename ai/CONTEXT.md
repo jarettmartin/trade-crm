@@ -256,7 +256,7 @@ Runs daily at 1am Eastern via cron on the instance
 
 ### Backend (NestJS)
 
-- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `feedback`, `jobs`, `invoices`, `users`
+- Modular architecture with feature modules: `auth`, `tenants`, `customers`, `catalog`, `feedback`, `contact`, `jobs`, `invoices`, `email`, `ai`, `users`
 - Common module (`common/`) for shared guards, decorators, DTOs, entities, and enums
 - Repository pattern used exclusively — no raw queries
 - Constructor injection for all dependencies
@@ -332,6 +332,8 @@ Runs daily at 1am Eastern via cron on the instance
   - `CustomerSearch` — Debounced search with dropdown results + "Create New Customer" button
   - `CustomerTable` — Shared paginated customers table (wraps `PaginatedTable`) used on Manage Customers + Create Job to browse/select customers
   - `CatalogItemSearch` — Catalog picker for the job detail page: tenant catalog is fetched up-front (`api.fetchAllCatalogItems()`, pages the endpoint at limit 100), then filtered **locally** on every keystroke across description/type/unit price. Refetched on `useIonViewWillEnter` so catalog edits/deletes land when a job page is revisited. Includes the "Add Custom Line Item" button that switches to the manual form.
+  - `LineItemFields` — the Type / Description / Quantity / Unit price field set, shared by the manual "Add Line Item" form (`JobDetailPage`) and each AI estimator suggestion card (`ServiceEstimatorModal`) so both look identical. Controlled (`values` + `onChange`); it deliberately uses Ionic's own `ion-item` defaults (16px inset, stacked label, bottom hairline) so it matches the other forms, with `.line-item-fields__row` in `variables.css` splitting Quantity + Unit price with a vertical rule.
+  - `ServiceEstimatorModal` — the "AI service estimator" modal opened from the job detail page. Takes a free-text description, shows the returned suggestions as editable line items (via `LineItemFields`) with per-row remove, and only calls back to create line items when the user presses "Add N line items" (Cancel saves nothing). In demo mode the input is pre-filled with one fixed, read-only example prompt (see AI service estimator above).
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
   - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings, Feedback) + logout
   - `PublicHeader` + `PublicMenu` — the unauthenticated-space nav, sharing the item list in `publicNav.ts`: a custom horizontal top bar on desktop (`>= 992px`) and a hamburger that opens the Ionic `IonMenu` drawer below that. Ionic has no horizontal menu component, so the bar is hand-rolled. Reused by every public page; it highlights the current page in the brand green and does **not** animate page transitions (`IonRouterOutlet animated={false}`), which looked out of place on desktop
@@ -385,6 +387,13 @@ src/
 │   ├── dto/
 │   ├── entities/
 │   └── services/
+├── ai/                              # AI service estimator (natural-language catalog matching via Anthropic tool use)
+│   ├── controllers/                  # ai-estimator.controller
+│   ├── dto/
+│   ├── entities/                     # AiEstimationRequest (per-user budget ledger)
+│   ├── services/                     # ai-estimator (orchestration), catalog-matcher (tool loop), catalog-tool (tenant-scoped search), ai-usage (3/hour)
+│   ├── anthropic.client.ts          # server-side Anthropic SDK wrapper (env-driven, optional)
+│   └── ai-estimator.config.ts       # named constants: rate limit, caps, default model
 ├── feedback/                        # In-app feedback/bug/feature-request/contact submissions
 │   ├── controllers/
 │   ├── dto/
@@ -464,14 +473,28 @@ src/
 - Job: `title`, `description`, `status` (DRAFT/ASSIGNED/IN_PROGRESS/COMPLETED/CANCELLED), `customerId`, `customerAddressId`, `assignedUserId`, `scheduledStart/End`, `completedAt`
 - Note: `userId`, `note` (cumulative, non-editable)
 - `PATCH /jobs/:id` accepts job fields only — notes and line items have their own endpoints (`POST /jobs/:id/notes`, `POST /jobs/:id/line-items`, `DELETE /jobs/:id/line-items/:lineItemId`), so a child row is inserted or removed individually and existing rows keep their `id` and `createdAt`. Both child lists are returned in the order they were added (`createdAt` ASC, server-derived) — no client sends or tracks an ordering value
-- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`)
+- LineItem: `type` (SERVICE/MATERIAL/FEE), `description`, `quantity`, `unitPrice`, `lineTotal`, `catalogItemId?` (nullable FK to `catalog_items`, `ON DELETE SET NULL`). When a `catalogItemId` is supplied, `createLineItem` verifies it belongs to the caller's tenant before saving (this is also the re-validation step for confirmed AI suggestions)
 
 ### CatalogItem
 
 - Tenant preset line items so adding bills/line items is faster. `type` (SERVICE/MATERIAL/FEE), `description`, `unitPrice`
 - `JobLineItem.catalogItemId` is an **optional reference only** — every display value is always snapshotted onto the `job_line_items` row at add time, so editing or deleting a catalog item never changes existing line items (deleting a catalog item just clears the reference via `ON DELETE SET NULL`)
 - Catalog search on the Create/Job detail page loads the tenant's items up-front and filters **locally** (description/type/unit price); pick an item to prefill the normal manual line item form (editable before applying), or use the "Add Custom Line Item" button for a blank entry
-- Management UI: `/manage-catalog` (paginated table + free-text search across description/type/price + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation)
+- Management UI: `/manage-catalog` (paginated table + free-text search + type-filter checkboxes — both applied server-side via `?q=` and `?type=`), `/create-catalog-item` and `/edit-catalog-item/:id` (same form page; edit mode has delete with confirmation). `?q=` is whitespace-tokenized: every token must match at least one of description / type / unit price (AND across tokens, OR across fields — the same shape as customer search), capped at 12 tokens and always bound as parameters. The AI estimator's `search_catalog` tool reuses this exact search
+
+### AI service estimator
+
+- Natural-language line-item suggestions on the job detail page: describe the work, Claude picks items from the caller's **own** catalog, and the UI shows editable suggestions. **No line items are created until the user explicitly confirms** — the AI endpoints only read.
+- Module `src/ai/`: `AiEstimatorController` (`POST /ai/catalog-matches`, `GET /ai/catalog-matches/usage`, both `TenantGuard`), `AiEstimatorService` (budget + orchestration + safe error mapping), `CatalogMatcherService` (inline fast path + bounded tool fallback), `CatalogToolService` (tenant-scoped catalog reads), `AiUsageService` (the per-user budget), `AnthropicClient` (SDK wrapper).
+- **Tool use, not guessing.** The model reads the caller's catalog through the single `search_catalog` tool, executed locally via `CatalogService.findAll`: an **empty query lists the whole catalog** (newest first, capped at `AI_MAX_TOOL_RESULTS` = 100) and a non-blank query is the token search (AND across tokens, OR across fields). The first provider call sets `tool_choice` to force `search_catalog`, so every estimate is grounded in rows a search actually returned; later turns may answer or search again. Always tenant-scoped, ≤ 5 iterations, no SQL/URL/write tools — the model can never create or update jobs or line items.
+- **Refs, not UUIDs, go over the wire.** Each row is sent with a short per-request `ref` ("1", "2", …): UUIDs tokenize poorly and models mistype them, and a mistyped id is silently dropped by validation. The model returns `catalogItemRef`, the server maps it back to the real UUID, and responses still carry `catalogItemId` so the client contract is unchanged. Refs are registered only for rows actually sent — a guessed ref cannot resolve to an item the model never saw.
+- **Output is untrusted**: the model returns only `catalogItemRef` + `quantity` + `matchReason`. Every ref is checked against the rows *this request* actually sent (invented/unseen/duplicate refs are dropped), and `catalogItemId`/`type`/`description`/`unitPrice` are re-attached server-side from the catalog rows — the model can never invent a name or a price. Malformed output yields an empty result with a friendly message.
+- The prompt tells the model to **start with an empty query** (list the whole, normally-small catalog), then narrow with **1–3 distinctive keywords** and drop filler words (e.g. "existing") — avoiding the "long phrase matches nothing" failure mode.
+- Bounded everywhere: description ≤ 1000 chars (DTO), ≤ 200 tool results per search, ≤ 5 tool iterations, ≤ 1024 output tokens, ≤ 10 suggestions, 30 s provider timeout, 1 SDK retry. Only the description and those minimal catalog fields are sent to the provider — never customer names, addresses or notes; logs carry operational metadata (status, latency, counts) only.
+- **Rate limit: 3 requests per rolling hour per authenticated user**, enforced *before* the provider call so provider failures still count. It is persistent (a small `ai_estimation_requests` ledger table + composite index) and atomic (count-then-insert inside a transaction guarded by a per-user `pg_advisory_xact_lock`), keyed by the local user id from the verified token. This is deliberately **not** the `@nestjs/throttler` email limiter (that one is in-memory). Over-limit returns 429 with a friendly message and a `retryAfterSeconds` hint; the response also carries `usage { limit, used, remaining, resetAt }`.
+- **Config**: `ANTHROPIC_API_KEY` (server-side only; unset ⇒ the endpoints return a graceful 503 and nothing else breaks) and optional `ANTHROPIC_MODEL` (default `claude-haiku-5-5`, the cheapest current model). Never commit the key.
+- **Confirmation reuses the normal endpoint**: the UI posts the edited selections to `POST /jobs/:id/line-items`, and `JobService.createLineItem` now validates that a supplied `catalogItemId` belongs to the caller's tenant (previously a foreign UUID could be referenced).
+- Demo mode: the modal pre-fills one fixed, read-only example prompt that maps to a **defined** catalog output built from the fixtures — neither the backend nor Anthropic is called, and unexpected input returns a friendly no-match message. The demo also mirrors the 3/hour budget (in-memory, resets on reload).
 
 ### Feedback
 
@@ -532,6 +555,7 @@ source of truth**:
 - `@Type(() => Number)` from `class-transformer` on numeric DTO fields (for string→number conversion)
 - `ValidationPipe` with `transform: true`, `whitelist: true`, `forbidNonWhitelisted: true`
 - Transactions via `DataSource.transaction()` for multi-table atomic operations
+- **Raw SQL fragments in a `createQueryBuilder` do not get TypeORM's property→column mapping** — and the mapping is also skipped when an `alias.property` is immediately followed by a `::` cast (e.g. `LOWER(item.unitPrice::text)` is passed through verbatim, then Postgres folds it to `unitprice` and the query fails with `column item.unitprice does not exist`). Write physical column names quoted (`item."unitPrice"`) in those fragments, or prefer the repository API / `ILike()` which map for you. See `catalog.service.ts` → `findAll` for the fixed pattern.
 - Explicit `relations` in all `findOne`/`find` queries — no eager loading
 - Pagination on list endpoints with `PaginationDto` (page, limit)
 - All list queries use `tenantId` filter + `order` for consistent results
@@ -549,6 +573,54 @@ source of truth**:
 - Error toasts are dismiss-only (never auto-hide)
 - Invoice numbers formatted as `8888 0001` via shared `formatInvoiceNumber()` utility
 - Phone inputs use `inputMode="numeric"` + `stripPhone()` + immediate `e.target.value` override
+
+### Testing & type-checking spec files
+
+Different tools type-check the backend, and they disagree by design — that is
+why a spec can pass `npm test` yet show errors in VS Code:
+
+- **`npm run build`** (`nest build`) compiles via `tsconfig.build.json`, which
+  **excludes `**/*spec.ts` and `test/`** — specs are never compiled, so the build
+  never reports spec errors.
+- **`npm test`** (ts-jest) honours `isolatedModules: true`, which is set in
+  `api-trade-crm/tsconfig.json`. Under `isolatedModules`, ts-jest **transpiles
+  each file in isolation without type-checking**, so semantic errors in specs
+  never fail the run.
+- **VS Code / `npx tsc --noEmit -p api-trade-crm/tsconfig.json`** type-checks
+  every file under `api-trade-crm/` (specs included) with `tsconfig.json`. This
+  is the **only** one that surfaces spec type errors — so an error that appears
+  only in the IDE is real, not a tooling quirk.
+
+**The recurring error** is a mock that doesn't structurally satisfy the type it
+is injected as. A `jest.fn()`-built object has none of a TypeORM `Repository<T>`'s
+members (`target`, `manager`, `metadata`, …), so `new Service(mockRepo …)` reports
+`TS2345` whose message names `jest.Mock`. A bare `jest.fn()` also widens its
+arguments to `never`, so `.mockResolvedValue({ … })` reports
+`TS2345 … not assignable to parameter of type 'never'`.
+
+**How to keep specs clean:**
+
+- Give mock functions explicit types using `jest.fn`'s two-type-argument form —
+  `jest.fn<Promise<unknown>, unknown[]>()` — so `mockResolvedValue(...)` accepts
+  real values instead of `never`.
+- Cast the whole mock to the real type **at the injection site** —
+  `repo as unknown as Repository<Job>`, `service as unknown as CatalogService` —
+  which keeps the object typed as mocks so `.mockResolvedValue(...)` /
+  `expect(...)` still work.
+
+**Import the Jest globals — never rely on the ambient ones.** `@types/jest` is
+installed only under `api-trade-crm/node_modules` and declares *global* types, so
+a spec that uses the bare `jest` / `describe` / `it` / `expect` (rather than
+importing them) is what shows `Cannot find name 'jest'` in the IDE even though
+`tsc -p tsconfig.json` resolves it. Every spec imports them from `@jest/globals`
+(e.g. `import { describe, expect, it, jest } from '@jest/globals'`); do the same
+and that error cannot appear. Note the two definitions differ: `@jest/globals`'
+`jest.fn` takes **one** function-type argument (`jest.fn<() => Promise<unknown>>()`),
+whereas the ambient `@types/jest` one takes two (`jest.fn<Promise<unknown>, unknown[]>()`).
+
+The `src/ai/**` specs and `src/jobs/services/job.service.spec.ts` are the
+reference examples. Since only the IDE surfaces these, run
+`npx tsc --noEmit -p api-trade-crm/tsconfig.json` to catch them before a commit.
 
 ### PDF Generation
 

@@ -20,15 +20,22 @@ interface Feature {
   /** Bold lead sentence shown directly under the title. */
   subtitle: string;
   body: string;
-  /** Screenshot shown above the copy. */
+  /** Screenshot shown below the copy in the card. */
   image: string;
 }
 
 /**
  * Feature highlights. Each `image` is a screenshot served from `public/landing/`
- * (captured at 1600 x 1000 px, 16:10 - see the frame in `theme/variables.css`).
+ * captured at 16:10 (see the frame in `theme/variables.css`); the frame
+ * letterboxes anything that is not exactly that ratio.
  */
 const features: Feature[] = [
+  {
+    title: "AI-Assisted Estimating",
+    subtitle: "Turn job descriptions into line items.",
+    body: "Describe the work in your own words and get AI-powered suggestions from your service catalog. Review and edit suggested services and materials before adding them to a job.",
+    image: "/landing/ai-estimator.png",
+  },
   {
     title: "Customer Management",
     subtitle: "Keep customer information close at hand.",
@@ -74,7 +81,7 @@ const CtaCard: React.FC<CtaCardProps> = ({
       <IonCardTitle>{title}</IonCardTitle>
     </IonCardHeader>
     <IonCardContent>
-      <IonText color="medium">
+      <IonText>
         <p style={{ marginTop: 0 }}>{body}</p>
       </IonText>
       <IonButton expand="block" style={{ marginTop: 16 }} onClick={onClick}>
@@ -88,8 +95,9 @@ const CtaCard: React.FC<CtaCardProps> = ({
  * Public landing page (the unauthenticated home, `/`).
  *
  * Layout: a centered logo hero, a centered intro card, a full-width feature
- * grid (2x2 on desktop, 1x4 below 992px), then stacked calls to action. The
- * widths and the grid live in `theme/variables.css` under "LANDING PAGE".
+ * grid (2-up on desktop — the fifth card wraps to its own left-aligned row —
+ * and 1-up below 992px), then stacked calls to action. The widths and the grid
+ * live in `theme/variables.css` under "LANDING PAGE".
  */
 const LandingPage: React.FC = () => {
   useEffect(() => {
@@ -121,7 +129,7 @@ const LandingPage: React.FC = () => {
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <IonText color="medium">
+                <IonText>
                   <p style={{ marginTop: 0 }}>
                     From managing customer relationships to tracking jobs and
                     preparing invoices, Sprout brings the essentials of running
@@ -136,13 +144,8 @@ const LandingPage: React.FC = () => {
           <div className="landing-features">
             {features.map((feature) => (
               <IonCard key={feature.title}>
-                <div className="landing-feature__media">
-                  <img
-                    className="landing-feature__image"
-                    src={feature.image}
-                    alt={`${feature.title} screenshot`}
-                  />
-                </div>
+                {/* Copy first: the screenshots contain clipped UI text, which
+                    reads badly as the first thing on a mobile screen. */}
                 <IonCardHeader>
                   {/* iOS card headers lay out in reverse DOM order
                       (flex-direction: column-reverse), so the subtitle is
@@ -153,10 +156,17 @@ const LandingPage: React.FC = () => {
                   <IonCardTitle>{feature.title}</IonCardTitle>
                 </IonCardHeader>
                 <IonCardContent>
-                  <IonText color="medium">
+                  <IonText>
                     <p style={{ marginTop: 0 }}>{feature.body}</p>
                   </IonText>
                 </IonCardContent>
+                <div className="landing-feature__media">
+                  <img
+                    className="landing-feature__image"
+                    src={feature.image}
+                    alt={`${feature.title} screenshot`}
+                  />
+                </div>
               </IonCard>
             ))}
           </div>

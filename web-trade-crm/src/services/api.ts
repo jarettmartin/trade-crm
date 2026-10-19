@@ -218,6 +218,35 @@ export interface CreateCatalogItemPayload {
   unitPrice: number;
 }
 
+/**
+ * One AI-estimated line item. `type`, `description` and `unitPrice` are the
+ * trusted catalog values the backend re-attached after validating the id — the
+ * model only chose `catalogItemId`, `quantity` and `matchReason`.
+ */
+export interface CatalogMatchSuggestion {
+  catalogItemId: string;
+  type: string;
+  description: string;
+  unitPrice: number;
+  quantity: number;
+  matchReason?: string;
+}
+
+/** The caller's AI estimator budget (mirrors the backend response). */
+export interface AiEstimatorUsage {
+  limit: number;
+  used: number;
+  remaining: number;
+  resetAt: string;
+}
+
+export interface CatalogMatchResponse {
+  suggestions: CatalogMatchSuggestion[];
+  followUpQuestions: string[];
+  message?: string;
+  usage: AiEstimatorUsage;
+}
+
 export interface FeedbackResult {
   id: string;
   type: string;
@@ -548,6 +577,41 @@ class ApiService {
     return this.request<{ success: boolean }>(`/catalog-items/${id}`, {
       method: "DELETE",
     });
+  }
+
+  // ---- AI service estimator ----
+  /**
+   * Ask the backend to suggest catalog line items for a free-text description.
+   * The endpoint only *suggests* — nothing is written until the user confirms
+   * and the caller creates the line items through the normal job endpoint.
+   */
+  async estimateCatalogMatches(
+    description: string,
+  ): Promise<CatalogMatchResponse> {
+    if (this.demoMode) {
+      return demoService.matchCatalog(description);
+    }
+    return this.request<CatalogMatchResponse>("/ai/catalog-matches", {
+      method: "POST",
+      body: JSON.stringify({ description }),
+    });
+  }
+
+  /** The caller's remaining AI requests for the current rolling hour. */
+  async fetchAiEstimatorUsage(): Promise<AiEstimatorUsage> {
+    if (this.demoMode) {
+      return demoService.fetchAiEstimatorUsage();
+    }
+    return this.request<AiEstimatorUsage>("/ai/catalog-matches/usage");
+  }
+
+  /**
+   * The fixed example prompt demo mode pre-fills (read-only). Returns `null`
+   * outside demo mode, where the estimator accepts any free text. Demo mode's
+   * hardcoded prompt stands in for the provider, so the result is deterministic.
+   */
+  getEstimatorDemoPrompt(): string | null {
+    return this.demoMode ? demoService.getEstimatorDemoPrompt() : null;
   }
 
   // ---- Feedback ----

@@ -1,6 +1,6 @@
 # Sprout — Privacy Policy
 
-**Effective date:** October 12, 2026
+**Effective date:** October 13, 2026
 
 ## 1. Introduction
 
@@ -40,6 +40,7 @@ Information may be used to:
 - Provide customer, job, catalog, and invoicing functionality.
 - Store and display records you enter.
 - Generate invoices and other requested application outputs.
+- Generate AI-assisted line-item suggestions when you choose to use the AI service estimator (see section 5).
 - Operate, maintain, troubleshoot, and secure Sprout.
 - Respond to support inquiries and process account deletion requests.
 - Diagnose errors and improve reliability.
@@ -61,6 +62,8 @@ Sprout uses Amazon Web Services (AWS) infrastructure and related AWS services to
 Information may be processed or stored in the AWS regions configured for the service. Processing locations depend on the specific services and deployment configuration. Information may be processed outside your province, state, or country, subject to the services used and applicable law.
 
 Third-party providers may process information on the operator's behalf to deliver their services. The operator remains responsible for handling information under their control in accordance with applicable legal obligations.
+
+**AI service estimator.** When you use the AI service estimator, the description you type and a limited set of fields describing your own service catalog items (the type, description, and unit price of items the assistant searches) are sent to Anthropic, the provider of the Claude models, so it can suggest matching catalog items. Customer names, addresses, contact details, job notes, and invoice records are not sent. The assistant only suggests items; nothing is saved to a job until you review and confirm it. The operator does not use this information to train AI models. Anthropic processes these requests as a service provider acting on the operator's behalf.
 
 Sprout does not currently use third-party analytics tools. If additional monitoring, observability, or analytics services are introduced, they may process technical or usage information as necessary for their stated purposes, and this policy will be updated as appropriate.
 
