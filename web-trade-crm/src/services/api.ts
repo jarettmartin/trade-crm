@@ -361,13 +361,27 @@ class ApiService {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
 
+  /**
+   * Performs an API request.
+   *
+   * `authenticated: false` is for credential endpoints (sign-in, registration,
+   * password reset). They must not send a cached session token, and a 401 from
+   * them means "bad credentials"/"Cognito lockout" — not "session expired". The
+   * global unauthorized handler clears the session and hard-redirects, which
+   * would wipe the form's error message (and log out a stale session) before the
+   * user ever sees it.
+   */
   private async request<T>(
     path: string,
     options: RequestInit = {},
+    { authenticated = true }: { authenticated?: boolean } = {},
   ): Promise<T> {
-    const token = this.idToken || localStorage.getItem(ID_TOKEN_KEY);
-    const rt =
-      this.refreshToken || localStorage.getItem(REFRESH_TOKEN_KEY) || "";
+    const token = authenticated
+      ? this.idToken || localStorage.getItem(ID_TOKEN_KEY)
+      : null;
+    const rt = authenticated
+      ? this.refreshToken || localStorage.getItem(REFRESH_TOKEN_KEY) || ""
+      : "";
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -391,15 +405,28 @@ class ApiService {
       localStorage.setItem(ID_TOKEN_KEY, newToken);
     }
 
-    const data = await res.json();
+    // A proxy error page or an empty 204 body isn't JSON; still surface the
+    // HTTP status instead of failing with a JSON parse error.
+    let data: unknown = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
 
     if (!res.ok) {
-      // If the server returned 401, the token is fully expired — log out
-      if (res.status === 401) {
+      // Only an authenticated request can expire a session. Credential
+      // endpoints answer 401 for a failed sign-in (including Cognito's
+      // "Password attempts exceeded" lockout) and must keep the form alive.
+      if (res.status === 401 && authenticated) {
         this.clearTokens();
         this.onUnauthorizedCallback?.();
       }
-      const message = data.message || data.error?.message || "Request failed";
+      const body = (data ?? {}) as {
+        message?: string | string[];
+        error?: { message?: string };
+      };
+      const message = body.message || body.error?.message || "Request failed";
       throw new Error(Array.isArray(message) ? message[0] : message);
     }
 
@@ -411,19 +438,27 @@ class ApiService {
   }
 
   async login(email: string, password: string) {
-    const res = await this.request<LoginResponse>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
+    const res = await this.request<LoginResponse>(
+      "/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      },
+      { authenticated: false },
+    );
     this.setTokens(res.idToken, res.refreshToken);
     return res;
   }
 
   async register(payload: RegisterPayload) {
-    return this.request<RegisterResponse>("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    return this.request<RegisterResponse>(
+      "/auth/register",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      { authenticated: false },
+    );
   }
 
   async createTenant(payload: CreateTenantPayload) {
@@ -777,10 +812,14 @@ class ApiService {
   }
 
   async sendPasswordResetEmail(email: string): Promise<void> {
-    return this.request("/auth/forgot-password", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
+    return this.request<void>(
+      "/auth/forgot-password",
+      {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      },
+      { authenticated: false },
+    );
   }
 
   async confirmPasswordReset(
@@ -788,10 +827,14 @@ class ApiService {
     code: string,
     newPassword: string,
   ): Promise<void> {
-    return this.request("/auth/confirm-forgot-password", {
-      method: "POST",
-      body: JSON.stringify({ email, code, newPassword }),
-    });
+    return this.request<void>(
+      "/auth/confirm-forgot-password",
+      {
+        method: "POST",
+        body: JSON.stringify({ email, code, newPassword }),
+      },
+      { authenticated: false },
+    );
   }
 }
 
