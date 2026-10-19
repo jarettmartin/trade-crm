@@ -19,6 +19,7 @@ import { api, JobResult } from "../services/api";
 import PaginatedTable, {
   PaginatedTableColumn,
 } from "../components/PaginatedTable";
+import AppFooter from "../components/AppFooter";
 
 const statusLabel: Record<string, string> = {
   ALL: "All Statuses",
@@ -203,6 +204,7 @@ const Home: React.FC = () => {
           />
         </div>
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

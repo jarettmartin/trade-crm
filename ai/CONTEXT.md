@@ -339,6 +339,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `PaginatedTable` — Reusable paginated table; pagination info + prev/next buttons are at the TOP so controls don't jump on mobile when row counts change between pages
   - `Menu` — Sidemenu with nav items (Jobs, Customers, Catalog, Business Settings, Feedback) + logout
   - `PublicHeader` + `PublicMenu` — the unauthenticated-space nav, sharing the item list in `publicNav.ts`: a custom horizontal top bar on desktop (`>= 992px`) and a hamburger that opens the Ionic `IonMenu` drawer below that. Ionic has no horizontal menu component, so the bar is hand-rolled. Reused by every public page; it highlights the current page in the brand green and does **not** animate page transitions (`IonRouterOutlet animated={false}`), which looked out of place on desktop
+  - `AppFooter` — the app-wide footer (Ionic `IonFooter` + `IonToolbar`), shared by both the public and authenticated spaces. `IonFooter` only lays out correctly as a direct child of an `IonPage`, so every routed page renders `<AppFooter />` right after its `IonContent` instead of the app mounting one global instance (the transient Create Business page has no nav chrome and omits it). Its two `routerLink` CTAs (`/terms`, `/privacy`) work in both outlets because App.tsx registers those routes in each
 - Paginated tables on the Jobs page (the primary job list) and the Manage Customers / Create Job pages (below the search bar) share `PaginatedTable`; the real API orders by `createdAt DESC` and demo mode mirrors that
 - PDF handling:
   - In-memory `pdfCache.ts` (Map<string, Blob>) caches downloaded PDFs for the session
@@ -350,7 +351,7 @@ Runs daily at 1am Eastern via cron on the instance
   - `api.sendInvoiceEmail()` returns a PENDING attempt which is shown **immediately** on the card; the UI polls `api.fetchInvoiceEmailAttempts()` until `SENT`/`FAILED`, then reloads the job
   - Attempt entries read **"Email sent to <recipient>"** with an optional status tag appended: `· PENDING` (amber, in flight) or `· ERROR` (red, with the error message). SENT has **no tag** — assumed success
   - Demo mode mirrors this in `demoService.ts` (simulated ~2s delivery; emails containing `fail@` or ending `.fail` simulate a failure so the ERROR state is testable)
-- Legal documents (Privacy Policy + Terms of Service) live in `src/legal/` as `.md` files imported with Vite's `?raw` — so the wording is never re-typed — and are rendered by the dependency-free `MarkdownContent` (headings, paragraphs, `-` lists, `**bold**`, two-space hard breaks). Registration requires agreeing to both: each consent row opens its document in an `IonModal`, and the Register button stays disabled until both boxes are ticked. There is deliberately **no nav item** for them (signup-only for now; a footer entry point comes later)
+- Legal documents (Privacy Policy + Terms of Service) live in `src/legal/` as `.md` files imported with Vite's `?raw` — so the wording is never re-typed — and are rendered by the dependency-free `MarkdownContent` (headings, paragraphs, `-` lists, `**bold**`, two-space hard breaks). Registration requires agreeing to both: each consent row opens its document in an `IonModal`, and the Register button stays disabled until both boxes are ticked. Both documents also have their own routes (`/terms`, `/privacy`), linked from the shared `AppFooter`: `LegalPage` renders the same `.md` source in a page shell and picks the public header (`chrome="public"`) or the app back-button header (`chrome="app"`) per outlet. There is still deliberately **no nav item** for them in the header/sidemenu
 - Validation:
   - Frontend `validation.ts` helpers: `isValidEmail()`, `isValidPhone()`
   - Forms validate before submit (email format, phone format, required fields)
@@ -440,9 +441,9 @@ src/
 src/
 ├── App.tsx                          # Root app with routing + auth gating
 ├── main.tsx                         # Entry point
-├── components/                      # Reusable components (CustomerSearch, CustomerTable, CatalogItemSearch, PaginatedTable, Menu, PublicHeader, PublicMenu, publicNav, MarkdownContent)
+├── components/                      # Reusable components (CustomerSearch, CustomerTable, CatalogItemSearch, PaginatedTable, Menu, PublicHeader, PublicMenu, publicNav, AppFooter, MarkdownContent)
 ├── contexts/                        # AuthContext (user, login, logout, updateUser)
-├── legal/                           # Privacy Policy + Terms of Service (.md files + modal-ready wrappers)
+├── legal/                           # Privacy Policy + Terms of Service (.md files, modal wrappers, routed LegalPage)
 ├── pages/                           # Route-level pages (Auth, Home, Create/Manage pages, Catalog pages, public BetaProgram/Contact)
 ├── services/                        # API client, PDF cache, formatting, validation
 └── theme/                           # Ionic theme overrides

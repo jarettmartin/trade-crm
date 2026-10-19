@@ -12,6 +12,7 @@ import {
   IonText,
 } from "@ionic/react";
 import PublicHeader from "../components/PublicHeader";
+import AppFooter from "../components/AppFooter";
 import { goToDemo } from "../components/publicNav";
 
 /** One highlighted product capability on the landing page. */
@@ -190,6 +191,7 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

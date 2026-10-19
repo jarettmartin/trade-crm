@@ -22,6 +22,7 @@ import {
 } from "@ionic/react";
 import { api, FeedbackResult } from "../services/api";
 import PaginatedTable from "../components/PaginatedTable";
+import AppFooter from "../components/AppFooter";
 
 const PAGE_SIZE = 10;
 const MESSAGE_MAX_LENGTH = 1000;
@@ -266,6 +267,7 @@ const FeedbackPage: React.FC = () => {
           onDidDismiss={() => setShowToast(false)}
         />
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

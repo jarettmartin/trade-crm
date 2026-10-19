@@ -40,6 +40,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { formatInvoiceNumber } from "../services/format";
 import { downloadPdf, clearPdfCache } from "../services/pdfCache";
 import { isValidEmail } from "../services/validation";
+import AppFooter from "../components/AppFooter";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Draft",
@@ -487,6 +488,7 @@ const JobDetailPage: React.FC = () => {
             <IonSpinner />
           </div>
         </IonContent>
+        <AppFooter />
       </IonPage>
     );
   }
@@ -505,6 +507,7 @@ const JobDetailPage: React.FC = () => {
         <IonContent className="ion-padding">
           <IonText color="danger">Job not found</IonText>
         </IonContent>
+        <AppFooter />
       </IonPage>
     );
   }
@@ -1242,6 +1245,7 @@ const JobDetailPage: React.FC = () => {
           onDidDismiss={() => setShowToast(false)}
         />
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

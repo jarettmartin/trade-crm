@@ -23,6 +23,7 @@ import { useHistory } from "react-router-dom";
 import { api, CustomerResult, CreateJobPayload } from "../services/api";
 import CustomerSearch from "../components/CustomerSearch";
 import CustomerTable from "../components/CustomerTable";
+import AppFooter from "../components/AppFooter";
 
 const CUSTOMERS_TABLE_PAGE_SIZE = 10;
 
@@ -335,6 +336,7 @@ const CreateJobPage: React.FC = () => {
           onDidDismiss={() => setShowToast(false)}
         />
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

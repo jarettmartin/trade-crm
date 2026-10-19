@@ -223,6 +223,12 @@ ion-textarea.control-bordered {
   margin-right: auto;
 }
 
+/* `.legal-page` — routed legal documents (see legal/LegalPage.tsx). A little
+   breathing room under the header, matching the first block on public pages. */
+.legal-page {
+  margin-top: 16px;
+}
+
 /* `.center-content` — vertically centers a page's content within the content
    area (below the header). Applied to the sign-in page so its card stays
    centered now that the public nav occupies the top of the page. `safe`

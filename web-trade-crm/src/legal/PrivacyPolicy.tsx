@@ -7,6 +7,7 @@ import {
   IonToolbar,
 } from "@ionic/react";
 import MarkdownContent from "../components/MarkdownContent";
+import LegalPage, { LegalPageChrome } from "./LegalPage";
 import privacyPolicy from "./privacy-policy.md?raw";
 
 /**
@@ -35,6 +36,17 @@ const PrivacyPolicy: React.FC<{ onClose?: () => void }> = ({ onClose }) => (
       </div>
     </IonContent>
   </>
+);
+
+/**
+ * The Privacy Policy on its own route (`/privacy`), linked from the app
+ * footer. `chrome` picks the surrounding header for the public or signed-in
+ * space; the document itself is the same one the signup modal shows.
+ */
+export const PrivacyPolicyPage: React.FC<{ chrome?: LegalPageChrome }> = ({
+  chrome,
+}) => (
+  <LegalPage title="Privacy Policy" source={privacyPolicy} chrome={chrome} />
 );
 
 export default PrivacyPolicy;

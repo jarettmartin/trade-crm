@@ -91,10 +91,12 @@ describe("legal documents", () => {
 
     fireEvent.click(await screen.findByText("Don't have an account? Register"));
 
-    // One consent row per document, each linking to it.
+    // One consent row per document, each linking to it. The shared footer
+    // links to the same two documents, so the consent rows come first in the
+    // DOM — the footer instances are the second match.
     expect(screen.getAllByText("I have read and agree to the")).toHaveLength(2);
-    const privacyLink = screen.getByText("Privacy Policy");
-    expect(screen.getByText("Terms of Service")).toBeTruthy();
+    const privacyLink = screen.getAllByText("Privacy Policy")[0];
+    expect(screen.getAllByText("Terms of Service")).toHaveLength(2);
 
     // Register is blocked until both boxes are ticked.
     const submit = await screen.findByTestId("auth-submit");
@@ -117,5 +119,51 @@ describe("legal documents", () => {
       });
     });
     await waitFor(() => expect(submit.hasAttribute("disabled")).toBe(false));
+  });
+});
+
+describe("routed legal pages and shared footer", () => {
+  afterEach(() => {
+    localStorage.clear();
+    window.history.pushState({}, "", "/");
+  });
+
+  it("links both legal documents from the shared footer", async () => {
+    render(<App />);
+
+    expect(await screen.findByTestId("footer-terms")).toBeInTheDocument();
+    expect(screen.getByTestId("footer-privacy")).toBeInTheDocument();
+  });
+
+  it("serves the privacy policy on its own public route", async () => {
+    window.history.pushState({}, "", "/privacy");
+
+    render(<App />);
+
+    expect(await screen.findByText("Sprout — Privacy Policy")).toBeTruthy();
+    expect(screen.getByTestId("footer-privacy")).toBeInTheDocument();
+  });
+
+  it("serves the terms on their own route in the authenticated app", async () => {
+    localStorage.setItem("trade_crm_id_token", "id-token");
+    localStorage.setItem("trade_crm_refresh_token", "refresh-token");
+    localStorage.setItem(
+      "trade_crm_user",
+      JSON.stringify({
+        id: "user-1",
+        email: "owner@example.com",
+        status: "ACTIVE",
+        role: "OWNER",
+        firstName: "Owner",
+        lastName: "User",
+        tenantId: "tenant-1",
+      }),
+    );
+    window.history.pushState({}, "", "/terms");
+
+    render(<App />);
+
+    expect(await screen.findByText("Sprout — Terms of Service")).toBeTruthy();
+    expect(screen.getByTestId("footer-terms")).toBeInTheDocument();
   });
 });
