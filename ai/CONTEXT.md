@@ -308,13 +308,15 @@ Runs daily at 1am Eastern via cron on the instance
 - Token refresh is transparent: guards detect expired tokens, refresh via Cognito, and return the new token in the response
 - Registration uses Cognito `SignUp` API which sends a verification link email
 - Login uses Cognito `InitiateAuth` with `USER_PASSWORD_AUTH`
+- A failed login is a **401** too, so the web client calls credential endpoints (`/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/confirm-forgot-password`) with `authenticated: false`: no cached token is sent, and a 401 does **not** run the global session-expired handler. The form stays mounted and shows the message. Only a 401 from an authenticated request clears the session — `AuthProvider` then redirects to `/sign-in?reason=session-expired`, which the sign-in page explains to the user.
+- Cognito lockout: after **5 failed password attempts** the account is locked for 1 second; each further failure doubles the lockout up to ~15 minutes and returns `Password attempts exceeded`. The counter resets after a successful sign-in **or after 15 consecutive minutes with no sign-in attempt**. `AuthService.mapLoginError` turns that (and the other raw Cognito errors) into user-facing copy: "Too many failed sign-in attempts. Please wait 15 minutes and try again, or reset your password."
 - Password reset uses Cognito `ForgotPassword` + `ConfirmForgotPassword` APIs
 - IAM credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`) are used for admin operations (user lookup, deletion)
 
 ### Frontend (Ionic React)
 
 - SPA with `IonReactRouter` + `IonSplitPane` layout (sidemenu + content area)
-- `AuthProvider` context wraps the entire app — provides `user`, `login`, `logout`, `updateUser`
+- `AuthProvider` context wraps the entire app — provides `user`, `login`, `logout`, `updateUser`; a 401 from an authenticated request clears the session and sends the user to `/sign-in?reason=session-expired`. An authenticated user who lands on a public URL is redirected into the app (jobs, or tenant creation)
 - `api.ts` singleton class handles all HTTP requests:
   - In-memory token cache + localStorage fallback
   - Auto-refresh on 401 via backend `POST /auth/refresh`
