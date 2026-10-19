@@ -19,6 +19,7 @@ import { isValidEmail } from "../services/validation";
 import PublicHeader from "../components/PublicHeader";
 import PrivacyPolicy from "../legal/PrivacyPolicy";
 import TermsOfService from "../legal/TermsOfService";
+import AppFooter from "../components/AppFooter";
 
 /**
  * A consent row for the signup form: a checkbox plus a button that opens the
@@ -400,6 +401,8 @@ const AuthPage: React.FC = () => {
           color="success"
         />
       </IonContent>
+
+      <AppFooter />
 
       {/* The legal documents, opened from the signup consent rows. */}
       <IonModal

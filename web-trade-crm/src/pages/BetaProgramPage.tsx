@@ -12,6 +12,7 @@ import {
   IonText,
 } from "@ionic/react";
 import PublicHeader from "../components/PublicHeader";
+import AppFooter from "../components/AppFooter";
 
 /** A bullet in a program card; `label` renders bold ahead of the text. */
 interface ProgramBullet {
@@ -138,6 +139,7 @@ const BetaProgramPage: React.FC = () => {
           ))}
         </div>
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

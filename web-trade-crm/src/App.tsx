@@ -26,6 +26,8 @@ import ManageCustomersPage from "./pages/ManageCustomersPage";
 import ManageCatalogPage from "./pages/ManageCatalogPage";
 import CatalogItemFormPage from "./pages/CatalogItemFormPage";
 import FeedbackPage from "./pages/FeedbackPage";
+import { PrivacyPolicyPage } from "./legal/PrivacyPolicy";
+import { TermsOfServicePage } from "./legal/TermsOfService";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -121,6 +123,13 @@ const AppContent: React.FC = () => {
               <Route path="/invoice-preview/:id" exact={true}>
                 <InvoicePreviewPage />
               </Route>
+              {/* Legal documents linked from the shared app footer. */}
+              <Route path="/terms" exact={true}>
+                <TermsOfServicePage chrome="app" />
+              </Route>
+              <Route path="/privacy" exact={true}>
+                <PrivacyPolicyPage chrome="app" />
+              </Route>
               <Route>
                 <Redirect to="/manage-jobs" />
               </Route>
@@ -152,6 +161,14 @@ const AppContent: React.FC = () => {
               </Route>
               <Route path="/sign-in" exact={true}>
                 <AuthPage />
+              </Route>
+              {/* Same legal routes as the authenticated outlet, with the
+                  public header instead of the app back-button header. */}
+              <Route path="/terms" exact={true}>
+                <TermsOfServicePage chrome="public" />
+              </Route>
+              <Route path="/privacy" exact={true}>
+                <PrivacyPolicyPage chrome="public" />
               </Route>
               <Route>
                 <Redirect to="/" />

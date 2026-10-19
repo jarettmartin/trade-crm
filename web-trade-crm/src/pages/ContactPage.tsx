@@ -16,6 +16,7 @@ import {
   IonToast,
 } from "@ionic/react";
 import PublicHeader from "../components/PublicHeader";
+import AppFooter from "../components/AppFooter";
 import { api } from "../services/api";
 import { isValidEmail } from "../services/validation";
 
@@ -237,6 +238,7 @@ const ContactPage: React.FC = () => {
           </div>
         </div>
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

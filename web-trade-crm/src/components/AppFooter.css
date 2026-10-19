@@ -1,0 +1,32 @@
+/* ===== APP FOOTER =====
+ * Shared by the public and authenticated spaces. A slim white toolbar under
+ * the page content (matching the header's surface) with the legal CTAs
+ * centered; sentence-case links in the brand green rather than Ionic's
+ * uppercase button default, so it reads the same way as PublicHeader. */
+.app-footer ion-toolbar {
+  --min-height: 44px;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+  border-top: 1px solid var(--ion-color-light-shade);
+}
+
+.app-footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-footer ion-button {
+  margin: 0;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}

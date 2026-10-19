@@ -21,6 +21,7 @@ import {
 } from "@ionic/react";
 import { useHistory, useParams } from "react-router-dom";
 import { api, CatalogItemResult } from "../services/api";
+import AppFooter from "../components/AppFooter";
 
 type CatalogFormMode = "create" | "edit";
 
@@ -149,6 +150,7 @@ const CatalogItemFormPage: React.FC = () => {
             <IonSpinner />
           </div>
         </IonContent>
+        <AppFooter />
       </IonPage>
     );
   }
@@ -283,6 +285,7 @@ const CatalogItemFormPage: React.FC = () => {
           onDidDismiss={() => setShowToast(false)}
         />
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };

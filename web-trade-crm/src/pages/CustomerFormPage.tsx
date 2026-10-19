@@ -29,6 +29,7 @@ import {
   validatePostalCode,
 } from "../services/validation";
 import { formatPhone, stripPhone } from "../services/format";
+import AppFooter from "../components/AppFooter";
 
 interface AddressForm {
   label: string;
@@ -253,6 +254,7 @@ const CustomerFormPage: React.FC = () => {
             <IonSpinner />
           </div>
         </IonContent>
+        <AppFooter />
       </IonPage>
     );
   }
@@ -502,6 +504,7 @@ const CustomerFormPage: React.FC = () => {
           onDidDismiss={() => setShowToast(false)}
         />
       </IonContent>
+      <AppFooter />
     </IonPage>
   );
 };
