@@ -22,7 +22,7 @@ export interface PublicNavItem {
  *  optional so a future item can appear before its page exists (it then renders
  *  inert instead of as a dead link). */
 export const publicNavItems: PublicNavItem[] = [
-  { title: "Sprout CRM", url: "/", icon: homeOutline },
+  { title: "Overview", url: "/", icon: homeOutline },
   { title: "Early Access", url: "/beta-program", icon: flaskOutline },
   { title: "Contact", url: "/contact", icon: chatbubbleOutline },
 ];

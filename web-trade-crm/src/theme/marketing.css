@@ -1,0 +1,1127 @@
+/* ===== MARKETING SURFACES (public pages) =====
+ * One design system for the three pre-auth marketing pages — landing (`/`),
+ * Early Access (`/beta-program`), and Contact (`/contact`) — plus the public
+ * header and `MarketingFooter` they render. Imported once from App.tsx after
+ * `theme/variables.css`, so Ionic's color tokens are already defined.
+ *
+ * Everything is namespaced `mkt` / `--mkt-*` so the authenticated app (which
+ * keeps its Ionic card/form styling) is untouched. The tokens live on `:root`
+ * because the public header and footer render outside the `.mkt` wrapper.
+ *
+ * Layout: a page wraps its sections in `.mkt`; each section uses
+ * `.mkt-container` for the shared 1200px frame (24px gutters) and
+ * `.mkt-section` for the vertical rhythm. Breakpoints match the app's 992px
+ * desktop cutoff (the public header's own collapse point).
+ */
+
+/* ===== TOKENS ===== */
+:root {
+  --mkt-container: 1200px;
+  --mkt-gutter: 24px;
+  --mkt-section-y: 64px;
+
+  --mkt-canvas: #f6f8f5;
+  --mkt-surface: #ffffff;
+  --mkt-tint: #edf4ee;
+  --mkt-hairline: #e2e8e1;
+
+  --mkt-ink: #101f16;
+  --mkt-ink-2: #35473c;
+  --mkt-muted: #5c6b62;
+  --mkt-dot: #d5ddd5;
+
+  --mkt-brand: #2f8f46;
+  --mkt-brand-strong: #227034;
+  --mkt-brand-ink: #1b5229;
+  --mkt-brand-wash: rgba(47, 143, 70, 0.1);
+  --mkt-brand-ring: rgba(47, 143, 70, 0.24);
+  --mkt-primary-top: #3aa154;
+  --mkt-primary-top-hover: #33984c;
+  --mkt-focus: rgba(47, 143, 70, 0.35);
+
+  --mkt-radius-sm: 10px;
+  --mkt-radius: 16px;
+  --mkt-radius-lg: 24px;
+
+  --mkt-shadow-sm: 0 1px 2px rgba(16, 31, 22, 0.06);
+  --mkt-shadow-md: 0 18px 40px -24px rgba(16, 31, 22, 0.35);
+  --mkt-shadow-lg: 0 40px 80px -44px rgba(16, 31, 22, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mkt-canvas: #141915;
+    --mkt-surface: #1b211c;
+    --mkt-tint: #19211a;
+    --mkt-hairline: #2c352e;
+
+    --mkt-ink: #e9f1ea;
+    --mkt-ink-2: #c6d1c9;
+    --mkt-muted: #97a69c;
+    --mkt-dot: #333d35;
+
+    --mkt-brand: #55c96e;
+    --mkt-brand-strong: #6bd684;
+    --mkt-brand-ink: #9fe3ad;
+    --mkt-brand-wash: rgba(85, 201, 110, 0.14);
+    --mkt-brand-ring: rgba(85, 201, 110, 0.32);
+    --mkt-primary-top: #63d47c;
+    --mkt-primary-top-hover: #74dd8c;
+
+    --mkt-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --mkt-shadow-md: 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+    --mkt-shadow-lg: 0 40px 80px -44px rgba(0, 0, 0, 0.85);
+  }
+}
+
+@media (min-width: 992px) {
+  :root {
+    --mkt-section-y: 100px;
+  }
+}
+
+/* ===== BASE ===== */
+.mkt {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--mkt-canvas);
+  color: var(--mkt-ink);
+  font-family: var(--ion-font-family);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ionic's typography utilities are global, so restate the display rules inside
+   the marketing surface rather than fighting them from the outside. Weights
+   are explicit (not 650) because Inter is loaded as static weights. */
+.mkt h1,
+.mkt h2,
+.mkt h3,
+.mkt h4 {
+  margin: 0;
+  color: var(--mkt-ink);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.mkt p {
+  margin: 0;
+}
+
+.mkt img {
+  max-width: 100%;
+}
+
+.mkt ul,
+.mkt ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mkt a {
+  color: var(--mkt-brand-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt *,
+  .mkt *::before,
+  .mkt *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ===== LAYOUT ===== */
+.mkt-container {
+  width: 100%;
+  max-width: var(--mkt-container);
+  margin-inline: auto;
+  padding-inline: var(--mkt-gutter);
+}
+
+.mkt-section {
+  padding-block: var(--mkt-section-y);
+}
+
+.mkt-section--tint {
+  background: var(--mkt-tint);
+}
+
+/* Section heading block: kicker, title, optional lede. */
+.mkt-head {
+  max-width: 720px;
+  margin-bottom: 44px;
+}
+
+.mkt-head--center {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.mkt-head h2 {
+  margin-top: 12px;
+  font-size: clamp(1.75rem, 3.4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.mkt-head__lede {
+  margin-top: 16px;
+  font-size: 17.5px;
+  color: var(--mkt-muted);
+}
+
+/* Small uppercase label that introduces a block. */
+.mkt-kicker {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mkt-brand-strong);
+}
+
+/* ===== BUTTONS =====
+ * Native buttons (not `IonButton`) so the marketing pages get one consistent,
+ * fully controlled pill button — Ionic's shadow parts fight gradient fills,
+ * padding and typography at this size. Ionic inputs stay in the contact form. */
+.mkt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding-inline: 20px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.mkt-btn:active {
+  transform: translateY(1px);
+}
+
+.mkt-btn:focus-visible {
+  outline: 3px solid var(--mkt-focus);
+  outline-offset: 2px;
+}
+
+.mkt-btn[disabled],
+.mkt-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.mkt-btn--primary {
+  background: linear-gradient(180deg, var(--mkt-primary-top), var(--mkt-brand));
+  color: var(--ion-color-primary-contrast);
+  box-shadow:
+    0 10px 22px -14px rgba(34, 112, 52, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.mkt-btn--primary:hover {
+  background: linear-gradient(180deg, var(--mkt-primary-top-hover), var(--mkt-brand-strong));
+}
+
+.mkt-btn--ghost {
+  background: var(--mkt-surface);
+  border-color: var(--mkt-hairline);
+  color: var(--mkt-ink);
+  box-shadow: var(--mkt-shadow-sm);
+}
+
+.mkt-btn--ghost:hover {
+  border-color: var(--mkt-brand);
+  color: var(--mkt-brand-strong);
+}
+
+.mkt-btn--lg {
+  min-height: 54px;
+  padding-inline: 26px;
+  font-size: 16px;
+}
+
+.mkt-btn--sm {
+  min-height: 38px;
+  padding-inline: 16px;
+  font-size: 14px;
+}
+
+.mkt-btn--block {
+  width: 100%;
+}
+
+/* Text link rendered as a button (keeps SPA navigation + button semantics). */
+.mkt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--mkt-brand-strong);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mkt-link:hover {
+  text-decoration: underline;
+}
+
+.mkt-link:focus-visible {
+  outline: 3px solid var(--mkt-focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+
+/* ===== SCREENSHOT FRAME =====
+ * Product captures share the app's light background, so they need a real
+ * frame (border + lift) to read as images instead of more page text. */
+.mkt-shot {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--mkt-hairline);
+  border-radius: var(--mkt-radius);
+  background: var(--mkt-surface);
+  box-shadow: var(--mkt-shadow-md);
+}
+
+.mkt-shot__img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mkt-shot--hero {
+  border-radius: var(--mkt-radius-lg);
+  box-shadow: var(--mkt-shadow-lg);
+}
+
+/* Faux browser chrome on the hero capture only — a familiar cue that reads as
+ * "this is the product", not a marketing illustration. */
+.mkt-shot__bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding-inline: 16px;
+  background: var(--mkt-tint);
+  border-bottom: 1px solid var(--mkt-hairline);
+}
+
+.mkt-shot__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--mkt-dot);
+}
+
+.mkt-shot__url {
+  margin-left: 10px;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--mkt-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ===== HERO ===== */
+.mkt-hero {
+  position: relative;
+  overflow: hidden;
+  padding-block: 56px 64px;
+  background:
+    radial-gradient(
+      900px 420px at 50% -140px,
+      var(--mkt-brand-wash),
+      transparent 70%
+    ),
+    var(--mkt-canvas);
+  text-align: center;
+}
+
+/* Inner-page heroes (Early Access, Contact) carry less weight than the home
+   hero: no product shot underneath, tighter rhythm. */
+.mkt-hero--compact {
+  padding-block: 48px 24px;
+}
+
+.mkt-hero--left {
+  text-align: left;
+}
+
+@media (min-width: 992px) {
+  .mkt-hero {
+    padding-block: 88px 80px;
+  }
+
+  .mkt-hero--compact {
+    padding-block: 72px 24px;
+  }
+}
+
+/* "Now onboarding founding customers" style pill above the headline. */
+.mkt-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  border: 1px solid var(--mkt-brand-ring);
+  border-radius: 999px;
+  background: var(--mkt-brand-wash);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkt-brand-ink);
+}
+
+.mkt-eyebrow__dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mkt-brand);
+}
+
+/* Slow pulse so the badge reads as "live", not as a loading state. */
+.mkt-eyebrow__dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--mkt-brand);
+  opacity: 0;
+  animation: mkt-pulse 3.2s ease-out infinite;
+}
+
+@keyframes mkt-pulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.6);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+.mkt-hero__title {
+  max-width: 940px;
+  margin: 20px auto 0;
+  font-size: clamp(2.2rem, 5.6vw, 3.9rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.mkt-hero--compact .mkt-hero__title {
+  max-width: 820px;
+  margin-top: 16px;
+  font-size: clamp(2rem, 4.4vw, 3.1rem);
+}
+
+/* Second clause of the headline, tinted in brand green. The gradient is
+   progressive enhancement: the solid fallback colour is set first. */
+.mkt-hero__accent {
+  color: var(--mkt-brand-strong);
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .mkt-hero__accent {
+    background: linear-gradient(
+      92deg,
+      var(--mkt-brand-strong),
+      var(--mkt-brand)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/* Gradient text is invisible in Windows high-contrast mode. */
+@media (forced-colors: active) {
+  .mkt-hero__accent {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+.mkt-hero__lede {
+  max-width: 660px;
+  margin: 22px auto 0;
+  font-size: 17.5px;
+  line-height: 1.65;
+  color: var(--mkt-muted);
+}
+
+.mkt-hero--compact .mkt-hero__lede,
+.mkt-hero--left .mkt-hero__lede {
+  margin-inline: 0;
+  font-size: 17px;
+}
+
+.mkt-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.mkt-hero--left .mkt-hero__actions {
+  justify-content: flex-start;
+}
+
+.mkt-hero__note {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--mkt-muted);
+}
+
+.mkt-hero__visual {
+  position: relative;
+  margin-top: 52px;
+}
+
+@media (min-width: 992px) {
+  .mkt-hero__visual {
+    margin-top: 64px;
+  }
+}
+
+/* Soft brand glow behind the hero capture, so it lifts off the page. */
+.mkt-hero__visual::before {
+  content: "";
+  position: absolute;
+  inset: 14% 4% -8%;
+  z-index: 0;
+  background: radial-gradient(
+    closest-side,
+    rgba(47, 143, 70, 0.24),
+    transparent
+  );
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mkt-hero__visual::before {
+    background: radial-gradient(
+      closest-side,
+      rgba(85, 201, 110, 0.2),
+      transparent
+    );
+  }
+}
+
+.mkt-hero__visual .mkt-shot {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ===== CAPABILITY STRIP =====
+ * A single bordered rail of "what's inside" right under the hero: it answers
+ * "is this for me?" before the visitor commits to scrolling. */
+.mkt-strip {
+  padding-block: 8px 0;
+}
+
+.mkt-strip__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--mkt-hairline);
+  border-radius: var(--mkt-radius);
+  background: var(--mkt-hairline);
+  box-shadow: var(--mkt-shadow-sm);
+}
+
+.mkt-strip__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  background: var(--mkt-surface);
+}
+
+.mkt-strip__icon {
+  flex: none;
+  margin-top: 2px;
+  font-size: 20px;
+  color: var(--mkt-brand-strong);
+}
+
+.mkt-strip__title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.mkt-strip__text {
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--mkt-muted);
+}
+
+@media (min-width: 640px) {
+  .mkt-strip__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  .mkt-strip__list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ===== HOW IT WORKS ===== */
+.mkt-steps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.mkt-step {
+  padding: 28px;
+  border: 1px solid var(--mkt-hairline);
+  border-radius: var(--mkt-radius);
+  background: var(--mkt-surface);
+  box-shadow: var(--mkt-shadow-sm);
+}
+
+.mkt-step__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--mkt-brand-wash);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mkt-brand-ink);
+}
+
+.mkt-step__title {
+  margin-top: 18px;
+  font-size: 18.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.mkt-step__body {
+  margin-top: 8px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--mkt-muted);
+}
+
+@media (min-width: 992px) {
+  .mkt-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+/* ===== FEATURE ROWS =====
+ * Alternating copy/screenshot rows instead of a card grid: the visitor reads
+ * one idea at a time and the product shots get enough size to be legible. */
+.mkt-rows {
+  display: grid;
+  gap: 56px;
+}
+
+.mkt-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.mkt-row__title {
+  margin-top: 12px;
+  font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.mkt-row__body {
+  margin-top: 14px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--mkt-muted);
+}
+
+.mkt-row__media {
+  margin: 0;
+}
+
+@media (min-width: 992px) {
+  .mkt-rows {
+    gap: 96px;
+  }
+
+  .mkt-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+    gap: 64px;
+  }
+
+  .mkt-row--flip .mkt-row__copy {
+    order: 2;
+  }
+}
+
+/* ===== CHECK LIST ===== */
+.mkt-checks {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.mkt-checks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 15.5px;
+  line-height: 1.5;
+  color: var(--mkt-ink-2);
+}
+
+.mkt-checks ion-icon {
+  flex: none;
+  margin-top: 2px;
+  font-size: 18px;
+  color: var(--mkt-brand);
+}
+
+/* ===== CARD GRID ===== */
+.mkt-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.mkt-card {
+  padding: 28px;
+  border: 1px solid var(--mkt-hairline);
+  border-radius: var(--mkt-radius);
+  background: var(--mkt-surface);
+  box-shadow: var(--mkt-shadow-sm);
+}
+
+.mkt-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: var(--mkt-brand-wash);
+  font-size: 21px;
+  color: var(--mkt-brand-strong);
+}
+
+.mkt-card__title {
+  margin-top: 18px;
+  font-size: 18.5px;
+  letter-spacing: -0.02em;
+}
+
+.mkt-card__body {
+  margin-top: 8px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--mkt-muted);
+}
+
+.mkt-card__action {
+  margin-top: 16px;
+}
+
+@media (min-width: 992px) {
+  .mkt-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+/* ===== PANEL =====
+ * The elevated box used for the "how to join" block on Early Access and the
+ * contact form. Bigger radius + deeper shadow than a card so it reads as the
+ * page's primary surface. */
+.mkt-panel {
+  padding: 28px;
+  border: 1px solid var(--mkt-hairline);
+  border-radius: var(--mkt-radius-lg);
+  background: var(--mkt-surface);
+  box-shadow: var(--mkt-shadow-md);
+}
+
+.mkt-panel__title {
+  font-size: 21px;
+  letter-spacing: -0.025em;
+}
+
+.mkt-panel__body {
+  margin-top: 10px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--mkt-muted);
+}
+
+/* Primary action at the foot of a panel. */
+.mkt-panel__action {
+  margin-top: 24px;
+}
+
+@media (min-width: 992px) {
+  .mkt-panel {
+    padding: 36px;
+  }
+}
+
+/* ===== SPLIT =====
+ * Two-column content block (requirements + how to join, contact aside + form). */
+.mkt-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .mkt-split {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 64px;
+  }
+}
+
+
+/* ===== CTA BAND =====
+ * Full-bleed closing call to action. Deep brand green in both color schemes:
+ * it is the one place the page goes dark, which makes the final ask the
+ * loudest thing on screen. */
+.mkt-cta-band {
+  position: relative;
+  overflow: hidden;
+  padding-block: 64px;
+  background:
+    radial-gradient(
+      620px 320px at 88% -10%,
+      rgba(135, 182, 91, 0.4),
+      transparent 70%
+    ),
+    linear-gradient(135deg, #123f24 0%, #1c6132 52%, #277a3c 100%);
+  color: #f3fbf4;
+}
+
+.mkt-cta-band__inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.mkt-cta-band h2 {
+  margin-top: 12px;
+  color: #ffffff;
+  font-size: clamp(1.8rem, 3.6vw, 2.7rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.mkt-cta-band p {
+  margin-top: 14px;
+  max-width: 640px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: rgba(243, 251, 244, 0.82);
+}
+
+.mkt-cta-band .mkt-kicker {
+  color: #b7e8c2;
+}
+
+.mkt-cta-band__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* On the band the primary button inverts to white so it reads as the single
+   next step against the green field. */
+.mkt-cta-band .mkt-btn--primary {
+  background: #ffffff;
+  color: var(--mkt-brand-strong);
+  box-shadow: 0 18px 36px -22px rgba(0, 0, 0, 0.85);
+}
+
+.mkt-cta-band .mkt-btn--primary:hover {
+  background: #eef7f0;
+}
+
+.mkt-cta-band .mkt-btn--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.mkt-cta-band .mkt-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+}
+
+@media (min-width: 992px) {
+  .mkt-cta-band {
+    padding-block: 88px;
+  }
+
+  .mkt-cta-band__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 48px;
+  }
+
+  .mkt-cta-band__actions {
+    justify-content: flex-end;
+  }
+}
+
+/* ===== CONTACT FORM =====
+ * Ionic inputs stay (validation, accessibility, popovers), but each field is
+ * repainted as a bordered marketing field instead of an Ionic list row. */
+.mkt-contact {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* On phones the form comes first — the aside is supporting context. */
+.mkt-contact__form {
+  order: -1;
+}
+
+.mkt-contact__aside {
+  display: grid;
+  gap: 16px;
+}
+
+.mkt-form__heading {
+  font-size: 21px;
+  letter-spacing: -0.025em;
+}
+
+.mkt-form__intro {
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--mkt-muted);
+}
+
+.mkt-form__fields {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* One field = one bordered box. Ionic paints `--background` on the inner
+   wrapper, so paint the box on the host (the same trick as `.form-card`). */
+.mkt-field {
+  --background: transparent;
+  --min-height: 58px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  border: 1px solid var(--mkt-hairline);
+  border-radius: 12px;
+  background: var(--mkt-surface);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.mkt-field.item-has-focus {
+  border-color: var(--mkt-brand);
+  box-shadow: 0 0 0 4px var(--mkt-brand-wash);
+}
+
+.mkt-field--textarea {
+  --min-height: 140px;
+  align-items: stretch;
+}
+
+.mkt-field ion-label {
+  font-size: 13px !important;
+  font-weight: 600;
+  color: var(--mkt-muted) !important;
+}
+
+.mkt-field ion-input,
+.mkt-field ion-textarea,
+.mkt-field ion-select {
+  font-size: 15.5px;
+  --color: var(--mkt-ink);
+}
+
+.mkt-form__hint {
+  display: block;
+  margin: 6px 2px 0;
+  font-size: 12px;
+  color: var(--mkt-muted);
+}
+
+.mkt-form__hint--over {
+  color: var(--ion-color-danger);
+}
+
+.mkt-form__submit {
+  margin-top: 22px;
+}
+
+.mkt-form__footnote {
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mkt-muted);
+}
+
+/* Confirmation state after a successful submission. */
+.mkt-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mkt-success__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--mkt-brand-wash);
+  font-size: 30px;
+  color: var(--mkt-brand);
+}
+
+.mkt-success__title {
+  margin-top: 20px;
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+
+.mkt-success__body {
+  margin-top: 10px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--mkt-muted);
+}
+
+.mkt-success__action {
+  margin-top: 22px;
+}
+
+@media (min-width: 992px) {
+  .mkt-contact {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 56px;
+  }
+
+  .mkt-contact__form {
+    order: 0;
+  }
+}
+
+/* ===== UTIL ===== */
+/* Extra air under the page's last section before the footer. */
+.mkt-section--last {
+  padding-bottom: calc(var(--mkt-section-y) + 16px);
+}
+
+/* Quiet inline note (e.g. the "existing invite code?" line). */
+.mkt-note {
+  margin-top: 18px;
+  font-size: 13.5px;
+  color: var(--mkt-muted);
+}
+
+
+/* Ionic paint target for marketing pages — keeps the canvas behind overscroll
+   and below the last section, so no white band appears on short pages. */
+ion-content.mkt-content {
+  --background: var(--mkt-canvas);
+  --color: var(--mkt-ink);
+}
+
+/* Standalone section title outside a `.mkt-head` block (split layouts). */
+.mkt-title {
+  margin-top: 12px;
+  font-size: clamp(1.75rem, 3.4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+/* Steps nested in the "how to join" panel: a plain numbered list, not a stack
+   of cards inside a card. */
+.mkt-panel .mkt-steps {
+  grid-template-columns: 1fr;
+  gap: 22px;
+  margin-top: 24px;
+}
+
+.mkt-panel .mkt-step {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.mkt-panel .mkt-step__title {
+  margin-top: 12px;
+  font-size: 17px;
+}
+
+.mkt-panel .mkt-step__body {
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+/* The contact aside's checklist sits directly under a card title. */
+.mkt-contact__aside .mkt-checks {
+  margin-top: 14px;
+}
+

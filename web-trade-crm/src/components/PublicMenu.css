@@ -1,0 +1,107 @@
+/* ===== PUBLIC MENU (mobile drawer) =====
+ * Mirrors the marketing header's language: the brand lockup at the top, the
+ * nav as tinted pills (the active page gets the brand wash), then the
+ * secondary actions as full-width buttons at the foot of the list.
+ * Tokens come from `theme/marketing.css`. */
+.public-menu {
+  --width: 300px;
+}
+
+.public-menu__content {
+  --background: var(--mkt-canvas);
+  --color: var(--mkt-ink);
+}
+
+.public-menu__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 20px 32px;
+}
+
+.public-menu__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.public-menu__logo {
+  width: 30px;
+  height: 30px;
+}
+
+.public-menu__brandname {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--mkt-ink);
+}
+
+.public-menu__brandname span {
+  font-weight: 500;
+  color: var(--mkt-muted);
+}
+
+.public-menu__nav {
+  display: grid;
+  gap: 4px;
+}
+
+.public-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--mkt-ink-2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.public-menu__item:hover {
+  background: var(--mkt-brand-wash);
+  color: var(--mkt-brand-ink);
+}
+
+.public-menu__item--active,
+.public-menu__item--active:hover {
+  border-color: var(--mkt-hairline);
+  background: var(--mkt-surface);
+  color: var(--mkt-brand-ink);
+  font-weight: 600;
+}
+
+.public-menu__item--inactive {
+  color: var(--mkt-muted);
+  cursor: default;
+}
+
+.public-menu__icon {
+  font-size: 19px;
+  color: var(--mkt-brand-strong);
+}
+
+.public-menu__actions {
+  display: grid;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--mkt-hairline);
+}
+
+/* Give the drawer's list a real vertical rhythm rather than Ionic's defaults. */
+.public-menu ion-content {
+  --padding-start: 0;
+  --padding-end: 0;
+}

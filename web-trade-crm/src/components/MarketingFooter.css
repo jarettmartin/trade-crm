@@ -1,0 +1,108 @@
+/* ===== MARKETING FOOTER =====
+ * Full footer for the public marketing pages. Renders inside `IonContent`
+ * (see MarketingFooter.tsx), so it scrolls with the page rather than being
+ * pinned like the app-wide `AppFooter`. Tokens come from `theme/marketing.css`.
+ */
+.mkt-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--mkt-hairline);
+  background: var(--mkt-surface);
+}
+
+.mkt-footer__inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  width: 100%;
+  max-width: var(--mkt-container);
+  margin-inline: auto;
+  padding: 48px var(--mkt-gutter) 40px;
+}
+
+@media (min-width: 720px) {
+  .mkt-footer__inner {
+    grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+    gap: 40px;
+  }
+}
+
+.mkt-footer__lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mkt-footer__logo {
+  width: 28px;
+  height: 28px;
+}
+
+.mkt-footer__brandname {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--mkt-ink);
+}
+
+.mkt-footer__brandname span {
+  font-weight: 500;
+  color: var(--mkt-muted);
+}
+
+.mkt-footer__tagline {
+  max-width: 300px;
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mkt-muted);
+}
+
+.mkt-footer__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mkt-muted);
+}
+
+.mkt-footer__list {
+  display: grid;
+  gap: 2px;
+  margin-top: 14px;
+}
+
+.mkt-footer__link {
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--mkt-ink-2);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.16s ease;
+}
+
+.mkt-footer__link:hover {
+  color: var(--mkt-brand-strong);
+}
+
+.mkt-footer__link:focus-visible {
+  outline: 3px solid var(--mkt-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.mkt-footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: space-between;
+  width: 100%;
+  max-width: var(--mkt-container);
+  margin-inline: auto;
+  padding: 18px var(--mkt-gutter) 24px;
+  border-top: 1px solid var(--mkt-hairline);
+  font-size: 13px;
+  color: var(--mkt-muted);
+}

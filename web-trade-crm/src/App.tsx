@@ -52,6 +52,10 @@ import "@ionic/react/css/palettes/dark.system.css";
 /* Theme variables */
 import "./theme/variables.css";
 
+/* Marketing design system for the public pages (landing, Early Access,
+   Contact) and the public header/footer they render. */
+import "./theme/marketing.css";
+
 // Force iOS mode for every Ionic component so the UI looks identical across
 // platforms (desktop browsers would otherwise default to Material Design).
 setupIonicReact({ mode: "ios" });

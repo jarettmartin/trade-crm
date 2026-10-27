@@ -1,49 +1,101 @@
 /* ===== PUBLIC HEADER =====
- * Responsive header for the unauthenticated space:
- *   - >= 992px (desktop): inline horizontal nav — logo + links + actions
- *   - < 992px (mobile): hamburger that opens the PublicMenu drawer; the text
- *     links move into that drawer, while the logo and the Try Demo / Login
- *     buttons stay in the bar.
- * 992px matches Ionic's default split-pane breakpoint, so the public space
- * collapses at the same width as the rest of the app. */
-.public-header {
-  --min-height: 60px;
+ * Responsive marketing header for the unauthenticated space:
+ *   - >= 992px (desktop): brand + inline nav + Sign in / Live demo / CTA
+ *   - < 992px (mobile): brand + primary CTA + hamburger that opens the
+ *     PublicMenu drawer (which holds the nav and the secondary actions)
+ *
+ * The tokens it uses (`--mkt-*`) come from `theme/marketing.css`; the header
+ * renders on every public page (including sign-in and the legal documents),
+ * so it must not depend on a `.mkt` wrapper being present. Ionic keeps the
+ * header pinned above `ion-content`, so it needs no `position: sticky`.
+ */
+.public-header__toolbar {
+  --min-height: 68px;
+  --background: rgba(255, 255, 255, 0.88);
+  --border-width: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  border-bottom: 1px solid var(--mkt-hairline);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .public-header__toolbar {
+    --background: rgba(20, 25, 21, 0.88);
+  }
 }
 
 .public-header__inner {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: var(--mkt-container);
+  margin-inline: auto;
+  padding-inline: var(--mkt-gutter);
+}
+
+/* Brand lockup: the sprout mark plus a typographic wordmark. The square
+   `logowithname.png` is too tall to read at header size, so the name is set in
+   the page font next to the mark instead. */
+.public-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.public-header__brand:focus-visible {
+  outline: 3px solid var(--mkt-focus);
+  outline-offset: 4px;
+  border-radius: 6px;
 }
 
 .public-header__logo {
   display: block;
-  height: 32px;
-  width: auto;
-  cursor: pointer;
-  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.public-header__brandname {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--mkt-ink);
+  white-space: nowrap;
+}
+
+.public-header__brandname span {
+  font-weight: 500;
+  color: var(--mkt-muted);
 }
 
 .public-header__links {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 2px;
   min-width: 0;
 }
 
 .public-header__item {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
   background: none;
-  border: none;
-  padding: 4px 0;
-  margin: 0;
   font: inherit;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 500;
-  color: var(--ion-text-color);
+  color: var(--mkt-ink-2);
   white-space: nowrap;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
 }
 
 button.public-header__item {
@@ -51,18 +103,22 @@ button.public-header__item {
 }
 
 button.public-header__item:hover {
-  color: var(--ion-color-primary);
+  background: var(--mkt-brand-wash);
+  color: var(--mkt-brand-ink);
 }
 
 /* Items that don't route anywhere yet — visible but not interactive. */
 .public-header__item--inactive {
-  color: var(--ion-color-medium);
+  color: var(--mkt-muted);
   cursor: default;
 }
 
-/* Current page — highlighted in the brand green. */
-.public-header__item--active {
-  color: var(--ion-color-primary);
+/* Current page — tinted pill rather than a colour-only change. */
+.public-header__item--active,
+button.public-header__item--active:hover {
+  background: var(--mkt-brand-wash);
+  color: var(--mkt-brand-ink);
+  font-weight: 600;
 }
 
 .public-header__actions {
@@ -73,23 +129,81 @@ button.public-header__item:hover {
   flex-shrink: 0;
 }
 
-/* Hamburger is mobile-only (see the media query below). */
-.public-header__hamburger {
+.public-header__signin {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--mkt-ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.16s ease;
+}
+
+.public-header__signin:hover {
+  color: var(--mkt-brand-ink);
+}
+
+.public-header__signin:focus-visible {
+  outline: 3px solid var(--mkt-focus);
+  outline-offset: 2px;
+}
+
+/* The bar is tight on phones, so the CTA swaps to a shorter label instead of
+   dropping the site's primary action. */
+.public-header__cta-short {
   display: none;
 }
 
+/* Hamburger is mobile-only (see the media query below). */
+.public-header__hamburger {
+  display: none;
+  margin-left: -8px;
+}
+
+.public-header__hamburger ion-menu-button {
+  --color: var(--mkt-ink);
+}
+
 @media (max-width: 991px) {
-  .public-header__hamburger {
-    display: inline-flex;
+  .public-header__toolbar {
+    --min-height: 60px;
   }
 
-  /* Tighter gaps to leave room for the CTAs alongside the logo. */
   .public-header__inner {
     gap: 12px;
   }
 
-  /* Only the text links collapse into the PublicMenu drawer. */
-  .public-header__links {
+  .public-header__hamburger {
+    display: inline-flex;
+    order: -1;
+  }
+
+  /* The text links and secondary actions live in the PublicMenu drawer. */
+  .public-header__links,
+  .public-header__signin,
+  .public-header__demo {
+    display: none;
+  }
+
+  .public-header__brandname {
+    font-size: 16px;
+  }
+
+  .public-header__cta-full {
+    display: none;
+  }
+
+  .public-header__cta-short {
+    display: inline;
+  }
+}
+
+@media (max-width: 400px) {
+  .public-header__brandname {
     display: none;
   }
 }
