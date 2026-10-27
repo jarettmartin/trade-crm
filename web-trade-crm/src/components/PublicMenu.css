@@ -99,9 +99,3 @@
   padding-top: 20px;
   border-top: 1px solid var(--mkt-hairline);
 }
-
-/* Give the drawer's list a real vertical rhythm rather than Ionic's defaults. */
-.public-menu ion-content {
-  --padding-start: 0;
-  --padding-end: 0;
-}

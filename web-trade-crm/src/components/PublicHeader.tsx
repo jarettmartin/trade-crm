@@ -25,6 +25,7 @@ const PublicHeader: React.FC = () => {
           <button
             type="button"
             className="public-header__brand"
+            aria-label="Sprout CRM home"
             onClick={() => history.push("/")}
           >
             <img

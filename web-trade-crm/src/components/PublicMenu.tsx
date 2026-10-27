@@ -32,6 +32,7 @@ const PublicMenu: React.FC = () => {
           <button
             type="button"
             className="public-menu__brand"
+            aria-label="Sprout CRM home"
             onClick={() => history.push("/")}
           >
             <img

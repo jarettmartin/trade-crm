@@ -506,7 +506,8 @@
 
 .mkt-hero__visual {
   position: relative;
-  margin-top: 52px;
+  max-width: 1040px;
+  margin: 52px auto 0;
 }
 
 @media (min-width: 992px) {

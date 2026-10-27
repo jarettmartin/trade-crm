@@ -569,6 +569,7 @@ source of truth**:
 - Singleton `api.ts` class for all HTTP — never use raw `fetch` outside of it
 - Shared components for reusable UI (CustomerSearch, CustomerTable, PaginatedTable, Menu)
 - Shared layout and styling classes live in `src/theme/variables.css` (page containers, form cards, form controls) — reuse them instead of page-local styles, and read the comment above a class to see where it's meant to be used
+- The **public marketing pages** (landing, Early Access, Contact) and the public header/footer are the exception: they use their own namespaced system in `src/theme/marketing.css` (`--mkt-*` tokens, `.mkt-container`, `.mkt-btn`, …), imported once from `App.tsx`. Keep app-side changes out of it and keep marketing styles out of `variables.css`.
 - Shared services for cross-cutting concerns (format, validation, pdfCache)
 - `IonActionSheet` for inline status changes (invoice status)
 - `IonSelect` + `interface="popover"` for dropdown menus

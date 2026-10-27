@@ -82,7 +82,8 @@ src/
 │   ├── validation.ts          # Email, phone validation helpers
 │   └── pdfCache.ts            # In-memory PDF blob cache
 └── theme/
-    └── variables.css          # Ionic theme overrides
+    ├── variables.css          # Ionic theme overrides (app + public pages)
+    └── marketing.css          # Marketing design system (landing, Early Access, Contact)
 ```
 
 ## Key Features
