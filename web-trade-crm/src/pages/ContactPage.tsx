@@ -190,7 +190,7 @@ const ContactPage: React.FC = () => {
 
                 <div className="mkt-panel mkt-contact__form">
                   {submitted ? (
-                    <div className="mkt-success">
+                    <div className="mkt-success" role="status">
                       <span className="mkt-success__icon">
                         <IonIcon aria-hidden="true" icon={checkmarkCircle} />
                       </span>

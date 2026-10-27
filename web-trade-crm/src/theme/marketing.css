@@ -365,9 +365,10 @@
 }
 
 /* Inner-page heroes (Early Access, Contact) carry less weight than the home
-   hero: no product shot underneath, tighter rhythm. */
+   hero: no product shot underneath, and the following section supplies the
+   lower rhythm. */
 .mkt-hero--compact {
-  padding-block: 48px 24px;
+  padding-block: 48px 8px;
 }
 
 .mkt-hero--left {
@@ -380,7 +381,7 @@
   }
 
   .mkt-hero--compact {
-    padding-block: 72px 24px;
+    padding-block: 72px 8px;
   }
 }
 
@@ -484,6 +485,11 @@
 .mkt-hero--left .mkt-hero__lede {
   margin-inline: 0;
   font-size: 17px;
+}
+
+/* A left-aligned hero must not keep the centred auto margins on its title. */
+.mkt-hero--left .mkt-hero__title {
+  margin-inline: 0;
 }
 
 .mkt-hero__actions {
@@ -881,15 +887,18 @@
 }
 
 /* On the band the primary button inverts to white so it reads as the single
-   next step against the green field. */
+   next step against the green field. The label stays a fixed deep green in
+   both colour schemes — the band is dark green either way, so the themed
+   `--mkt-brand-strong` (a light green in dark mode) would wash out here. */
 .mkt-cta-band .mkt-btn--primary {
   background: #ffffff;
-  color: var(--mkt-brand-strong);
+  color: #1f6b34;
   box-shadow: 0 18px 36px -22px rgba(0, 0, 0, 0.85);
 }
 
 .mkt-cta-band .mkt-btn--primary:hover {
   background: #eef7f0;
+  color: #174f27;
 }
 
 .mkt-cta-band .mkt-btn--ghost {
